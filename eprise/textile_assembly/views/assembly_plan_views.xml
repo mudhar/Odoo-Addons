@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="assembly_plan_view_form" model="ir.ui.view">
+            <field name="name">assembly.plan.view.form</field>
+            <field name="model">assembly.plan</field>
+            <field name="arch" type="xml">
+                <form string="Assembly Plan">
+                    <header>
+                        <button name="button_to_approve" type="object" string="Confirm" states="draft" class="oe_highlight"/>
+                        <button name="button_done" type="object" string="Done" states="procurement" class="oe_highlight"/>
+                        <button name="check_qty" type="object" string="check" states="procurement" class="oe_highlight"/>
+                        <button name="button_done" type="object" id="done_process" string="Done" states="to approve" class="oe_highlight"/>
+                        <button name="action_cancel" type="object" string="Cancel" states="draft,approve" class="oe_highlight"/>
+                        <button name="button_procurement" type="object" string="Create Procurement" states="to approve"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,approve"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                                <!--<field name="assembly_id" invisible="1"/>-->
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="product_template_id" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="date_start"/>
+                                <field name="active" invisible="1"/>
+                                <field name="location_id"/>
+                                <field name="origin"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group>
+                                <label for="total_quantity" string="Total Quantity"/>
+                                <div>
+                                    <field name="total_quantity" class="oe_inline"
+                                           attrs="{'readonly':[('state','=','approve')]}"/>
+                                    <button name="update_qty"
+                                            type="object"
+                                            attrs="{'invisible':[('state','=','approve')]}"
+                                            string="Update"
+                                            class="oe_edit_only oe_link oe_inline"/>
+                                </div>
+                                <field name="sisa_qty"/>
+                            </group>
+                        </group>
+
+                        <group string="Raw Materials">
+                            <field name="raw_line_ids" nolabel="1">
+                                <tree string="Raw Materials" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="qty_available" readonly="1"/>
+                                    <field name="product_qty"/>
+                                    <field name="product_uom_id" readonly="1"/>
+                                    <field name="total_ratio" readonly="1"/>
+                                    <field name="total_quantity" readonly="1"/>
+                                    <field name="qty_to_po" readonly="1"/>
+                                    <field name="amount_qty" readonly="1"/>
+                                    <field name="state" invisible="1"/>
+
+                                </tree>
+                            </field>
+
+                        </group>
+                        <group string="Products">
+                            <field name="plan_line_ids" nolabel="1">
+                                <tree string="Products" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_variant_id" readonly="1"/>
+                                    <field name="attribute_value_ids" widget="many2many_tags" readonly="1"/>
+                                    <field name="ratio" sum="Total Ratio" readonly="1"/>
+                                    <field name="new_qty" sum="Total Qty"/>
+                                    <field name="state" invisible="1"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" widget="mail_followers"/>
+                        <field name="activity_ids" widget="mail_activity"/>
+                        <field name="message_ids" widget="mail_thread"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <record id="assembly_plan_view_tree" model="ir.ui.view">
+            <field name="name">assembly.plan.view.tree</field>
+            <field name="model">assembly.plan</field>
+            <field name="arch" type="xml">
+                <tree string="Assembly Production">
+                    <field name="name" string="Reference"/>
+                    <field name="origin" string="Origin"/>
+                    <field name="product_template_id"/>
+                    <field name="date_start"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="assembly_plan_action" model="ir.actions.act_window">
+            <field name="name">Assembly Plan</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">assembly.plan</field>
+            <field name="view_mode">tree,form</field>
+            <!--<field name="context">{'search_default_assembly_id':active_id}</field>-->
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    <!-- Add Text Here -->
+                </p><p>
+                <!-- More details about what a user can do with this object will be OK -->
+            </p>
+            </field>
+        </record>
+
+        <record id="assembly_plan_view_search" model="ir.ui.view">
+            <field name="name">assembly.plan.view.search</field>
+            <field name="model">assembly.plan</field>
+            <field name="arch" type="xml">
+                <search string="Search Assembly Plan">
+                    <field name="product_template_id" string="Product"/>
+                    <!--<field name="assembly_id"/>-->
+                    <field name="name" string="Plans"/>
+                    <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                    <filter name="approve" string="Approved" domain="[('state', '=', 'approve')]"/>
+                     <filter name="cancel" string="Cancelled" domain="[('state', '=', 'cancel')]"/>
+                </search>
+            </field>
+        </record>
+
+    </data>
+</odoo>
