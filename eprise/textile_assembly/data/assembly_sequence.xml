@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_assembly_lan" model="ir.sequence">
+            <field name="name">Assembly Plan</field>
+            <field name="code">assembly.plan</field>
+            <field name="prefix">APL. %(day)s/%(month)s/%(year)s/</field>
+            <field name="padding">1</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>
