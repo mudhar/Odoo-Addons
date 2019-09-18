@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="view_mrp_request_reject" model="ir.ui.view">
+            <field name="name">Reason for the Reject</field>
+            <field name="model">mrp.request.reject</field>
+            <field name="arch" type="xml">
+             <form string="Reason for the Reject" version="7.0">
+                <group>
+                    <field name="reason_id"/>
+                </group>
+                <footer>
+                    <button name="confirm_reject"
+                        string="Confirm" type="object"
+                        class="oe_highlight"/>
+
+                </footer>
+            </form>
+            </field>
+        </record>
+        <record id="action_mrp_request_reject" model="ir.actions.act_window">
+            <field name="name">Reason for the Reject</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">mrp.request.reject</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_mrp_request_reject"/>
+            <field name="target">new</field>
+        </record>
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_request_product_view_form_inherit" model="ir.ui.view">
+            <field name="name">mrp.request.product.view.form.inherit</field>
+            <field name="model">mrp.request.product</field>
+            <field name="inherit_id" ref="mrp_mos.mrp_request_product_view_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//button[@name='button_confirm']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <button name="%(action_mrp_request_reject)d" type="action" states="to approve" string="Reject" groups="stock.group_stock_user"  class="oe_highlight"/>
+                </xpath>
+
+            </field>
+        </record>
+
+
+    </data>
+</openerp>

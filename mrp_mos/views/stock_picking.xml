@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="stock_picking_view_form_update_button" model="ir.ui.view">
+            <field name="name">stock.picking.view.form.update.button.lot</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//button[@name='action_confirm']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <button name="update_lot_from_stock_move" string="Rizki Only" type="object"
+                            class="oe_highlight" group="base.group_no_one"/>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</openerp>

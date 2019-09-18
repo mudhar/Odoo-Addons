@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+         <report
+            string="Request Product"
+            id="action_report_mrprequest_product"
+            model="mrp.request.product"
+            report_type="qweb-pdf"
+            name="mrp_mos.report_mrprequest_product"
+            file="mrp_mos.report_mrprequest_product"
+        />
+
+        <template id="report_mrprequest_product">
+            <t t-call="report.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="report.external_layout">
+                        <div class="page">
+                            <div class="oe_structure"/>
+
+                            <h2>
+                                <span t-if="o.state=='approve'">Order N°</span>
+                                <span t-field="o.name"/>
+                            </h2>
+
+                            <div class="row mt32 mb32">
+                                <div t-if="o.user_id" class="col-xs-3">
+                                    <strong>Request By:</strong>
+                                    <p t-field="o.user_id"/>
+                                </div>
+                                <div t-if="o.req_date" class="col-xs-3">
+                                    <strong>Request Date:</strong>
+                                    <p t-field="o.req_date"/>
+                                </div>
+                            </div>
+
+
+                            <br/>
+                            <table class="table table-condensed" t-if="o.line_ids">
+                              <thead>
+                                <tr>
+                                    <th><strong>Product</strong></th>
+                                    <th class="text-right"><strong>Quantity</strong></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr t-foreach="o.line_ids" t-as="line">
+                                    <td>
+                                        <span t-field="line.product_id.code"/>
+                                        <span t-field="line.product_id.name"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-field="line.product_qty"/>
+                                        <span t-field="line.product_uom" groups="product.group_uom"/>
+                                    </td>
+
+                                </tr>
+                              </tbody>
+                            </table>
+                        </div>
+                    </t>
+                 </t>
+             </t>
+        </template>
+    </data>
+</openerp>

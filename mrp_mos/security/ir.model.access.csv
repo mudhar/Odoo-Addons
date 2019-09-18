@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_mrp_request_product_stock_user,Access.mrp.request.product.stock.user,model_mrp_request_product,stock.group_stock_user,1,1,1,1
+access_mrp_request_product_mrp_user,Access.mrp.request.product.mrp.user,model_mrp_request_product,mrp.group_mrp_user,1,1,1,1
+access_mrp_request_product_line_stock_user,Access.mrp.request.product.line.stock.user,model_mrp_request_product_line,stock.group_stock_user,1,1,1,1
+access_mrp_request_product_line_mrp_user,Access.mrp.request.product.line.mrp.user,model_mrp_request_product_line,mrp.group_mrp_user,1,1,1,1
+access_mrp_request_reject_stock_user,Access.mrp.request.reject.stock.user,model_mrp_request_reject,stock.group_stock_user,1,1,1,1

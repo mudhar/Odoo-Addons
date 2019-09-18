@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_bom_view_form_inherit_note" model="ir.ui.view">
+            <field name="name">mrp.bom.view.form.inherit.note</field>
+            <field name="model">mrp.bom</field>
+            <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='bom_line_ids']/tree/field[@name='product_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="note_bom"/>
+                </xpath>
+
+            </field>
+        </record>
+        <record id="mrp_operation_tree_view_inherit" model="ir.ui.view">
+            <field name="name">mrp.operation.tree.view.inherit</field>
+            <field name="model">mrp.production.workcenter.line</field>
+            <field name="inherit_id" ref="mrp_operations.mrp_production_workcenter_tree_view_inherit"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='state']" position="after">
+                    <!-- Add new fields here -->
+                     <field name="note_pending" attrs="{'invisible': [('state', '!=', 'pause')]}"/>
+                </xpath>
+
+            </field>
+        </record>
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_operation_form_view_inherit" model="ir.ui.view">
+            <field name="name">mrp.operation.form.view.inherit</field>
+            <field name="model">mrp.production.workcenter.line</field>
+            <field name="inherit_id" ref="mrp_operations.mrp_production_workcenter_form_view_inherit"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//page" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <page string="Extra Information">
+                        <group>
+                            <field name="note_desc"/>
+                        </group>
+                        <group>
+                            <field name="note_pending" attrs="{'invisible': [('state', '!=', 'pause')]}"/>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="mrp_request_product_view_tree" model="ir.ui.view">
+            <field name="name">mrp.request.product.view.tree</field>
+            <field name="model">mrp.request.product</field>
+            <field name="arch" type="xml">
+                <tree string="Request Product">
+                    <field name="name" String="Ref"/>
+                    <field name="user_id"/>
+                    <field name="req_date"/>
+                    <field name="state"/>
+                    <field name="reject_reason_id"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="mrp_request_product_view_form" model="ir.ui.view">
+            <field name="name">mrp.request.product.view.form</field>
+            <field name="model">mrp.request.product</field>
+            <field name="arch" type="xml">
+                <form string="Request">
+                     <header>
+                        <button name="button_confirm" type="object" string="Request" class="oe_highlight" states="draft"/>
+                        <button name="button_confirm" type="object" id="confirm_approve" string="Confirm"
+                                states="to approve" groups="stock.group_stock_user" class="oe_highlight"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,approve,reject"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" nolabel="1"/></h1>
+
+                        </div>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="req_date"/>
+                        </group>
+                        <group>
+                            <h2 attrs="{'invisible': [('state', '!=', 'reject')]}">
+                                <label for="reject_reason_id" string="Reject reason:"/>
+                                <field name="reject_reason_id" class="oe_inline"
+                                       />
+                            </h2>
+                        </group>
+
+                        <group string="Products">
+                            <field name="line_ids" nolabel="1" colspan="4">
+                                <tree string="Products" editable="bottom">
+                                    <field name="request_id" invisible="1"/>
+                                    <field name="product_id"/>
+                                    <field name="product_qty" sum="Total"/>
+                                    <field name="product_uom"/>
+                                    <field name="req_state" invisible="1"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_production_view_form_inherit_note" model="ir.ui.view">
+            <field name="name">mrp.production.view.form.inherit.note</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp_ppic.mrp_production_view_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='ppic_lines']/tree/field[@name='name']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="note_bom"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="action_mrp_request" model="ir.actions.act_window">
+            <field name="name">Request For Product</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">mrp.request.product</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+              <p class="oe_view_nocontent_create">
+             Klik Tombol Create untuk Melakukan Permintaan Barang
+              </p><p>
+                <!-- More details about what a user can do with this object will be OK -->
+              </p>
+            </field>
+        </record>
+
+        <!--vieww MRP WorkOrder di Sales-->
+         <record id="open_view_workoder_tree" model="ir.actions.act_window">
+            <field name="name">Job Orders</field>
+            <field name="res_model">mrp.production.workcenter.line</field>
+            <field name="view_type">tree</field>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="mrp_operations.mrp_production_workcenter_tree_view_inherit"/>
+         </record>
+
+        <!-- This Menu Item must have a parent and an action -->
+        <menuitem id="menu_sales_workorder" name="" parent="base.menu_sales" action="open_view_workoder_tree" sequence="1"/>
+
+        <!-- This Menu Item will appear in the Upper bar, That's why It needs NO parent or action -->
+        <menuitem id="menu_mrp_request" name="Request For Product" parent="mrp.menu_mrp_manufacturing" action="action_mrp_request" sequence="1"/>
+        <menuitem id="menu_mrp_request_stock" name="Request For Product"
+                  parent="stock.menu_stock_warehouse_mgmt" action="action_mrp_request" sequence="1"/>
+
+    </data>
+</openerp>

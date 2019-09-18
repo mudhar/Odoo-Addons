@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="view_mrp_production_workcenter_pending" model="ir.ui.view">
+            <field name="name">Reason for the Pending</field>
+            <field name="model">mrp.production.workcenter.pending</field>
+            <field name="arch" type="xml">
+             <form string="Reason for the Pending" version="7.0">
+
+                <group>
+                    <field name="reason"/>
+                </group>
+                <footer>
+                    <button name="confirm_pending"
+                        string="Confirm" type="object"
+                        class="oe_highlight"/>
+
+                </footer>
+            </form>
+            </field>
+        </record>
+        <record id="action_mrp_production_workcenter_pending" model="ir.actions.act_window">
+            <field name="name">Reason for the Pending</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">mrp.production.workcenter.pending</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_mrp_production_workcenter_pending"/>
+            <field name="target">new</field>
+        </record>
+
+         <record id="mrp_operation_form_view_inherit_wiz" model="ir.ui.view">
+            <field name="name">mrp.operation.form.view.inherit.wiz</field>
+            <field name="model">mrp.production.workcenter.line</field>
+            <field name="inherit_id" ref="mrp_operations.mrp_production_workcenter_form_view_inherit"/>
+            <field name="arch" type="xml">
+                <xpath expr="//button[@name='button_pause']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <button name="%(action_mrp_production_workcenter_pending)d" type="action" states="startworking" string="Pending"/>
+
+                </xpath>
+                 <xpath expr="//button[@name='button_pause']" position="attributes">
+                    <attribute name="invisible">True</attribute>
+                </xpath>
+
+            </field>
+        </record>
+
+
+    </data>
+</openerp>

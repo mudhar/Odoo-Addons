@@ -1,0 +1,41 @@
+<openerp>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="view_company_form_inherit_header" model="ir.ui.view">
+            <field name="name">view.company.form.inherit.header</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='x_letter_head']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="custom_header"/>
+                    <field name="x_custom_header" attrs="{'invisible': [('custom_header','=',False)]}" widget="image"/>
+                    <field name="x_letter_foot" widget="image"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <template id="report_header_img" inherit_id="report.external_layout_header">
+            <xpath expr="//div[@t-if='not company.x_letter_head']" position="after">
+                <!-- Add your fields or attributes here -->
+                <div t-if="company.x_letter_head" class="text-center col-md-6 col-md-offset-3">
+                    <img t-if="company.x_letter_head" t-att-src="'data:image/png;base64,%s' % company.x_letter_head" style="width:20%" alt="company.x_letter_head"/>
+                </div>
+                <div style="padding-top: 4px"/>
+                <div t-if="company.custom_header" class="text-center col-md-6 col-md-offset-3">
+                    <img t-if="company.x_custom_header" t-att-src="'data:image/png;base64,%s' % company.x_custom_header" style="width:70%" alt="company.x_custom_header"/>
+                </div>
+            </xpath>
+
+        </template>
+        <template id="report_footer_img" inherit_id="report.external_layout_footer">
+            <xpath expr="//div/div[@class='row']" position="inside">
+                <div t-if="not company.custom_footer" class="text-center col-md-6 col-md-offset-3">
+                    <img t-if="company.x_letter_foot" t-att-src="'data:image/png;base64,%s' % company.x_letter_foot" style="width: 70%" alt="company.x_letter_foot"/>
+                </div>
+            </xpath>
+        </template>
+    </data>
+</openerp>
