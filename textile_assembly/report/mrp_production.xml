@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="report_mrporder_inherit_detaillot" inherit_id="mrp.report_mrporder">
+            <xpath expr="//table[@t-if='o.move_raw_ids']/thead/tr/th[2]" position="after">
+                <!-- Add your fields or attributes here -->
+                <th><strong>Detail Lot</strong></th>
+            </xpath>
+            <xpath expr="//div[hasclass('page')]/div[3]/div[3]" position="after">
+                <!-- Add your fields or attributes here -->
+                <t t-set="attribute_ids" t-value="o.assembly_plan_id.mapped('produce_ids')"/>
+                <div class="col-xs-3">
+                    <strong>QTY To Produce(Variant)</strong>
+                    <t t-foreach="attribute_ids" t-as="plan">
+                        <span t-esc="plan.attribute_id.name"/> - <span t-esc="plan.quantity_actual"/>
+                    </t>
+                </div>
+            </xpath>
+            <xpath expr="//table[@t-if='o.move_raw_ids']/tbody/t[@t-if='o.move_raw_ids']/tr[2]/td[2]" position="after">
+                <!-- Add your fields or attributes here -->
+                <t t-if="line.product_id.tracking!='none'">
+                    <t t-foreach="line.active_move_line_ids" t-as="move_line">
+                        <td class="text-righ">
+
+                            <li>
+                                <span t-esc="move_line.lot_id.name"/>
+                                <strong>[<span t-esc="move_line.product_qty"/>]</strong>
+                            </li>
+                        </td>
+                    </t>
+                </t>
+            </xpath>
+            <xpath expr="//div[@t-if='o.workorder_ids']" position="before">
+                <!-- Add your fields or attributes here -->
+                <div t-if="o.variant_ids">
+                    <strong>Component Of Products</strong>
+                    <table class="table table-condensed">
+                        <tr>
+                            <td class="text-center"><strong>Name</strong></td>
+                            <td class="text-center"><strong>Qty To Produce</strong></td>
+                            <td class="text-center"><strong>Ratio</strong></td>
+                        </tr>
+                        <tr t-foreach="o.variant_ids" t-as="variant">
+                            <td class="text-center"><span t-field="variant.product_id.display_name"/></td>
+                            <td class="text-center"><span t-field="variant.product_qty"/><span t-field="variant.product_uom_id.name"/></td>
+                            <td class="text-center"><span t-field="variant.ratio"/></td>
+                        </tr>
+                    </table>
+
+                </div>
+            </xpath>
+        </template>
+    </data>
+</odoo>

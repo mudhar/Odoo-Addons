@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data noupdate="1">
+        <!-- Sequences for purchase.order  Bahan Baku-->
+        <record id="seq_stock_picking_materials_incoming" model="ir.sequence">
+            <field name="name">Stock Picking Materials Incoming</field>
+            <field name="code">stock.picking.materials_incoming</field>
+            <field name="prefix">STBN/%(y)s/%(month)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+         <!-- Sequences for purchase.order  Bahan Jadi-->
+        <record id="seq_stock_picking_materials_ougoing" model="ir.sequence">
+            <field name="name">Stock Picking Materials Outgoing</field>
+            <field name="code">stock.picking.materials_outgoing</field>
+            <field name="prefix">SJPB/%(y)s/%(month)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+         <!-- Sequences for purchase.order  Bahan Baku-->
+        <record id="seq_stock_picking_goods_incoming" model="ir.sequence">
+            <field name="name">Stock Picking Goods Incoming</field>
+            <field name="code">stock.picking.goods_incoming</field>
+            <field name="prefix">STBJ/%(y)s/%(month)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+         <!-- Sequences for purchase.order  Bahan Jadi-->
+        <record id="seq_stock_picking_goods_ougoing" model="ir.sequence">
+            <field name="name">Stock Picking Goods Outgoing</field>
+            <field name="code">stock.picking.goods_outgoing</field>
+            <field name="prefix">SJBJ/%(y)s/%(month)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

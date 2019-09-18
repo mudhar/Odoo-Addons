@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="stock_move_operations_view_inherit_button" model="ir.ui.view">
+            <field name="name">stock.move.operations.inherit.button</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock.view_stock_move_operations"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='move_line_ids']" position="before">
+                    <!-- Add your fields or attributes here -->
+                    <field name="show_generate_lot" invisible="1"/>
+                    <button name="action_generate_lot_id" type="object" string="Generate Lot" colspan="1" class="btn-info"
+                    attrs="{'invisible': ['|',('state','=','done'),('show_generate_lot','=',False)]}"/>
+
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="view_move_tree_inherit_partner_display" model="ir.ui.view">
+            <field name="name">view.move.tree.inherit.partner.display</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock.view_move_tree"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='reference']" position="after">
+                    <!-- Add new fields here -->
+                    <field name="partner_id"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_move_search_inherit_group_by_partner" model="ir.ui.view">
+            <field name="name">view.move.search.inherit.partner</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock.view_move_search"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//filter[@name='by_product']" position="after">
+                    <!-- Add new fields here -->
+                       <filter string="Supplier" name="partner_id" domain="[]" context="{'group_by':'partner_id'}"/>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>

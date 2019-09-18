@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="product_template_form_view_inherit_multi_sequence" model="ir.ui.view">
+            <field name="name">product.template.form.view.inherit.multi.sequence</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='options']//div" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <div>
+                        <field name="is_goods"/>
+                        <label for="is_goods"/>
+                    </div>
+                    <div>
+                        <field name="is_materials"/>
+                        <label for="is_materials"/>
+                    </div>
+
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

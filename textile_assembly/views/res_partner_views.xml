@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="partner_view_form_cmt" model="ir.ui.view">
+            <field name="name">partner.view.form.cmt</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//group[@name='purchase']" position="inside">
+                    <!-- Add your fields or attributes here -->
+                    <field name="is_cmt" string="Is CMT"/>
+
+                </xpath>
+                <field name="category_id" position="after">
+                    <field name="capacity_cmt" attrs="{'invisible': [('is_cmt', '=', True)]}"/>
+                    <field name="partner_code" placeholder="Referensi No Assembly Plan"/>
+                </field>
+            </field>
+        </record>
+
+        <record id="view_res_partner_filter_inherit_assembly_plan" model="ir.ui.view">
+            <field name="name">view.res.partner.filter.inherit.assembly.plan</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_res_partner_filter"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//filter[@name='supplier']" position="after">
+                    <!-- Add new fields here -->
+                    <filter string="CMT" name="is_cmt" domain="[('is_cmt','=',1), ('parent_id', '=', False)]"/>
+                    <filter string="Code Partner" name="partner_code" domain="[('partner_code','ilike',self), ('parent_id', '=', False), ('partner_code','=',1)]"/>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>
