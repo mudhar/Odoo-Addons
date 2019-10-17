@@ -24,7 +24,8 @@
     'category': 'Product',
     'summary': 'Tools',
     'description': """
-Button Untuk Membuat Product Template Pada Intercompany
+Jika User Membuat Product A Pada Company A dan Partner Company B Di Set Supplier Pada Product A
+Ketika User Klik Button Maka Akan Terbentuk Product A Pada Company B
 ================================================================
 
     """,
