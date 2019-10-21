@@ -13,18 +13,17 @@ class ProductTemplate(models.Model):
                  'product_variant_ids')
     def _compute_seller_ids(self):
         for prod in self:
-            if prod.seller_ids:
+            if prod.seller_ids and prod.product_variant_ids:
                 partner_id = prod.seller_ids[0].mapped('name')
                 dest_company = self.env['res.company']._find_company_from_partner(
                     partner_id.id)
                 product_found = self._check_product_intercompany(prod.name, dest_company)
 
-                if product_found:
-                    prod.write({'show_button': False})
-                elif not product_found and (dest_company and prod.product_variant_ids):
-                    prod.write({'show_button': True})
-                else:
-                    prod.write({'show_button': False})
+                if product_found and dest_company:
+                    prod.update({'show_button': False})
+                if not product_found and dest_company:
+                    prod.update({'show_button': True})
+
 
     @api.multi
     def action_create_product_inter_company(self):
