@@ -24,8 +24,9 @@
     'category': 'Product',
     'summary': 'Tools',
     'description': """
-Jika User Membuat Product A Pada Company A dan Partner Company B Di Set Supplier Pada Product A
-Ketika User Klik Button Maka Akan Terbentuk Product A Pada Company B
+Jika User Membuat Product A Pada Company A \n
+dan Partner Company B Di Set Supplier Pada Product A\n
+Ketika User Klik Button Maka Akan Terbentuk Product A Pada Company B\n
 ================================================================
 
     """,

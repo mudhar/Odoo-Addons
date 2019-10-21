@@ -9,18 +9,22 @@ class ProductTemplate(models.Model):
     show_button = fields.Boolean(string="Show Button", compute="_compute_seller_ids")
 
     @api.multi
-    @api.depends('seller_ids')
+    @api.depends('seller_ids',
+                 'product_variant_ids')
     def _compute_seller_ids(self):
         for prod in self:
             if prod.seller_ids:
                 partner_id = prod.seller_ids[0].mapped('name')
                 dest_company = self.env['res.company']._find_company_from_partner(
                     partner_id.id)
+                product_found = self._check_product_intercompany(prod.name, dest_company)
 
-                if dest_company:
-                    prod.update({'show_button': True})
+                if product_found:
+                    prod.write({'show_button': False})
+                elif not product_found and (dest_company and prod.product_variant_ids):
+                    prod.write({'show_button': True})
                 else:
-                    prod.update({'show_button': False})
+                    prod.write({'show_button': False})
 
     @api.multi
     def action_create_product_inter_company(self):
@@ -33,9 +37,10 @@ class ProductTemplate(models.Model):
         dest_company = self.env['res.company']._find_company_from_partner(
             partner_id.id)
 
-        product_id = self.mapped('product_variant_ids')
         if dest_company:
-            self._check_product_intercompany(product_id, dest_company)
+            check_product = self._check_product_intercompany(self.name, dest_company)
+            if check_product:
+                raise UserError(_("Product %s Sudah Dibuat Pada Company %s") % (self.name.upper(), dest_company.name))
 
             product_template_data = self._prepare_product_template(dest_company)
 
@@ -58,11 +63,10 @@ class ProductTemplate(models.Model):
         return template
 
     @api.multi
-    def _check_product_intercompany(self, product_id, dest_company):
-        found = self.env['product.product'].sudo().get_related_product(product_id.name,
+    def _check_product_intercompany(self, name, dest_company):
+        found = self.env['product.product'].sudo().get_related_product(name,
                                                                        dest_company.id)
-        if found:
-            raise UserError(_("Produk %s Sudah Ada Di %s") % (product_id.name, dest_company.name))
+        return found
 
 
 
