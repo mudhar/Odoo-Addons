@@ -296,65 +296,6 @@ class AssemblyPlan(models.Model):
 
         return True
 
-    # @api.multi
-    # def action_update_quantity_to_produce(self):
-    #     self.ensure_one()
-    #     for order in self:
-    #         if order.state == 'draft':
-    #             for produce in order.produce_ids:
-    #                 if produce.attribute_id:
-    #                     produce.write({'original_quantity_plan': produce.quantity_plan})
-    #                 raw_ids = order.raw_line_ids.filtered(
-    #                     lambda x: x.attribute_id.id == produce.attribute_id.id)
-    #                 for raw in raw_ids:
-    #                     raw.write({'qty_to_plan': float_round(
-    #                         raw.product_qty * produce.quantity_plan,
-    #                         precision_rounding=raw.product_id.uom_id.rounding,
-    #                         rounding_method='UP')})
-    #
-    #                 # raw.write({'qty_to_plan': float_round(
-    #                 #     (raw.product_qty / raw.total_ratio) * produce.quantity_plan,
-    #                 #     precision_rounding=raw.product_id.uom_id.rounding,
-    #                 #     rounding_method='UP')})
-    #
-    #                 total_ratio = sum(order.plan_line_ids.filtered(
-    #                     lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-    #                               or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
-    #                 variant_ids = order.plan_line_ids.filtered(
-    #                     lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-    #                               or x.attribute_value_ids[1].id == produce.attribute_id.id)
-    #                 for variant in variant_ids:
-    #                     if variant.product_id:
-    #                         variant.write({'new_qty': float_round((variant.ratio / total_ratio) * produce.quantity_plan,
-    #                                                               precision_rounding=variant.product_uom_id.rounding)})
-    #         if order.state in ['on process', 'procurement']:
-    #             for produce in order.produce_ids:
-    #                 if produce.attribute_id:
-    #                     produce.write({'original_quantity_actual': produce.quantity_actual})
-    #                     raw_ids = order.raw_line_ids.filtered(
-    #                         lambda x: x.attribute_id.id == produce.attribute_id.id)
-    #                     for raw in raw_ids:
-    #                         raw.write({
-    #                             'qty_to_actual': float_round(
-    #                                 (raw.product_qty / raw.total_ratio) * produce.quantity_actual,
-    #                                 precision_rounding=raw.product_id.uom_id.rounding,
-    #                                 rounding_method='UP')})
-    #
-    #                     total_ratio = sum(order.plan_line_ids.filtered(
-    #                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-    #                                   or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
-    #                     variant_ids = order.plan_line_ids.filtered(
-    #                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-    #                                   or x.attribute_value_ids[1].id == produce.attribute_id.id)
-    #                     for variant in variant_ids:
-    #                         if variant.product_id:
-    #                             variant.write(
-    #                                 {'actual_quantity': float_round(
-    #                                     (variant.ratio / total_ratio) * produce.quantity_actual,
-    #                                     precision_rounding=variant.product_uom_id.rounding)})
-    #
-    #     return True
-
     @api.multi
     def _compute_cmt_consume(self):
         cmt_consume_max_than_initial = self.cmt_material_actual_line_ids.filtered(
@@ -681,205 +622,104 @@ class AssemblyPlan(models.Model):
                                     })
         return True
 
-    # Purchase Order Create
-
+    # Create Purchase Order #
     @api.multi
-    def button_procurement(self):
+    def action_create_purchase_order(self):
         self.ensure_one()
 
         orders_to_procurement = self.filtered(lambda x: x.check_raw_procurement or x.check_cmt_procurement
                                                         and x.state == 'on process')
         for order in orders_to_procurement:
             if order.check_raw_procurement:
-                order.generate_raw_material_po()
-                order.write({'check_raw_procurement': False})
-
+                for raw_line in order.raw_line_ids.filtered(lambda x: x.product_id and x.need_procurement):
+                    order.create_purchase_order(raw_line)
+                    order.write({'check_raw_procurement': False})
             if order.check_cmt_procurement:
-                order.generate_cmt_material_po()
-                order.write({'check_cmt_procurement': False})
+                for cmt_line in order.cmt_material_line_ids.filtered(lambda x: x.product_id and x.need_procurement):
+                    order.create_purchase_order(cmt_line)
+                    order.write({'check_cmt_procurement': False})
         return orders_to_procurement.write({'state': 'procurement'})
 
-    def generate_raw_material_po(self):
-        for order in self:
-            picking_type_id = order.get_default_picking_type_po()
-            for raw_line in order.raw_line_ids.filtered(
-                    lambda x: x.product_id.type in ['product', 'consu'] and x.need_procurement):
-                if raw_line.product_id:
-                    temporary = {}
-                    suppliers = raw_line.product_id.seller_ids.filtered(lambda r:
-                                                                        (not r.company_id or
-                                                                         r.company_id == order.company_id) and
-                                                                        (not r.product_id or
-                                                                         r.product_id == raw_line.product_id))
-
-                    if not suppliers:
-                        raise UserError(_('Tidak Ada Vendor Yang Ditambkan Pada Product %s') %
-                                        raw_line.product_id.display_name)
-                    supplier = order.make_po_supplier(suppliers)
-                    partner = supplier.name
-                    domain = order.make_po_get_domain(partner, order.company_id, picking_type_id, order)
-
-                    if domain in temporary:
-                        po = temporary[domain]
-                    else:
-                        po = self.env['purchase.order'].sudo().search([dom for dom in domain])
-                        po = po[0] if po else False
-                        temporary[domain] = po
-                    if not po:
-                        value = order.prepare_purchase_order(order.name, order.company_id, partner,
-                                                             picking_type_id, order.currency_id,
-                                                             order.date_planned_start, order)
-                        po = self.env['purchase.order'].with_context \
-                            (force_company=order.company_id.id).sudo().create(value)
-                        temporary[domain] = po
-                    elif not po.origin or order.name not in po.origin.split(', '):
-                        if po.origin:
-                            if order.name:
-                                po.write({'origin': po.origin + ', ' + order.name})
-                            else:
-                                po.write({'origin': po.origin})
-                        else:
-                            po.write({'origin': order.name})
-
-                    po_line = False
-                    if not po_line:
-                        po_qty = float_round(raw_line.qty_to_plan - raw_line.qty_available,
-                                             precision_rounding=raw_line.product_uom_id.rounding)
-                        vals = order.prepare_purchase_line(raw_line.product_id, po_qty,
-                                                           raw_line.product_uom_id, order.company_id, po,
-                                                           supplier, order.date_planned_start,
-                                                           raw_line.price_unit)
-                        self.env['purchase.order.line'].sudo().create(vals)
-            return True
-
-    def generate_cmt_material_po(self):
-        for order in self:
-            picking_type_id = order.get_default_picking_type_po()
-            for cmt_line in order.cmt_material_line_ids.filtered(
-                    lambda x: x.product_id.type in ['product', 'consu'] and x.need_procurement):
-                if cmt_line.product_id:
-                    temporary = {}
-                    suppliers = cmt_line.product_id.seller_ids.filtered(lambda r:
-                                                                        (not r.company_id or
-                                                                         r.company_id == order.company_id) and
-                                                                        (not r.product_id or
-                                                                         r.product_id == cmt_line.product_id))
-
-                    if not suppliers:
-                        raise UserError(_('Tidak Ada Vendor Yang Ditambkan Pada Product %s') %
-                                        cmt_line.product_id.display_name)
-                    supplier = order.make_po_supplier(suppliers)
-                    partner = supplier.name
-                    domain = order.make_po_get_domain(partner, order.company_id, picking_type_id, order)
-
-                    if domain in temporary:
-                        po = temporary[domain]
-                    else:
-                        po = self.env['purchase.order'].sudo().search([dom for dom in domain])
-                        po = po[0] if po else False
-                        temporary[domain] = po
-                    if not po:
-                        value = order.prepare_purchase_order(order.name, order.company_id, partner,
-                                                             picking_type_id, order.currency_id,
-                                                             order.date_planned_start, order)
-                        po = self.env['purchase.order']. \
-                            with_context(force_company=order.company_id.id).sudo().create(value)
-                        temporary[domain] = po
-                    elif not po.origin or order.name not in po.origin.split(', '):
-                        if po.origin:
-                            if order.name:
-                                po.write({'origin': po.origin + ', ' + order.name})
-                            else:
-                                po.write({'origin': po.origin})
-                        else:
-                            po.write({'origin': order.name})
-
-                    po_line = False
-                    if not po_line:
-                        po_qty = float_round(cmt_line.quantity_to_plan - cmt_line.qty_available,
-                                             precision_rounding=cmt_line.product_uom_id.rounding)
-                        vals = order.prepare_purchase_line(cmt_line.product_id, po_qty,
-                                                           cmt_line.product_uom_id, order.company_id, po,
-                                                           supplier, order.date_planned_start,
-                                                           cmt_line.price_unit)
-
-                        self.env['purchase.order.line'].sudo().create(vals)
-
-            return True
-
-    def prepare_purchase_order(self, origin, company_id, partner,
-                               picking_type_id, currency_id, date_order, order):
-        data = {
-            'assembly_plan_id': order.id,
+    @api.model
+    def _prepare_purchase_order(self, partner_id, picking_type_id):
+        return {
             'name': 'New',
             'state': 'draft',
+            'assembly_plan_id': self.id,
+            'partner_id': partner_id.id,
             'picking_type_id': picking_type_id,
-            'partner_id': partner.id,
-            'company_id': company_id.id,
-            'currency_id': currency_id.id,
-            'date_order': date_order,
-            'origin': origin,
+            'company_id': self.company_id.id,
+            'currency_id': self.currency_id.id,
+            'date_order': self.date_planned_start,
+            'origin': self.name,
             'product_select_type': 'materials',
         }
-        return data
 
-    def prepare_purchase_line(self, product_id, quantity, product_uom,
-                              company_id, po, partner, date_order, price):
-        procurement_uom_po_qty = product_uom._compute_quantity(quantity, product_id.uom_po_id)
-        seller = product_id._select_seller(
-            partner_id=partner.name,
-            quantity=procurement_uom_po_qty,
-            date=po.date_order and po.date_order[:10],
-            uom_id=product_id.uom_po_id)
-
+    @api.model
+    def _prepare_purchase_order_line(self, po, product_id, product_qty, product_uom_id, price_unit, partner_id):
+        procurement_uom_po_qty = product_uom_id._compute_quantity(product_qty, product_id.uom_po_id)
+        product_lang = product_id.with_context({
+            'lang': partner_id.lang,
+            'partner_id': partner_id.id,
+        })
+        name = product_lang.display_name
         taxes = product_id.supplier_taxes_id
         fpos = po.fiscal_position_id
         taxes_id = fpos.map_tax(taxes) if fpos else taxes
         if taxes_id:
-            taxes_id = taxes_id.filtered(lambda x: x.company_id.id == company_id.id)
-
-        price_unit = self.env['account.tax']._fix_tax_included_price_company(seller.price, product_id.supplier_taxes_id,
-                                                                             taxes_id,
-                                                                             company_id) if seller else 0.0
-        if price_unit and seller and po.currency_id and seller.currency_id != po.currency_id:
-            price_unit = seller.currency_id.compute(price_unit, po.currency_id)
-
-        product_lang = product_id.with_context({
-            'lang': partner.name.lang,
-            'partner_id': partner.name.id,
-        })
-        name = product_lang.display_name
-        if product_lang.description_purchase:
-            name += '\n' + product_lang.description_purchase
+            taxes_id = taxes_id.filtered(lambda x: x.company_id.id == self.company_id.id)
 
         return {
             'name': name,
             'product_qty': procurement_uom_po_qty,
             'product_id': product_id.id,
-            'product_uom': product_id.uom_po_id.id,
-            'price_unit': price_unit or price,
-            'date_planned': date_order,
+            'product_uom': product_uom_id.id,
+            'price_unit': price_unit,
+            'date_planned': self.date_planned_start,
+            'order_id': po.id,
             'taxes_id': [(6, 0, taxes_id.ids)],
-            'order_id': po.id
         }
 
-    def make_po_get_domain(self, partner, company_id, picking_type_id, order):
-        domain = tuple()
-        domain += (
-            ('assembly_plan_id', '=', order.id),
-            ('partner_id', '=', partner.id),
+    @api.model
+    def _make_po_get_domain(self, partner_id, picking_type_id):
+        domain = (
             ('state', '=', 'draft'),
             ('picking_type_id', '=', picking_type_id),
-            ('company_id', '=', company_id.id),
+            ('company_id', '=', self.company_id.id),
+            ('assembly_plan_id', '=', self.id),
+            ('partner_id', '=', partner_id.id),
         )
         return domain
 
-    def make_po_supplier(self, suppliers):
-        return suppliers[0]
+    @api.multi
+    def create_purchase_order(self, line):
+        purchase_order_model = self.env['purchase.order']
+        purchase_order_line_model = self.env['purchase.order.line']
+        picking_type_id = self.get_default_picking_type_po()
+        cache = {}
+        po = self.env['purchase.order']
+        if line.product_id and line.need_procurement:
+            if not line.product_id.seller_ids:
+                raise UserError(_("Product %s Tidak Ada Vendor Yang Diinput") % line.product_id.display_name)
+            partner_id = line.product_id.seller_ids[0].mapped('name')
 
+            domain = self._make_po_get_domain(partner_id, picking_type_id)
+            if domain in cache:
+                po = cache[domain]
+            elif domain:
+                po = self.env['purchase.order'].search([dom for dom in domain])
+                po = po[0] if po else False
+                cache[domain] = po
+            if not po:
+                purchase_data = self._prepare_purchase_order(partner_id, picking_type_id)
+                po = purchase_order_model.create(purchase_data)
+                cache[domain] = po
 
-
-
+            # Create Line
+            product_qty = line.qty_to_plan - line.qty_available
+            purchase_line_data = self._prepare_purchase_order_line(
+                po, line.product_id, product_qty, line.product_uom_id, line.price_unit, partner_id)
+            purchase_order_line_model.create(purchase_line_data)
 
 
 

@@ -24,20 +24,5 @@
             </field>
         </record>
 
-<!--        &lt;!&ndash; Inherit Form View to Modify it &ndash;&gt;-->
-<!--        <record id="product_product_inherited_view_form" model="ir.ui.view">-->
-<!--            <field name="name">product.product.inherited.view.form</field>-->
-<!--            <field name="model">product.product</field>-->
-<!--            <field name="inherit_id" ref="product.product_normal_form_view"/>-->
-<!--            <field name="arch" type="xml">-->
-
-<!--                <xpath expr="//field[@name='barcode']" position="after">-->
-<!--                    &lt;!&ndash; Add your fields or attributes here &ndash;&gt;-->
-<!--                    <field name="template_code"/>-->
-<!--                </xpath>-->
-
-<!--            </field>-->
-<!--        </record>-->
-
     </data>
 </odoo>

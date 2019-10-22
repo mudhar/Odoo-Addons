@@ -18,7 +18,7 @@ class AssemblyPlanCmtMaterial(models.Model):
     product_qty = fields.Float(string="Quantity", default=0.0, digits=dp.get_precision('Product Unit of Measure'))
     product_uom_id = fields.Many2one(comodel_name="product.uom", string="UoM")
     ratio = fields.Float(string="Ratio Of")
-    quantity_to_plan = fields.Float(string="Expected Consume Qty",
+    qty_to_plan = fields.Float(string="Expected Consume Qty",
                                     digits=dp.get_precision('Product Unit of Measure'),
                                     compute="_compute_quantity_consume", store=True)
     quantity_to_actual = fields.Float(string="Expected Consume Revised",
@@ -38,21 +38,14 @@ class AssemblyPlanCmtMaterial(models.Model):
     need_procurement = fields.Boolean(string="Need Procurment", readonly=True, compute="_compute_need_procurement")
     date_planned_start = fields.Datetime('Deadline Start', copy=False, index=True,
                                          related="plan_id.date_planned_start")
-    # # Tambahan untuk report
-    # qty_consumed = fields.Float(string="Quantity Consumed", digits=dp.get_precision('Product Unit of Measure'), readonly=True)
-    # qty_used = fields.Float(string="Quantity Used", digits=dp.get_precision('Product Unit of Measure'), readonly=True)
-    # qty_reject = fields.Float(string="Quantity Reject", digits=dp.get_precision('Product Unit of Measure'), readonly=True)
-    # qty_return = fields.Float(string="Quantity Return", digits=dp.get_precision('Product Unit of Measure'), readonly=True)
-    # qty_differ = fields.Float(string="Quantity Differ", digits=dp.get_precision('Product Unit of Measure'),
-    #                           compute="_compute_qty_differ", store=True)
 
     @api.multi
     @api.depends('price_unit',
-                 'quantity_to_plan',
+                 'qty_to_plan',
                  'quantity_to_actual')
     def _compute_price_subtotal(self):
         for cmt in self:
-            cmt.price_subtotal_plan = cmt.quantity_to_plan * cmt.price_unit
+            cmt.price_subtotal_plan = cmt.qty_to_plan * cmt.price_unit
             cmt.price_subtotal_actual = cmt.quantity_to_actual * cmt.price_unit
         return True
 
@@ -76,10 +69,10 @@ class AssemblyPlanCmtMaterial(models.Model):
                     lambda x: (x.attribute_value_ids[0].id == cmt.product_id.attribute_value_ids[0].id)
                               or (x.attribute_value_ids[1].id == cmt.product_id.attribute_value_ids[0].id)
                 ).mapped('new_qty'))
-                cmt.update({'quantity_to_plan': quantity_plan})
+                cmt.update({'qty_to_plan': quantity_plan})
             if cmt.product_id and not cmt.product_id.attribute_value_ids:
                 quantity_to_plan = sum(cmt.plan_id.produce_ids.mapped('quantity_plan'))
-                cmt.update({'quantity_to_plan': float_round((cmt.product_qty * quantity_to_plan),
+                cmt.update({'qty_to_plan': float_round((cmt.product_qty * quantity_to_plan),
                                                             precision_rounding=cmt.product_uom_id.rounding,
                                                             rounding_method='UP')})
         return True
@@ -105,11 +98,11 @@ class AssemblyPlanCmtMaterial(models.Model):
         return True
 
     @api.multi
-    @api.depends('qty_available', 'quantity_to_plan')
+    @api.depends('qty_available', 'qty_to_plan')
     def _compute_need_procurement(self):
         for cmt in self:
             if cmt.product_id.type == 'product':
-                if cmt.quantity_to_plan > cmt.qty_available:
+                if cmt.qty_to_plan > cmt.qty_available:
                     cmt.need_procurement = True
                 else:
                     cmt.need_procurement = False

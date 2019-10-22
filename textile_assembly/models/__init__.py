@@ -40,5 +40,4 @@ from . import assembly_prod_variant_line
 from . import assembly_production
 from . import assembly_raw_material_line
 
-
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

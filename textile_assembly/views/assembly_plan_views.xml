@@ -41,9 +41,8 @@
             <field name="arch" type="xml">
                 <form string="Assembly Plan" create="false" delete="false">
                     <header>
-
                         <button name="%(action_plan_change_vendor_wizard)d" type="action" string="Change Vendor" states="draft" class="btn-info"/>
-                        <button name="button_procurement" type="object" string="Create Procurement" attrs="{'invisible': ['&amp;','&amp;','|',('state','in',('draft','procurement','done','cancel')), ('check_raw_procurement', '=', False),('check_cmt_procurement','=',False)]}" class="btn-warning"/>
+                        <button name="action_create_purchase_order" type="object" string="Create Procurement" attrs="{'invisible': ['&amp;','&amp;','|',('state','in',('draft','procurement','done','cancel')), ('check_raw_procurement', '=', False),('check_cmt_procurement','=',False)]}" class="btn-warning"/>
                         <button name="check_qty_available" type="object" string="Check Available" class="btn-info" states="on process,procurement"/>
 
                         <button name="button_to_approve" type="object" string="Confirm" states="draft" class="btn-primary"/>
@@ -149,11 +148,11 @@
                         <notebook>
                             <page string="Aksesoris Plan">
                                 <field name="cmt_material_line_ids" nolabel="1" readonly="1">
-                                    <tree string="Aksesoris Plan" create="false" delete="false" decoration-danger="quantity_to_plan&gt;qty_available">
+                                    <tree string="Aksesoris Plan" create="false" delete="false" decoration-danger="qty_to_plan&gt;qty_available">
                                         <field name="sequence" widget="handle"/>
                                         <field name="product_id"/>
                                         <field name="product_qty" invisible="1"/>
-                                        <field name="quantity_to_plan" string="Exp Consu Plan" force_save="1"/>
+                                        <field name="qty_to_plan" string="Exp Consu Plan" force_save="1"/>
                                         <field name="qty_available"/>
                                         <field name="product_uom_id"/>
                                         <field name="ratio" invisible="1"/>
