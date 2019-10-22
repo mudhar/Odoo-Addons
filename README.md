@@ -1,2 +1,1 @@
-# addons_odoo
-# eksperimen addon
+Odoo Addons Development
