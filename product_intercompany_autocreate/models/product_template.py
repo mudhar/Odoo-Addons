@@ -17,13 +17,13 @@ class ProductTemplate(models.Model):
                 partner_id = prod.seller_ids[0].mapped('name')
                 dest_company = self.env['res.company']._find_company_from_partner(
                     partner_id.id)
-                product_found = self._check_product_intercompany(prod.name, dest_company)
+                if dest_company:
+                    product_found = self._check_product_intercompany(prod.name, dest_company)
 
-                if product_found and dest_company:
-                    prod.update({'show_button': False})
-                if not product_found and dest_company:
-                    prod.update({'show_button': True})
-
+                    if product_found and dest_company:
+                        prod.update({'show_button': False})
+                    if not product_found and dest_company:
+                        prod.update({'show_button': True})
 
     @api.multi
     def action_create_product_inter_company(self):
