@@ -139,6 +139,16 @@ class AssemblyCmtProductTemplate(models.Model):
 
     po_price_unit = fields.Float(string="Unit Price PO", digits=dp.get_precision('Product Price'),
                                  compute="_compute_price_unit_po", inverse="_inverse_price_unit_po", copy=False)
+    attribute_name = fields.Char(string="Check Attribute Name", compute="_compute_product_attribute_name")
+
+    @api.depends('product_id',
+                 'product_id.attribute_line_ids')
+    def _compute_product_attribute_name(self):
+        for line in self:
+            if line.product_id and line.product_id.attribute_line_ids:
+                line.attribute_name = line.product_id.attribute_line_ids.display_name
+            else:
+                line.attribute_name = 'pass'
 
     @api.depends('assembly_id',
                  'assembly_id.cmt_material_line_ids',
@@ -160,10 +170,13 @@ class AssemblyCmtProductTemplate(models.Model):
             if cmt.po_price_unit:
                 cmt.write({'price_unit': cmt.po_price_unit})
 
-    @api.constrains('price_unit')
+    @api.constrains('price_unit', 'attribute_name')
     def warning_maximum_price_unit(self):
+        forbidden_attribute = ['color']
         if self.price_unit == 0.0:
             raise UserError(_("Jumlah Harga Tidak Boleh Sama Dengan Nol"))
+        if self.attribute_name.lower() in forbidden_attribute:
+            raise UserError(_("Product %s Tidak Boleh Memiliki Attribute COLOR") % self.product_id.display_name)
 
     @api.onchange('product_id')
     def onchange_product_id(self):
@@ -212,7 +225,7 @@ class AssemblyCmtProductService(models.Model):
     @api.onchange('product_id')
     def onchange_product_id(self):
         self.product_uom_id = self.product_id.uom_id.id
-        self.price_unit = self.product_id.product_tmpl_id.standard_price
+
 
     @api.multi
     @api.depends('price_unit', 'product_qty')

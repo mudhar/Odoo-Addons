@@ -467,8 +467,10 @@ class AssemblyProd(models.Model):
 
     @api.multi
     def button_need_approval(self):
-        # if self.variant_line_ids:
-        #     self._warning_duplicate_product_variant()
+
+        sub_attribute = self.raw_material_line_ids.mapped('attribute_id')
+        if len(sub_attribute) <= 1:
+            raise UserError(_("Attribute Pada Raw Material Harus Sama Dengan Product Component"))
 
         ratio_done = self.variant_line_ids.filtered(lambda x: x.ratio)
         if len(ratio_done) != len(self.variant_line_ids.mapped('ratio')):
