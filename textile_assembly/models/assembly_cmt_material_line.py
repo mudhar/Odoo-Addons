@@ -168,7 +168,6 @@ class AssemblyCmtProductTemplate(models.Model):
     @api.onchange('product_id')
     def onchange_product_id(self):
         self.product_uom_id = self.product_id.uom_id.id
-        self.price_unit = self.product_id.standard_price
 
         return {'domain': {'product_uom_id': [('category_id', '=', self.product_id.uom_id.category_id.id)]}}
 

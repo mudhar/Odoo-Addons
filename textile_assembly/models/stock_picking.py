@@ -6,7 +6,6 @@ from odoo.addons import decimal_precision as dp
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
-
     production_id = fields.Many2one(comodel_name="mrp.production", string="Production Order Finished Product", copy=True)
     raw_material_production_id = fields.Many2one(comodel_name="mrp.production",
                                                  string="Production Order Raw Material", copy=True)
@@ -17,7 +16,8 @@ class StockPicking(models.Model):
     show_button_return = fields.Boolean(string="Display Button Return", compute="_compute_button_return")
 
     @api.multi
-    @api.depends('raw_material_production_id')
+    @api.depends('raw_material_production_id',
+                 'raw_material_production_id.workorder_ids')
     def _compute_button_return(self):
         for picking in self:
             if picking.raw_material_production_id and picking.raw_material_production_id.workorder_ids:

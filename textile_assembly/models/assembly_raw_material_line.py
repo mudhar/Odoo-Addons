@@ -59,7 +59,7 @@ class AssemblyRawMaterialLine(models.Model):
         if self.product_id.description_purchase:
             name += '\n' + self.product_id.description_purchase
         self.product_uom_id = self.product_id.uom_id.id
-        self.price_unit = self.product_id.product_tmpl_id.standard_price
+
         self.name = name
         return {'domain': {'product_uom_id': [('category_id', '=', self.product_id.uom_id.category_id.id)]}}
 

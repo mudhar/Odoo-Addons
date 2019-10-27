@@ -14,6 +14,9 @@ class StockPicking(models.Model):
 
     @api.model
     def create(self, vals):
+        defaults = self.default_get(['name', 'picking_type_id'])
+        picking_cmt_consume = self.env.ref('textile_assembly.picking_cmt_consume')
+        picking_cmt_produce = self.env.ref('textile_assembly.picking_cmt_produce')
         operation = self.env['stock.picking.type'].browse(vals.get('picking_type_id'))
         if operation.code == 'incoming':
             if vals.get('product_select_type', 'materials') == 'materials':
@@ -25,11 +28,15 @@ class StockPicking(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_outgoing')
             elif vals.get('product_select_type', 'goods') == 'goods':
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.goods_outgoing')
-        if operation.code == 'internal':
+        if operation.code == 'internal' and operation.id == picking_cmt_consume.id:
             if vals.get('product_select_type', 'materials') == 'materials':
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_outgoing')
-            elif vals.get('product_select_type', 'goods') == 'goods':
+        if operation.code == 'internal' and operation.id == picking_cmt_produce.id:
+            if vals.get('product_select_type', 'goods') == 'goods':
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.goods_incoming')
+        if operation.code == 'internal' and operation.id not in [picking_cmt_consume.id, picking_cmt_produce.id]:
+            vals['name'] = self.env['stock.picking.type'].browse(
+                vals.get('picking_type_id', defaults.get('picking_type_id'))).sequence_id.next_by_id()
 
         return super(StockPicking, self).create(vals)
 

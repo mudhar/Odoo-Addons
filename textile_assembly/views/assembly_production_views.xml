@@ -71,8 +71,8 @@
                         </group>
 
                         <field name="currency_id" invisible="1"/>
-                        <field name="active" groups="base.group_no_one"/>
-                        <field name="version" groups="base.group_no_one"/>
+                        <field name="active" invisible="1"/>
+                        <field name="version" invisible="1"/>
 
 
                         <group string="Product Component">
@@ -134,7 +134,7 @@
                             </field>
                         </group>
                         <group>
-                            <field name="cmt_material_line_ids" nolabel="1" groups="base.group_no_one">
+                            <field name="cmt_material_line_ids" nolabel="1" invisible="1">
                                 <tree string="Aksesoris" create="false" delete="false">
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_id"/>

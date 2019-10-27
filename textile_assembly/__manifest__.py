@@ -6,7 +6,10 @@
     'author' : 'odoo-consultants',
     'summary': 'Textile Assembly Production',
     'description': """
-Textile Assembly Production.
+Textile Assembly Production\n.
+1. User Merancang BoM untuk Produk Yang Akan Dijual\n
+2. User Estimasi Quantity Produksi Yang Akan Dijual\n
+3. Finish Goods Terbentuk Dalam Variant Dalam 1 MO\n
     """,
     'category': 'Manufacturing',
     'website': 'https://www.odoo-consultants.com',
