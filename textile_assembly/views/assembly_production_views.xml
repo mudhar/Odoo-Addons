@@ -20,6 +20,7 @@
             <field name="arch" type="xml">
                 <form string="Assembly Production">
                     <header>
+                        <button name="do_print_picking" states="approve" type="object" string="Print Report" class="btn-success"/>
                         <button name="button_process" states="draft" type="object" class="oe_highlight" string="Confirm"/>
                         <button name="button_need_approval" states="process,reject" type="object" class="btn-success" string="Done"/>
                         <button name="button_approve" type="object" string="Approve" states="waiting" class="btn-success" groups="mrp.group_mrp_manager"/>

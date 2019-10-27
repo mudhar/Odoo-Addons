@@ -44,7 +44,7 @@
                         <button name="%(action_plan_change_vendor_wizard)d" type="action" string="Change Vendor" states="draft" class="btn-info"/>
                         <button name="action_create_purchase_order" type="object" string="Create Procurement" attrs="{'invisible': ['&amp;','&amp;','|',('state','in',('draft','procurement','done','cancel')), ('check_raw_procurement', '=', False),('check_cmt_procurement','=',False)]}" class="btn-warning"/>
                         <button name="check_qty_available" type="object" string="Check Available" class="btn-info" states="on process,procurement"/>
-
+                        <button name="do_print_picking" states="done" type="object" string="Print Report" class="btn-success"/>
                         <button name="button_to_approve" type="object" string="Confirm" states="draft" class="btn-primary"/>
                         <button name="button_done" type="object" string="Done" class="oe_highlight" attrs="{'invisible':['|','|',('check_raw_procurement', '=', True), ('check_cmt_procurement', '=', True), ('state','not in',('on process','procurement'))]}"/>
                         <button name="button_cancel" type="object" string="Cancel" attrs="{'invisible': [('state','=','cancel')]}" class="btn-danger"/>

@@ -405,18 +405,9 @@ class AssemblyProd(models.Model):
             name, version, product_code = assembly.product_tmpl_id.name, count_number, assembly.product_tmpl_id.template_code
             return ''.join('%s %s V%s' % (name, product_code, str(version)))
 
-    # @api.multi
-    # def _warning_duplicate_product_variant(self):
-    #     """
-    #     Tampilkan Pesan Error Jika Ditemukan Duplicate Product
-    #     :raise: UserError
-    #     """
-    #     product_count = self._compute_product_variants_line()
-    #     for variant in self.variant_line_ids:
-    #         if product_count.get(variant.product_id.id, 0) > 1:
-    #             raise UserError(_("Terdapat Duplikat Product Pada Tabel Component\n"
-    #                               "Untuk Product %s Dengan Total Duplicate %s")
-    #                             % (variant.product_id.display_name, str(product_count.get(variant.product_id.id, 0))))
+    @api.multi
+    def do_print_picking(self):
+        return self.env.ref('textile_assembly.action_report_assembly_price').report_action(self)
 
     # Button
     @api.multi

@@ -577,6 +577,10 @@ class AssemblyPlan(models.Model):
         self.warning_action_cancel()
         return True
 
+    @api.multi
+    def do_print_picking(self):
+        return self.env.ref('textile_assembly.action_report_plan_price').report_action(self)
+
     # Informasi Apabila Membatalkan Dokumen Assembly Plan Ini
     @api.multi
     def warning_action_cancel(self):
