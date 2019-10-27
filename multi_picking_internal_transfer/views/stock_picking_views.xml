@@ -1,0 +1,24 @@
+<odoo>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="view_picking_form_inherit_internal_transfer" model="ir.ui.view">
+            <field name="name">view.picking.form.inherit.internal.transfer</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='location_dest_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+
+                    <div class="o_raw"  attrs="{'invisible': [('picking_type_code','in',('incoming','outgoing'))]}">
+                        <label for="check_final_location"/>
+                        <field name="check_final_location"/>
+                        <field name="final_location_dest_id" attrs="{'invisible': [('check_final_location','=',False)]}"/>
+                    </div>
+
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>

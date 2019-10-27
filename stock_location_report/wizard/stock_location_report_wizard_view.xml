@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+	<record id="stock_location_report_view_form" model="ir.ui.view">
+        <field name="name">Stock Location Report</field>
+        <field name="model">stock_location_report.report</field>
+        <field name="arch" type="xml">
+        	<form>
+                <group>
+					<group>
+						<field name="from_date"/>
+						<field name="to_date"/>
+					</group>
+					<group>
+						<field name="company" groups="base.group_multi_company" options='{"no_open": True, "no_create": True}'/>
+					</group>
+					<group>
+						<field name="location_stock_ids" widget="many2many_tags" invisible="1"/>
+					</group>
+                </group>
+        		<footer>
+	                <button name="print_pdf_report" string="PDF" icon="fa-print" type="object" context="{'pdf':1}" default_focus="1" class="oe_highlight" />
+	                or
+					<button string="Cancel" class="oe_link" special="cancel" />
+	            </footer>
+			</form>
+        </field>
+    </record>
+
+	<record id="action_stock_location_report_wizard" model="ir.actions.act_window">
+        <field name="name">Stock Location Report</field>
+        <field name="res_model">stock_location_report.report</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="stock_location_report_view_form"/>
+        <field name="target">new</field>
+    </record>
+
+	<menuitem id="menu_stock_location_report" name="Kartu Stock Lokasi" action="action_stock_location_report_wizard" parent="stock.menu_warehouse_report" sequence="21"/>
+
+</odoo>
