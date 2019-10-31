@@ -73,36 +73,89 @@
 
                     <br></br><br></br>
 
-                    <t t-if="location_lines">
-                        <table class="table table-condensed">
-                            <thead>
-                                <tr>
-                                    <th class="col-sm-2" style="color:#a24689 !important;">Location</th>
-                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">QTY Awal</th>
-                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">QTY Sale</th>
-                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Return QTY Sale</th>
-                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">QTY Purchase</th>
-                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Return QTY Purchase</th>
-                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Adjust(+)</th>
-                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Adjust(-)</th>
-                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">QTY Akhir</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="location_lines" t-as="line">
-                                    <td><span t-esc="line['location_name']"/> </td>
-                                    <td class="text-right"><span t-esc="line['qty_awal']"/></td>
-                                    <td class="text-right"><span t-esc="line['qty_sale']"/></td>
-                                    <td class="text-right"><span t-esc="line['qty_return_sale']"/></td>
-                                    <td class="text-right"><span t-esc="line['qty_purchase']"/></td>
-                                    <td class="text-right"><span t-esc="line['qty_return_purchase']"/></td>
-                                    <td class="text-right"><span t-esc="line['qty_adjust_plus']"/></td>
-                                    <td class="text-right"><span t-esc="line['qty_adjust_minus']"/></td>
-                                    <td class="text-right"><span t-esc="line['qty_akhir']"/></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </t>
+                    <!--                    <t t-if="location_lines">-->
+                    <!--                        <table class="table table-condensed">-->
+                    <!--                            <thead>-->
+                    <!--                                <tr>-->
+                    <!--                                    <th class="col-sm-2" style="color:#a24689 !important;">Location</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Saldo Awal</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Purchase</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Adjust(+)</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Transfer IN</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">GIT IN</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Sale</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Retur Sale</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">GIT OUT</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Adjust(-)</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Retur Purchase</th>-->
+                    <!--                                    <th class="col-sm-2 text-right" style="color:#a24689 !important;">Saldo Akhir</th>-->
+                    <!--                                </tr>-->
+                    <!--                                <tr>-->
+                    <!--                                    <th colspan="4">SJ</th>-->
+                    <!--                                    <th colspan="5">SMB</th>-->
+                    <!--                                    <th colspan="4">Retur SJ</th>-->
+                    <!--                                    <th colspan="5">Retur SMB</th>-->
+                    <!--                                </tr>-->
+                    <!--                            </thead>-->
+                    <!--                            <tbody>-->
+                    <!--                                <tr t-foreach="location_lines" t-as="line">-->
+                    <!--                                    <td><span t-esc="line['location_name']"/> </td>-->
+                    <!--                                    <td class="text-right"><span t-esc="line['qty_awal']"/></td>-->
+                    <!--                                    <td class="text-right"><span t-esc="line['qty_sale']"/></td>-->
+                    <!--                                    <td class="text-right"><span t-esc="line['qty_return_sale']"/></td>-->
+                    <!--                                    <td class="text-right"><span t-esc="line['qty_purchase']"/></td>-->
+                    <!--                                    <td class="text-right"><span t-esc="line['qty_return_purchase']"/></td>-->
+                    <!--                                    <td class="text-right"><span t-esc="line['qty_adjust_plus']"/></td>-->
+                    <!--                                    <td class="text-right"><span t-esc="line['qty_adjust_minus']"/></td>-->
+                    <!--                                    <td class="text-right"><span t-esc="line['qty_akhir']"/></td>-->
+                    <!--                                </tr>-->
+                    <!--                            </tbody>-->
+                    <!--                        </table>-->
+                    <!--                    </t>-->
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" class="col-sm-2 text-center" >Location</th>
+                                <th rowspan="2" class="col-sm-2 text-center">Saldo Awal</th>
+                                <th rowspan="2" class="col-sm-2 text-center">Purchase</th>
+                                <th rowspan="2" class="col-sm-2 text-center">Adjust(+)</th>
+                                <th colspan="2" class="col-sm-2 text-center">Transfer In</th>
+                                <th rowspan="2" class="col-sm-2 text-center">GIT In</th>
+                                <th rowspan="2" class="col-sm-2 text-center">Sale</th>
+                                <th rowspan="2" class="col-sm-2 text-center">Retur Sale</th>
+                                <th rowspan="2" class="col-sm-2 text-center">GIT OUT</th>
+                                <th colspan="2" class="col-sm-2 text-center">Transfer Out</th>
+                                <th rowspan="2" class="col-sm-2 text-center">Adjust(-)</th>
+                                <th rowspan="2" class="col-sm-2 text-center">Retur Purchase</th>
+                                <th rowspan="2" class="col-sm-2 text-center">Saldo Akhir</th>
+                            </tr>
+                            <tr>
+                                <th>SJ</th>
+                                <th>SMB</th>
+                                <th>Retur SJ</th>
+                                <th>Retur SMB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Gudang</td>
+                                <td>Saldo Awal</td>
+                                <td>Purchase</td>
+                                <td>Adjust(+)</td>
+                                <td>SJ</td>
+                                <td>SMB</td>
+                                <td>GIT IN</td>
+                                <td>Sale</td>
+                                <td>retur sale</td>
+                                <td>Git out</td>
+                                <td>retur sj</td>
+                                <td>retur smb</td>
+                                <td>Adjust(-)</td>
+                                <td>Retur Purchase</td>
+                                <td>Saldo Akhir</td>
+                            </tr>
+                        </tbody>
+                    </table>
 
                     <t t-if="not location_lines">
                         <span style="font-size: 20px;">No Data to Display...!!!</span>
