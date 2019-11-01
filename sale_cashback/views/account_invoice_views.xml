@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+        <record id="account_invoice_view_form_inherit_cash_back" model="ir.ui.view">
+            <field name="name">account.invoice.view.form.inherit.cash.back</field>
+            <field name="model">account.invoice</field>
+            <field name="inherit_id" ref="account.invoice_form"/>
+            <field name="arch" type="xml">
+                <field name="move_id" position="after">
+                    <field name="cash_back" attrs="{'readonly': [('state','in',('open','paid','cancel'))]}"/>
+                </field>
+            </field>
+        </record>
+    </data>
+</openerp>

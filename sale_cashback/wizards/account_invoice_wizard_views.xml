@@ -1,0 +1,27 @@
+<openerp>
+    <data>
+        <record id="account_invoice_wizard_view_form" model="ir.ui.view">
+            <field name="name">account.invoice.wizard.view.form</field>
+            <field name="model">account_invoice.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Update Cash Back From Sale Order">
+                    <p class="oe_grey">
+                        Update Invoice Yang Belum Ada Cash Backnya
+                    </p>
+                    <footer>
+                        <button string="Confirm" name="action_set_cash_back" type="object" default_focus="1" class="oe_highlight"/>
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <act_window id="action_view_cash_back"
+                    multi="True"
+                    key2="client_action_multi" name="Update Cash Back"
+                    res_model="account_invoice.wizard" src_model="account.invoice"
+                    view_mode="form" target="new" view_type="form" />
+
+    </data>
+</openerp>
