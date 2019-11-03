@@ -10,10 +10,10 @@
                 <xpath expr="//field[@name='location_dest_id']" position="after">
                     <!-- Add your fields or attributes here -->
 
-                    <div class="o_raw"  attrs="{'invisible': [('picking_type_code','in',('incoming','outgoing'))]}">
+                    <div class="o_raw"  attrs="{'invisible': ['|','|','|',('picking_type_code','in',('incoming','outgoing')),('backorder_id','!=',False), ('raw_material_production_id', '!=', False), ('production_id', '!=', False)]}">
                         <label for="check_final_location"/>
                         <field name="check_final_location"/>
-                        <field name="final_location_dest_id" attrs="{'invisible': [('check_final_location','=',False)]}"/>
+                        <field name="final_location_dest_id" attrs="{'invisible': [('check_final_location','=',False)], 'required': [('check_final_location','=',True)]}"/>
                     </div>
 
                 </xpath>

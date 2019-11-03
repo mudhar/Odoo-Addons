@@ -10,12 +10,24 @@ class StockPicking(models.Model):
     final_location_dest_id = fields.Many2one(comodel_name="stock.location", string="Final Destination Location", copy=False)
     check_final_location = fields.Boolean(string="Final Destination Location?", copy=False)
 
+    @api.onchange('check_final_location')
+    def _onchange_final_location(self):
+        location_dest_id = self._default_location_dest_transit_id()
+        self.location_dest_id = location_dest_id
+
     @api.multi
     def button_validate(self):
         result = super(StockPicking, self).button_validate()
         if self.final_location_dest_id and self.check_final_location:
             self._create_backorder_inter_transfer()
         return result
+
+    @api.model
+    def _default_location_dest_transit_id(self):
+        location_obj = self.env['stock.location']
+        locations = location_obj.search([('company_id', '=', self.env.user.company_id.id),
+                                         ('usage', '=', 'transit')])
+        return locations[:1]
 
     @api.model
     def _default_picking_type_internal_dest_id(self):
