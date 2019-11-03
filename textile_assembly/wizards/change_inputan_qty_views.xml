@@ -20,14 +20,25 @@
                         <field name="quantity_good"/>
                         <field name="quantity_reject"/>
                         <field name="qc_id" invisible="1"/>
-                         <field name="quantity_sample" attrs="{'invisible': [('next_work_order_id','!=',False)]}"/>
+                        <field name="quantity_sample" attrs="{'invisible': [('next_work_order_id','!=',False)]}"/>
                     </group>
                     <group>
                         <field name="date_start"/>
                         <field name="user_id"/>
                     </group>
-                    <group>
-                        <field name="log_ids" context="{'tree_view_ref': 'workorder_qc_log_line_view_tree'}" nolabel="1"/>
+                    <group string="Progress Record">
+                        <field name="log_ids" nolabel="1">
+                            <tree string="Progress Record">
+                                <field name="date_start"/>
+                                <field name="user_id"/>
+                                <field name="product_id"/>
+                                <field name="quantity_good"/>
+                                <field name="quantity_reject"/>
+                                <field name="user_id"/>
+                                <field name="state_log_line"/>
+                            </tree>
+                        </field>
+
                     </group>
                     <footer>
                         <button name="action_confirm" string="Submit"

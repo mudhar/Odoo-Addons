@@ -10,41 +10,21 @@
                     <!-- Add your fields or attributes here -->
                     <field name="production_id" invisible="1"/>
                     <field name="raw_material_production_id" invisible="1"/>
-                    <field name="show_button_return"/>
-                </xpath>
-                <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="attributes">
-                    <!-- Add your fields or attributes here -->
-                    <attribute name="invisible">['|',('show_button_return','=',False)]</attribute>
                 </xpath>
                 <xpath expr="//field[@name='move_lines']//field[@name='quantity_done']" position="attributes">
                     <attribute name="sum">Total</attribute>
 
                 </xpath>
-<!--                <xpath expr="//field[@name='move_lines']//field[@name='quantity_done']" position="replace">-->
-<!--                    &lt;!&ndash; Add your fields or attributes here &ndash;&gt;-->
-<!--                     <field name="quantity_done" string="Done" attrs="{'readonly': ['|',('is_quantity_done_editable', '=', False), ('production_id','!=',False), ('is_qc_done','=',False)]}"/>-->
-<!--                </xpath>-->
+
                 <xpath expr="//group//field[@name='partner_id']" position="replace">
                     <field name="partner_id"/>
                 </xpath>
                 <xpath expr="//field[@name='origin']" position="after">
-                    <!-- Add your fields or attributes here -->
-<!--                    <field name="origin_production" invisible="1"/>-->
                     <field name="created_return_picking" invisible="1"/>
                 </xpath>
                 <xpath expr="//field[@name='move_lines']//field[@name='quantity_done']" position="after">
-                    <!-- Add your fields or attributes here -->
-<!--                    <field name="is_qc_done" invisible="1"/>-->
                     <field name="production_id" invisible="1"/>
                 </xpath>
-<!--                <xpath expr="//field[@name='move_lines']//field[@name='product_uom_qty']" position="after">-->
-<!--                    &lt;!&ndash; Add your fields or attributes here &ndash;&gt;-->
-<!--                    <field name="original_uom_qty" attrs="{'column_invisible': [('parent.state','not in', ('done', 'cancel'))]}" string="Initial Demand"/>-->
-<!--                </xpath>-->
-<!--                <xpath expr="//field[@name='move_lines']//field[@name='product_uom_qty']" position="replace">-->
-<!--                    &lt;!&ndash; Add your fields or attributes here &ndash;&gt;-->
-<!--                    <field name="product_uom_qty" string="Initial Demand" attrs="{'readonly': [('is_initial_demand_editable', '=', False)], 'column_invisible': [('parent.state','in', ('done', 'cancel'))]}"/>-->
-<!--                </xpath>-->
             </field>
         </record>
         <record id="view_picking_internal_search_inherited_production" model="ir.ui.view">

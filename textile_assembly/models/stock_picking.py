@@ -13,17 +13,6 @@ class StockPicking(models.Model):
     # Hanya Untuk Informasi Ketika User MRP Membatalkan MO Sedangkan Produk Sudah Terkonsumsi
     # Maka User Diharus Mengembalikan Produk Tsb Dari Lokasi Virtual Production ke Lokasi Stock
     created_return_picking = fields.Boolean(string="Created Return Picking")
-    show_button_return = fields.Boolean(string="Display Button Return", compute="_compute_button_return")
-
-    @api.multi
-    @api.depends('raw_material_production_id',
-                 'raw_material_production_id.workorder_ids')
-    def _compute_button_return(self):
-        for picking in self:
-            if picking.raw_material_production_id and picking.raw_material_production_id.workorder_ids:
-                picking.show_button_return = False
-            if picking.raw_material_production_id and not picking.raw_material_production_id.workorder_ids:
-                picking.show_button_return = True
 
     @api.multi
     def action_confirm(self):

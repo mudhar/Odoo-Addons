@@ -27,20 +27,7 @@
 
                         </group>
 
-                        <group string="Progress Record">
-                            <field name="progress_record_ids" nolabel="1">
-                                <tree string="Progress Record" create="false" delete="false" decoration-success="state_log_line=='added'" decoration-danger="state_log_line=='adjustment'">
-                                    <field name="name" attrs="{'column_invisible': [('parent.show_picking','!=',False)]}"/>
-                                    <field name="product_id"/>
-                                    <field name="date_start"/>
-                                    <field name="quantity_good"/>
-                                    <field name="quantity_reject"/>
-                                    <field name="quantity_sample" attrs="{'column_invisible': [('parent.show_picking','!=',False)]}"/>
-                                    <field name="user_id"/>
-                                    <field name="state_log_line"/>
-                                </tree>
-                            </field>
-                        </group>
+                        <field name="progress_record_ids" context="{'tree_view_ref': 'textile_assembly.workorder_qc_log_line_view_tree'}"/>
                     </sheet>
                 </form>
             </field>
@@ -117,10 +104,6 @@
                 <xpath expr="//field[@name='final_lot_id']" position="attributes">
                     <attribute name="invisible">['|',('product_tracking_template','=','none')]</attribute>
                 </xpath>
-<!--                <xpath expr="//field[@name='qty_producing']" position="after">-->
-<!--                    &lt;!&ndash; Add your fields or attributes here &ndash;&gt;-->
-<!--                    <field name="qc_final" invisible="1"/>-->
-<!--                </xpath>-->
 
                 <xpath expr="//group" position="inside">
                     <!-- Add your fields or attributes here -->
@@ -195,6 +178,7 @@
             <field name="model">workorder_qc.log.line</field>
             <field name="arch" type="xml">
                 <tree string="Progress Record" create="false" delete="false" decoration-success="state_log_line=='added'" decoration-danger="state_log_line=='adjustment'">
+                    <field name="qc_id"/>
                     <field name="name" attrs="{'column_invisible': [('parent.show_picking','!=',False)]}"/>
                     <field name="product_id"/>
                     <field name="date_start"/>

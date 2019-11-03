@@ -20,9 +20,18 @@ class ChangeInputanQty(models.TransientModel):
                                    )
 
     product_qty = fields.Float(string="Quantity To Produce", digits=dp.get_precision('Product Unit of Measure'))
-    log_ids = fields.One2many(comodel_name="workorder_qc.log.line", inverse_name="qc_id", string="Progress Record")
+    log_ids = fields.One2many(comodel_name="workorder_qc.log.line", inverse_name="qc_id", string="Progress Record",
+                              compute="_compute_log_ids", store=True)
     next_work_order_id = fields.Many2one(comodel_name="mrp.workorder",
                                          string="Next Work Order", related="qc_id.next_work_order_id")
+
+    @api.depends('qc_id', 'product_id')
+    def _compute_log_ids(self):
+        log_line_obj = self.env['workorder_qc.log.line']
+        for rec in self:
+            rec.log_ids = log_line_obj.search(
+                [('qc_id', '=', rec.qc_id.id),
+                 ('product_id', '=', rec.product_id.id)])
 
     @api.onchange('product_qty')
     def _onchange_product_qty(self):

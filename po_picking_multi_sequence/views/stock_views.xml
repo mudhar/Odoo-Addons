@@ -15,5 +15,20 @@
 
             </field>
         </record>
+
+        <!-- Inherit Form View to Modify it -->
+        <record id="view_move_form_inherit_internal_name" model="ir.ui.view">
+            <field name="name">view.move.form.inherit.internal.name</field>
+            <field name="model">stock.move</field>
+            <field name="inherit_id" ref="stock.view_move_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='origin']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="internal_transfer_type_name"/>
+                </xpath>
+
+            </field>
+        </record>
     </data>
 </odoo>

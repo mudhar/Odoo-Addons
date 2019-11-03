@@ -482,7 +482,7 @@ class MrpWorkOrderQcLine(models.Model):
                                     related="workorder_id.production_id")
     is_updated_from_prev_workorder = fields.Boolean(string="Is Updated From Prev Work Order", readonly=True)
     progress_record_ids = fields.One2many(comodel_name="workorder_qc.log.line", inverse_name="qc_id",
-                                          string="Progress Record", copy=False, )
+                                          string="Progress Record")
     move_finished_created = fields.Boolean(string="Move Finish Goods Created")
     show_picking = fields.Boolean(string="Show Picking Reference", compute="check_workorder_id")
 
@@ -540,7 +540,7 @@ class MrpWorkOrderQcLine(models.Model):
 
         template = {
             'picking_type_id': self.production_id.picking_type_production.id,
-            'partner_id': self.parent.partner_id.id,
+            'partner_id': self.workorder_id.partner_id.id,
             'name': ''.join('%s:%s' % (self.production_id.name, self.product_id.display_name)),
             'date': self.production_id.date_planned_start,
             'date_expected': self.production_id.date_planned_start,

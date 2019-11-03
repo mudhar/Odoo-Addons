@@ -37,15 +37,6 @@
             <field name="company_id" eval="False"/>
         </record>
 
-        <!-- Internal Transfer WH->TOKO Surat Jalan SJ-->
-        <record id="seq_picking_internal_wh_store" model="ir.sequence">
-            <field name="name">Picking Internal Transfer WH Store</field>
-            <field name="code">picking.internal.wh.store</field>
-            <field name="prefix">SJ/%(y)s/%(month)s/</field>
-            <field name="padding">5</field>
-            <field name="company_id" eval="False"/>
-        </record>
-
         <!-- Internal Transfer Toko->WH Surat Retur Barang SRB-->
         <record id="seq_picking_internal_store_wh" model="ir.sequence">
             <field name="name">Picking Internal Transfer Store WH</field>
@@ -54,7 +45,6 @@
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
-
         <!-- Internal Transfer WH->TOKO Surat Jalan SJ-->
         <record id="seq_picking_internal_wh_store" model="ir.sequence">
             <field name="name">Picking Internal Transfer WH Store</field>
@@ -63,12 +53,25 @@
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
-
         <!-- Internal Transfer TOKO->TOKO Surat Mutasi Barang SMB-->
         <record id="seq_picking_internal_store_store" model="ir.sequence">
             <field name="name">Picking Internal Transfer Store Store</field>
             <field name="code">picking.internal.store.store</field>
             <field name="prefix">SMB/%(y)s/%(month)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+         <record id="seq_picking_internal_transit_in" model="ir.sequence">
+            <field name="name">Picking Internal Transfer Transit IN</field>
+            <field name="code">picking.internal.transit.in</field>
+            <field name="prefix">Transit IN/%(y)s/%(month)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="seq_picking_internal_transit_out" model="ir.sequence">
+            <field name="name">Picking Internal Transfer Transit OUT</field>
+            <field name="code">picking.internal.transit.out</field>
+            <field name="prefix">Transit OUT/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
