@@ -1,0 +1,27 @@
+<openerp>
+    <data>
+        <record id="mrpbom_duplicate_wizard_view_form" model="ir.ui.view">
+            <field name="name">mrpbom.duplicate.wizard.view.form</field>
+            <field name="model">mrpbom.duplicate.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Remove Product Duplicate on Bom Lines">
+                    <p class="oe_grey">
+                        Hapus Produk Yang Duplikat Pada Bom Lines
+                    </p>
+                    <footer>
+                        <button string="Confirm" name="action_remove_duplicate" type="object" default_focus="1" class="oe_highlight"/>
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <act_window id="action_remove_duplicate_bomline"
+                    multi="True"
+                    key2="client_action_multi" name="Remove Duplicate Product"
+                    res_model="mrpbom.duplicate.wizard" src_model="mrp.bom"
+                    view_mode="form" target="new" view_type="form" />
+
+    </data>
+</openerp>

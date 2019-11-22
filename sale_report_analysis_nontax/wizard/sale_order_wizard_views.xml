@@ -1,0 +1,28 @@
+<openerp>
+    <data>
+        <record id="saleorder_wizard_view_bom" model="ir.ui.view">
+            <field name="name">saleorder.wizard.view.form</field>
+            <field name="model">sale_order_line.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Update Price Reduce">
+                    <p class="oe_grey">
+                        Hanya Update Field price_redce
+                    </p>
+                    <footer>
+                        <button string="Confirm" name="action_set_price_reduce" type="object" default_focus="1" class="oe_highlight"/>
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <act_window id="action_so_line_wizard"
+                    multi="True"
+                    key2="client_action_multi" name="Update Price Reduce"
+                    res_model="sale_order_line.wizard" src_model="sale.order"
+                    groups="base.group_no_one"
+                    view_mode="form" target="new" view_type="form" />
+
+    </data>
+</openerp>

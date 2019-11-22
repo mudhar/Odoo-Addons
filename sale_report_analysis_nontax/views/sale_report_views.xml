@@ -1,0 +1,18 @@
+<openerp>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="view_order_product_graph_inherit_total_nontax" model="ir.ui.view">
+            <field name="name">view.order.product.graph.inherit.total.nontax</field>
+            <field name="model">sale.report</field>
+            <field name="inherit_id" ref="sale.view_order_product_graph"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='price_total']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="price_total_non_tax" type="measure"/>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</openerp>
