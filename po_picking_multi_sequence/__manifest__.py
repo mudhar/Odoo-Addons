@@ -39,6 +39,4 @@ Generate Multi Sequence Number Based On Selected Field
     ],
     'installable': True,
     'application': True,
-    'auto_install': False,
-
 }
