@@ -8,7 +8,9 @@
             <field name="arch" type="xml">
                 <tree string="Assembly Production" default_order="create_date des" decoration-info="state=='process'"  decoration-muted="state in ('approve','cancel')">
                     <field name="name" string="Reference"/>
+                    <field name="code_pola"/>
                     <field name="product_tmpl_id" string="Finish Goods"/>
+                    <field name="code_pola"/>
                     <field name="state"/>
                 </tree>
             </field>
@@ -54,12 +56,15 @@
                                            options="{'no_create': True}"
                                            attrs="{'required': [('state', '=', 'draft')],
                                            'readonly': [('state', 'not in' , ('draft'))]}"
-                                           domain="[('template_code', '!=', False)]"/>
+                                           domain="[('template_code', '!=', False), ('code_pola','!=',False)]"/>
                                     <field name="product_uom_id" readonly="1" invisible="1"/>
                                 </div>
                                 <field name="product_categ_id"/>
                                 <field name="routing_id" attrs="{'required': [('state', '=', 'draft')], 'readonly': [('state', 'not in' , ('draft'))]}" groups="mrp.group_mrp_routings"/>
-                                <field name="partner_id" context="{'search_default_is_cmt':1, 'default_supplier':1, 'default_customer':0, 'default_is_cmt':1 }" domain="['&amp;',('supplier', '=', True), ('is_cmt','=',True)]" attrs="{'readonly': [('state','in',('done','cancel'))]}"/>
+                                <field name="partner_id" context="{'search_default_is_cmt':1, 'default_supplier':1, 'default_customer':0, 'default_is_cmt':1 }"
+                                       domain="['&amp;',('supplier', '=', True), ('is_cmt','=',True)]"
+                                       attrs="{'readonly': [('state','in',('done','cancel'))]}"/>
+                                <field name="code_pola"/>
                             </group>
 
                             <group>
@@ -100,7 +105,7 @@
                                     <field name="price_unit"/>
                                     <field name="ratio" groups="base.group_no_one" readonly="1"/>
                                     <field name="price_subtotal"/>
-<!--                                    <field name="set_attribute_ids" widget="many2many_tags"/>-->
+                                    <!--                                    <field name="set_attribute_ids" widget="many2many_tags"/>-->
                                     <field name="state" invisible="1"/>
                                 </tree>
                             </field>
@@ -187,7 +192,7 @@
             </field>
         </record>
 
-         <!-- Inherit Form View to Modify it View Filter Inherit -->
+        <!-- Inherit Form View to Modify it View Filter Inherit -->
         <record id="assembly_production_view_search_inherit_production" model="ir.ui.view">
             <field name="name">assembly.production.search.inherit.production</field>
             <field name="model">assembly.production</field>

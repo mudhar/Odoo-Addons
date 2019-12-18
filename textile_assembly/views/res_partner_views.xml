@@ -17,6 +17,9 @@
                     <field name="capacity_cmt" attrs="{'invisible': [('is_cmt', '=', True)]}"/>
                     <field name="partner_code" placeholder="Referensi No Assembly Plan"/>
                 </field>
+                <xpath expr="//page[@name='sales_purchases']//field[@name='customer']" position="attributes">
+                    <attribute name="attrs">{'readonly': [('is_cmt','=',True)]}</attribute>
+                </xpath>
             </field>
         </record>
 

@@ -17,6 +17,7 @@
                     <group>
                         <field name="product_id" invisible="1"/>
                         <field name="product_qty" readonly="1"/>
+                        <field name="product_uom_id"/>
                         <field name="quantity_good"/>
                         <field name="quantity_reject"/>
                         <field name="qc_id" invisible="1"/>
@@ -32,19 +33,20 @@
                                 <field name="date_start"/>
                                 <field name="user_id"/>
                                 <field name="product_id"/>
-                                <field name="quantity_good"/>
-                                <field name="quantity_reject"/>
+                                <field name="quantity_good" sum="Total Qty Good"/>
+                                <field name="quantity_reject" sum="Total Qty Reject"/>
                                 <field name="user_id"/>
                                 <field name="state_log_line"/>
                             </tree>
                         </field>
-
                     </group>
+                    <field name="is_work_order_finishing" invisible="1"/>
                     <footer>
-                        <button name="action_confirm" string="Submit"
+                        <button name="action_confirm" string="Tambah Input"
                                 colspan="1" type="object" class="btn-success"/>
-                        <button name="action_adjustment" string="Adjustment"
-                                colspan="1" type="object" class="btn-warning"/>
+                        <button name="action_adjustment" string="Kurang Input"
+                                colspan="1" type="object" class="btn-warning"
+                                attrs="{'invisible': [('is_work_order_finishing','=',False)]}"/>
                         <button string="Cancel" class="btn-default" special="cancel" />
                     </footer>
                 </form>

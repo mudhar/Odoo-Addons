@@ -15,6 +15,7 @@ class AssemblyProductionCostReport(models.Model):
                 if attrib.id:
                     product_line = {
                         'assembly': assembly.name,
+                        'code_pola': assembly.code_pola,
                         'image': assembly.product_image,
                         'routing_id': assembly.routing_id.name,
                         'currency': assembly.currency_id,
@@ -28,10 +29,25 @@ class AssemblyProductionCostReport(models.Model):
                     }
 
                     # list component ratio
+                    set_attribute_variants = assembly.variant_line_ids.filtered(
+                        lambda x: x.attribute_value_ids[0] in attrib or x.attribute_value_ids[1] in attrib)
+
+                    for variant in assembly.variant_line_ids.filtered(
+                        lambda x: x.attribute_value_ids[0] in attrib or x.attribute_value_ids[1] in attrib):
+                        variants = {
+                            'product_id': variant.product_id,
+                            'ratio': variant.ratio,
+                        }
+                        product_line['variant_lines'] += [variants]
+
                     for variant in assembly.variant_line_ids:
-                        if variant.product_id and variant.attribute_value_ids[0].id != attrib.id:
+                        if variant.product_id and (
+                                variant.attribute_value_ids[0].id != attrib.id
+                                or variant.attribute_value_ids[1].id != attrib.id):
                             continue
-                        if variant.product_id and variant.attribute_value_ids[0].id == attrib.id:
+                        if variant.product_id and (
+                                variant.attribute_value_ids[0].id == attrib.id
+                                or variant.attribute_value_ids[1].id != attrib.id):
                             variants = {
                                 'product_id': variant.product_id,
                                 # 'attribs': [(''.join('%s\t' % value.name for value in variant.attribute_value_ids))],

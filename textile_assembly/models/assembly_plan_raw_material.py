@@ -62,7 +62,7 @@ class AssemblyPlanRawMaterial(models.Model):
     def _compute_total_actual_quantity(self):
         for material in self:
             if material.qty_available:
-                result_qty = material.qty_available * material.product_qty
+                result_qty = material.qty_available / material.product_qty
                 material.total_actual_quantity = math.ceil(result_qty)
 
         return True

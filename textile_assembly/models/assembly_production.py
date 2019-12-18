@@ -37,6 +37,7 @@ class AssemblyProd(models.Model):
                                        index=True, readonly=True)
     partner_id = fields.Many2one(comodel_name="res.partner", string="CMT Vendor", required=True,
                                  track_visibility='onchange')
+    code_pola = fields.Char(string="Code Pola", related="product_tmpl_id.code_pola")
     user_id = fields.Many2one('res.users', string='Responsible', index=True, track_visibility='onchange',
                               default=lambda self: self.env.user)
     version = fields.Integer(string="Ver", default=1, index=True)
@@ -91,18 +92,11 @@ class AssemblyProd(models.Model):
     def _compute_amount_total_text(self):
         """ Menghitung Total Keseluruhan Biaya Pada Tiap Variant
          :return total_amount_text """
-        #import locale
-        #locale.setlocale(locale.LC_ALL, '')
         assemblies = self
         report_model = self.env['report.textile_assembly.assembly_production_cost_report']
         # Panggil Fungsi Report Untuk Mengenerate Total Variant
         value_ids = report_model.get_lines(assemblies)
         result = {'lines': value_ids}
-        # if result:
-        #     print(result)
-        # amount_total_text = ''.join('(%s)\t%s \n' % (str(line['attributes']),
-        #                                              locale.currency(line['total'], grouping=True))
-        #                             for line in result['lines'])
         amount_total_text = ''.join('%s:' % (line['attributes']) + '{:,.2f}\n' .format(line['total'])
                                     for line in result['lines'])
 
@@ -126,17 +120,6 @@ class AssemblyProd(models.Model):
         mapped_data = dict([(data['assembly_prod_id'][0], data['assembly_prod_id_count']) for data in read_group_res])
         for bom in self:
             bom.bom_count = mapped_data.get(bom.id, 0)
-
-    # @api.multi
-    # def _compute_product_variants_line(self):
-    #     """ Hitung Berapa Jumlah Produk Yang duplicate
-    #         :return dict
-    #          read_group(domain, fields, groupby)
-    #     """
-    #     product_data = self.env['assembly.prod.variant.line'].read_group(
-    #         [('product_id', '!=', False), ('assembly_id', '=', self.id)], ['product_id'], ['product_id'])
-    #     mapped_data = dict([(variant['product_id'][0], variant['product_id_count']) for variant in product_data])
-    #     return mapped_data
 
     @api.multi
     def check_selected_routing_id(self):
@@ -381,10 +364,6 @@ class AssemblyProd(models.Model):
         assembly_object = self.env['assembly.production']
         counter = 1
         for assembly in self:
-            # counters = assembly_object.search_count([('product_tmpl_id', '=', assembly.product_tmpl_id.id),
-            #                                          ('id', 'not in', assembly.ids)])
-            # method search_read(domain) return dict in list, pencarian id yg active aja selain id ini
-            # result diurutkan dari id terbesar ke terkecil / id terakhir dibuat diletakan index 0
             counters = assembly_object.search_read([('product_tmpl_id', '=', assembly.product_tmpl_id.id),
                                                     ('id', 'not in', assembly.ids)], order='id')
 
@@ -413,12 +392,6 @@ class AssemblyProd(models.Model):
     @api.multi
     def button_process(self):
         self.ensure_one()
-        config_check = self.env['res.config.settings'].search([('service_categ_id', '!=', False),
-                                                               ('location_id', '!=', False),
-                                                               ('default_operation_type_consume_id', '!=', False),
-                                                               ('default_operation_type_produce_id', '!=', False)])
-        if not config_check:
-            raise UserError(_("Setting Belum Lengkap"))
         self.check_selected_routing_id()
 
         if not self.variant_line_ids:

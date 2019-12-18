@@ -7,6 +7,14 @@ from odoo.exceptions import UserError
 class MrpProduction(models.Model):
     _inherit = 'mrp.production'
 
+    @api.model
+    def _get_default_picking_type_production(self):
+        return self.env.ref('textile_assembly.picking_cmt_produce').id
+
+    @api.model
+    def _get_default_picking_type_consume(self):
+        return self.env.ref('textile_assembly.picking_cmt_consume').id
+
     partner_id = fields.Many2one(comodel_name="res.partner", string="CMT Vendor")
     assembly_plan_id = fields.Many2one(comodel_name="assembly.plan", string="Assembly Plan", readonly=True, copy=True)
     variant_ids = fields.One2many(comodel_name="mrp.production.variant", inverse_name="production_id",
@@ -14,11 +22,9 @@ class MrpProduction(models.Model):
 
     # picking
     picking_type_production = fields.Many2one(
-        'stock.picking.type', 'Operation Type CMT Production', track_visibility='always',
-        domain="[('code', '=', 'internal')]")
+        'stock.picking.type', 'Operation Type CMT Production', default=_get_default_picking_type_production)
     picking_type_consume = fields.Many2one(
-        'stock.picking.type', 'Operation Type CMT Consume', track_visibility='always',
-        domain="[('code', '=', 'internal')]")
+        'stock.picking.type', 'Operation Type CMT Consume', default=_get_default_picking_type_consume)
     picking_count = fields.Integer(string="#Picking Production", compute="_compute_picking_count")
     picking_raw_count = fields.Integer(string="#Picking Consume", compute="_compute_picking_raw_count")
     picking_raw_ids = fields.One2many(comodel_name="stock.picking", inverse_name="raw_material_production_id",
@@ -28,13 +34,8 @@ class MrpProduction(models.Model):
                                                    string="Picking Finished Products", copy=False,
                                                    states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
     # Work Order
-    # work_order_qty_produced = fields.Float(compute="_get_produced_qty", string="Work Order Quantity Produced",
-    #                                        help="Informasi Jumlah Quantity WorkOrder Yang Telah Diproduksi")
     check_work_order_done = fields.Boolean(string="Check Work Order Done", compute="_get_produced_qty",
                                            help="Informasi Untuk Mengecek Status Work Order Yang Done")
-    # work_order_price = fields.Float(string="Total Cost Price", compute="_get_produced_price",
-    #                                 help="Total Biaya Dari Cutting Hingga Finishing")
-
     # Begin override field
     product_id = fields.Many2one(
         required=False)
@@ -123,28 +124,23 @@ class MrpProduction(models.Model):
         result = super(MrpProduction, self).action_cancel()
 
         move_consumed = self.move_raw_ids.filtered(
-            lambda x: (not x.scrapped and not x.picking_id.created_return_picking) and x.raw_material_production_id)
+            lambda x: (not x.scrapped and not x.returned_picking) and x.raw_material_production_id)
         move_returned = self.move_raw_ids.filtered(
-            lambda x: (not x.scrapped and x.picking_id.created_return_picking) and x.raw_material_production_id)
-        # move_scrapped = self.move_raw_ids.filtered(
-        #     lambda x: (x.scrapped and not x.picking_id.created_return_picking) and x.raw_material_production_id)
+            lambda x: (not x.scrapped and x.returned_picking) and x.raw_material_production_id)
 
-        if move_consumed and not move_returned:
-            if all(move.state == 'done' for move in move_consumed):
+        if move_consumed:
+            if (move_consumed and not move_returned) and all(
+                    move.state == 'done' for move in move_consumed):
                 raise UserError(_("Bahan Baku Sudah Terkonsumsi, Apabila Anda Ingin Membatalkan Manufacturing Order"
                                   "\n Anda Harus Mengembalikan Bahan Baku Yang Terkonsumsi Ke Gudang"
                                   "\n Anda Dapat Melakukan Tersebut Pada Halaman Picking Consume"
                                   "\n Dengan Mengklik Tombol Return"))
-        if move_consumed and move_returned:
-            if all(move.state != 'done' for move in move_returned):
+            elif (move_consumed and move_returned) and all(
+                    move.state != 'done' for move in move_returned
+            ):
                 raise UserError(_("Status Bahan Baku Yang Direturn Belum Selesai Ditransfer"))
-        #     else:
-        #         self.action_update_plan_consumed()
-        #
-        # if move_scrapped:
-        #     self.action_update_plan_consumed()
+            self.assembly_plan_id.button_cancel()
 
-        self.assembly_plan_id.button_cancel()
         return result
 
     @api.multi
@@ -240,7 +236,7 @@ class MrpProduction(models.Model):
                     'partner_id': order.partner_id.id or False,
                     'location_id': source_location.id,
                     'location_dest_id': order.product_template_id.property_stock_production.id,
-                    'origin': order.name,
+                    'origin': ''.join('%s:%s' % (order.name, order.origin)),
                     'raw_material_production_id': order.id,
                     'group_id': order.procurement_group_id.id,
                     'company_id': order.company_id.id,
@@ -283,7 +279,7 @@ class MrpProduction(models.Model):
         data = {
             'sequence': bom_line.sequence,
             'partner_id': self.partner_id.id,
-            'name': ''.join('%s:%s' % (self.name, self.product_id.display_name)),
+            'name': ''.join('%s:%s' % (self.name, self.product_template_id.display_name)),
             'date': self.date_planned_start,
             'date_expected': self.date_planned_start,
             'bom_line_id': bom_line.id,
@@ -297,7 +293,7 @@ class MrpProduction(models.Model):
             'operation_id': bom_line.operation_id.id or alt_op,
             'price_unit': bom_line.product_id.standard_price,
             'procure_method': 'make_to_stock',
-            'origin': self.name,
+            'origin': ''.join('%s:%s' % (self.name, self.origin)),
             'warehouse_id': source_location.get_warehouse().id,
             'group_id': self.procurement_group_id.id,
             'propagate': self.propagate,
@@ -315,22 +311,31 @@ class MrpProduction(models.Model):
                 return super(MrpProduction, self).button_plan()
 
     @api.multi
+    def _check_move_consume_state(self):
+        move_consumed = self.move_raw_ids.filtered(
+            lambda x: (not x.scrapped and not x.returned_picking) and x.raw_material_production_id)
+        move_returned = self.move_raw_ids.filtered(
+            lambda x: (not x.scrapped and x.returned_picking) and x.raw_material_production_id)
+        if move_consumed and not move_returned and any(
+                move.state not in ['done', 'cancel'] for move in move_consumed):
+            raise UserError(_("Produk Yang Dikonsumsi Belum Selesai Statusnya"))
+        elif move_consumed and move_returned and all(
+                move.state != 'done' for move in move_returned):
+            raise UserError(_("Anda Tidak Dapat Melanjutkan Plan\n"
+                              "Anda Sedang Melakukan Return Produk Ke Gudang\n"))
+
+    @api.multi
     def action_work_order_assembly(self):
         # self.action_update_plan_consumed()
         orders_to_plan = self.filtered(lambda order: order.routing_id and (
                 not order.product_id and order.state == 'confirmed'))
         if orders_to_plan:
             for order in orders_to_plan:
-                # order.picking_finished_product_ids.action_assign()
-                if any([pstate not in ['done', 'cancel'] for pstate in order.picking_raw_ids.mapped('state')]):
-
-                    raise UserError(_("Status Picking Consume Belum Done"))
-
-                else:
-                    quantity = order.product_uom_id._compute_quantity(order.product_qty,
-                                                                      order.bom_id.product_uom_id) / order.bom_id.product_qty
-                    boms, lines = order.bom_id.explode_template(order.product_template_id, quantity)
-                    order.generate_workorders(boms)
+                order._check_move_consume_state()
+                quantity = order.product_uom_id._compute_quantity(order.product_qty,
+                                                                  order.bom_id.product_uom_id) / order.bom_id.product_qty
+                boms, lines = order.bom_id.explode_template(order.product_template_id, quantity)
+                order.generate_workorders(boms)
 
             return orders_to_plan.write({'state': 'planned'})
 

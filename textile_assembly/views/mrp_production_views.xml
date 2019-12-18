@@ -19,6 +19,10 @@
             <field name="model">mrp.production</field>
             <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
             <field name="arch" type="xml">
+                <xpath expr="//form" position="attributes">
+                    <attribute name="create">false</attribute>
+                    <attribute name="delete">false</attribute>
+                </xpath>
 
                 <xpath expr="//group/group" position="after">
                     <!-- Add your fields or attributes here -->
@@ -39,11 +43,11 @@
                 </xpath>
                 <xpath expr="//button[@name='%(mrp.action_change_production_qty)d']" position="attributes">
                     <!-- Disable Button update quantity -->
-                     <attribute name="attrs">{'invisible':[('assembly_plan_id','!=',False)]}</attribute>
+                    <attribute name="attrs">{'invisible':[('assembly_plan_id','!=',False)]}</attribute>
                 </xpath>
                 <xpath expr="//field[@name='product_id']" position="attributes">
                     <!-- Hide Colum product_id -->
-                     <attribute name="attrs">{'invisible':[('assembly_plan_id','!=',False)]}</attribute>
+                    <attribute name="attrs">{'invisible':[('assembly_plan_id','!=',False)]}</attribute>
                 </xpath>
                 <xpath expr="//button[@name='post_inventory']" position="attributes">
                     <!-- Disable Button Post Inventory -->
@@ -51,7 +55,7 @@
                 </xpath>
                 <xpath expr="//button[@name='%(mrp.action_mrp_workorder_production_specific)d']" position="before">
                     <!-- Button BOX Picking Production dan Picking Consume -->
-                     <button class="oe_stat_button" name="%(template_open_picking_raw)d" type="action"
+                    <button class="oe_stat_button" name="%(template_open_picking_raw)d" type="action"
                             icon="fa-truck" attrs="{'invisible': ['|','|',('picking_raw_count', '=', 0),('bom_id','=',False),('state','=','cancel')]}">
                         <div class="o_field_widget o_stat_info">
                             <span class="o_stat_value"><field name="picking_raw_count" widget="statinfo" nolabel="1"/></span>
@@ -87,10 +91,23 @@
                 </xpath>
 
                 <xpath expr="//field[@name='product_template_id']" position="before">
-<!--                    &lt;!&ndash; Info Work Order &ndash;&gt;-->
-<!--                    <field name="work_order_qty_produced" invisible="1"/>-->
+                    <!--                    &lt;!&ndash; Info Work Order &ndash;&gt;-->
+                    <!--                    <field name="work_order_qty_produced" invisible="1"/>-->
                     <field name="check_work_order_done" invisible="1"/>
-<!--                    <field name="work_order_price" invisible="1"/>-->
+                    <!--                    <field name="work_order_price" invisible="1"/>-->
+                </xpath>
+            </field>
+        </record>
+
+        <record id="mrp_production_tree_view_inherit_assembly" model="ir.ui.view">
+            <field name="name">mrp.production.tree.view.inherit.assembly</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//tree" position="attributes">
+                    <attribute name="create">false</attribute>
+                    <attribute name="delete">false</attribute>
                 </xpath>
             </field>
         </record>

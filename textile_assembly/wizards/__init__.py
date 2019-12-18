@@ -6,6 +6,7 @@ from . import change_vendor_wizard
 from . import workorder_extension_wizard
 from . import change_inputan_qty
 from . import plan_change_vendor
+from . import product_service_wizard
 
 
 

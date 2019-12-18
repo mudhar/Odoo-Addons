@@ -10,7 +10,13 @@
 
                 <xpath expr="//field[@name='categ_id']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <field name="template_code" placeholder="Referensi Code Produk Assembly"/>
+
+                    <field name="template_code" placeholder="Referensi Code Produk Assembly"
+                           attrs="{'invisible': [('is_goods','=',False)]}"/>
+                    <field name="code_pola" placeholder="Referensi Code Pola"
+                           attrs="{'invisible': [('is_goods','=',False)]}"/>
+
+
 
                 </xpath>
                 <xpath expr="//div[@name='options']//div" position="after">

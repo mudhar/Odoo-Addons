@@ -10,6 +10,8 @@ class ChangeInputanQty(models.TransientModel):
     name = fields.Char(string="Description", related="product_id.display_name")
     qc_id = fields.Many2one(comodel_name="mrp.workorder.qc.line", string="Order Inputan")
     product_id = fields.Many2one(comodel_name="product.product", string="Products")
+    product_uom_id = fields.Many2one(
+        'product.uom', 'Product Unit of Measure')
     date_start = fields.Datetime('Deadline Start', copy=False, default=fields.Datetime.now)
     user_id = fields.Many2one('res.users', 'Responsible', default=lambda self: self._uid)
     quantity_good = fields.Float(string="Quantity Good", digits=dp.get_precision('Product Unit of Measure'),
@@ -21,9 +23,18 @@ class ChangeInputanQty(models.TransientModel):
 
     product_qty = fields.Float(string="Quantity To Produce", digits=dp.get_precision('Product Unit of Measure'))
     log_ids = fields.One2many(comodel_name="workorder_qc.log.line", inverse_name="qc_id", string="Progress Record",
-                              compute="_compute_log_ids", store=True)
+                              compute="_compute_log_ids")
     next_work_order_id = fields.Many2one(comodel_name="mrp.workorder",
                                          string="Next Work Order", related="qc_id.next_work_order_id")
+
+    is_work_order_finishing = fields.Boolean(string="Check Work Order Finishing", compute="_compute_workorder_type")
+
+    @api.depends('qc_id')
+    def _compute_workorder_type(self):
+        if not self.next_work_order_id and not self.qc_id.is_cutting:
+            self.is_work_order_finishing = True
+        else:
+            self.is_work_order_finishing = False
 
     @api.depends('qc_id', 'product_id')
     def _compute_log_ids(self):
@@ -49,6 +60,9 @@ class ChangeInputanQty(models.TransientModel):
         if 'product_id' in fields_list and not res.get('product_qty') and res.get('qc_id'):
             res['product_id'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).product_id.id
 
+        if 'product_uom_id' in fields_list and not res.get('product_uom_id') and res.get('qc_id'):
+            res['product_uom_id'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).product_uom_id.id
+
         # if 'next_work_order_id' in fields_list and not res.get('product_qty') and res.get('qc_id'):
         #     res['next_work_order_id'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).next_work_order_id.id
 
@@ -59,20 +73,43 @@ class ChangeInputanQty(models.TransientModel):
 
     @api.multi
     def action_confirm(self):
+        qc_log_object = self.env['workorder_qc.log.line']
+        qc_finished_object = self.env['mrp_workorder.qc_finished_move']
         for order in self:
-            # move_id = self.env['stock.move'].search([('production_id', '=', order.qc_id.production_id.id),
-            #                                           ('product_id', '=', order.product_id.id)], limit=1)
-            # if move_id:
+            # qc_id = self.env['mrp.workorder.qc.line'].browse(order.qc_id.id)
 
-            self.env['workorder_qc.log.line'].create({
-                                                      'product_id': order.product_id.id,
-                                                      'date_start': order.date_start,
-                                                      'quantity_good': order.quantity_good,
-                                                      'quantity_reject': order.quantity_reject,
-                                                      'quantity_sample': order.quantity_sample or 0.0,
-                                                      'user_id': order.user_id.id,
-                                                      'state_log_line': 'added',
-                                                      'qc_id': order.qc_id.id})
+            # order.qc_id.update({
+            #     'progress_record_ids': [(0, 0, {
+            #         'product_id': order.product_id.id,
+            #         'date_start': order.date_start,
+            #         'quantity_good': order.quantity_good,
+            #         'quantity_reject': order.quantity_reject,
+            #         'quantity_sample': order.quantity_sample or 0.0,
+            #         'user_id': order.user_id.id,
+            #         'state_log_line': 'added',
+            #         'qc_id': order.qc_id.id,
+            #     })]
+            # })
+            qc_log_data = {
+                'product_id': order.product_id.id,
+                'date_start': order.date_start,
+                'quantity_good': order.quantity_good,
+                'quantity_reject': order.quantity_reject,
+                'quantity_sample': order.quantity_sample or 0.0,
+                'user_id': order.user_id.id,
+                'state_log_line': 'added',
+                'qc_id': order.qc_id.id,
+            }
+            qc_log_id = qc_log_object.create(qc_log_data)
+            if order.is_work_order_finishing and qc_log_id:
+                qc_finished_object.create({
+                    'product_id': order.product_id.id,
+                    'product_qty': order.quantity_good + order.quantity_sample,
+                    'product_uom_id': order.product_uom_id.id,
+                    'qc_log_id': qc_log_id.id,
+                    'qc_id': order.qc_id.id,
+                })
+
             order.qc_id.qc_good += order.quantity_good
             order.qc_id.qc_reject += order.quantity_reject
             order.qc_id.qc_sample += order.quantity_sample

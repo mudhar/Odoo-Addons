@@ -22,6 +22,10 @@
                                 <strong>Variant</strong><br/>
                                 <t t-esc="line['attributes']"/>
                             </div>
+                             <div class="col-xs-3">
+                                <strong>Code Pola</strong><br/>
+                                <t t-esc="line['code_pola']"/>
+                            </div>
                             <t t-if="line['image']">
                                 <div class="col-xs-3 pull-right">
                                     <img t-att-src="'data:image/png;base64,%s' % to_text(line['image'])"/>

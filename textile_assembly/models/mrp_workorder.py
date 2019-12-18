@@ -95,14 +95,17 @@ class MrpWorkOrder(models.Model):
     workorder_created = fields.Boolean(string="Workorder Created By Wizard")
     skipped = fields.Boolean(string="Skipped")
     # Hanya Untuk Teknikal View
-    service_categ_id = fields.Many2one(comodel_name="product.category", string="Set Service Category", readonly=True)
+    service_categ_id = fields.Many2one(comodel_name="product.category", string="Set Service Category", readonly=True,
+                                       default=lambda self: self.env.user.company_id.service_categ_id.id)
     check_move_created = fields.Boolean(string="Check All Move Created", compute="_compute_move_created",
                                         help="Teknikal View Untuk Mengecek Stock Move Sudah Kebentuk Semua")
 
     @api.depends('qc_ids',
-                 'qc_ids.move_finished_created')
+                 'qc_ids.qc_finished_ids',
+                 'qc_ids.qc_finished_ids.stock_move_created')
     def _compute_move_created(self):
-        self.check_move_created = all(line.move_finished_created for line in self.qc_ids)
+        self.check_move_created = all(
+            line.stock_move_created for line in self.qc_ids.mapped('qc_finished_ids'))
 
     def _compute_po_count(self):
         read_group_res = self.env['purchase.order'].read_group([('work_order_id', 'in', self.ids)], ['work_order_id'],
@@ -230,7 +233,6 @@ class MrpWorkOrder(models.Model):
                  })
             # self.action_update_plan_workorder()
 
-
         if not self.next_work_order_id and not self.is_cutting:
             qc_updated = self.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder)
             # qc_not_updated = self.qc_ids.filtered(lambda x: not x.is_updated_from_prev_workorder)
@@ -241,9 +243,8 @@ class MrpWorkOrder(models.Model):
                                              precision_rounding=self.production_id.product_uom_id.rounding)
             # self.action_update_plan_workorder()
             # self.action_update_plan_sample()
-
-            if all(not qc.move_finished_created for qc in self.qc_ids):
-                raise UserError(_("Semua Inputan Belum Dibuat Picking"
+            if all(not qc_move.stock_move_created for qc_move in self.qc_ids.mapped('qc_finished_ids')):
+                raise UserError(_("Semua Inputan Belum Dibuat STBJ"
                                   "\n Klik Tombol Receive Good Terlebih Dahulu"))
 
         self.button_finish()
@@ -326,6 +327,31 @@ class MrpWorkOrder(models.Model):
         }
 
     @api.multi
+    def button_add_product_service(self):
+        self.ensure_one()
+
+        products = self.env['product.product'].search([('categ_id.parent_id', '=', self.service_categ_id.id)])
+
+        product_ids = []
+        service_ids = self.product_service_ids.mapped('product_id').ids
+        for product in products:
+            if product.id and product.id not in service_ids:
+                product_ids.append(product.id)
+
+        return {
+            'name': _('New Product Service'),
+            'view_type': 'form',
+            'view_mode': 'form',
+            'res_model': 'mrp_workorder.product_service.wizard',
+            'view_id': self.env.ref('textile_assembly.product_service_wizard_view_form').id,
+            'type': 'ir.actions.act_window',
+            'context': {
+                'product_ids': product_ids,
+            },
+            'target': 'new',
+        }
+
+    @api.multi
     def button_request_new_workorder(self):
         self.write({'state': 'waiting'})
         return True
@@ -393,41 +419,74 @@ class MrpWorkOrder(models.Model):
     @api.multi
     def button_receive_good(self):
         for order in self:
-            done = order.qc_ids.filtered(lambda x: x.state == 'done' and not x.move_finished_created)
-            if done:
-                move = done.generate_finished_moves()
-                picking = order._generate_finished_picking()
-                if picking:
-                    move.write({'picking_id': picking.id})
-                    picking.action_assign()
+            move_ids = self.env['stock.move']
+            qc_finished_moves = order.qc_ids.mapped('qc_finished_ids')
+            if qc_finished_moves:
+                for qc_finished_move in qc_finished_moves.filtered(lambda x: not x.stock_move_created):
+                    move_id = qc_finished_move.generate_finished_moves()
+                    qc_finished_move.write({'move_id': move_id.id,
+                                            'stock_move_created': True})
+                    move_ids |= move_id
+            if move_ids:
+                picking_id = order.create_finished_picking()
+                move_ids.write({'picking_id': picking_id.id})
+                self.env['mrp_workorder.qc_finished_move'].search(
+                    [('move_id', 'in', move_ids.ids)]).write(
+                    {'name': picking_id.name,
+                     'picking_id': picking_id.id})
+                picking_id.action_assign()
+
         return True
 
-    def _generate_finished_picking(self):
-        picking_obj = self.env['stock.picking']
-        picking = self.env['stock.picking'].browse()
+    def create_finished_picking(self):
+        # picking_obj = self.env['stock.picking']
+        # picking = self.env['stock.picking'].browse()
         for order in self:
-            if any([ptype in ['product', 'consu'] for ptype in order.qc_ids.mapped('product_id.type')]):
-                pickings = order.production_id.picking_finished_product_ids.filtered(
-                    lambda x: x.production_id and x.state not in ('done', 'cancel'))
-                if not pickings:
-                    res = {
-                        'picking_type_id': order.production_id.picking_type_production.id,
-                        'partner_id': order.partner_id.id or False,
-                        'location_id': order.product_template_id.property_stock_production.id,
-                        'location_dest_id': order.production_id.location_dest_id.id,
-                        'origin': order.production_id.name,
-                        'production_id': order.production_id.id,
-                        'group_id': order.production_id.procurement_group_id.id,
-                        'company_id': order.production_id.company_id.id,
-                        'product_select_type': 'goods',
-                    }
-                    picking += picking_obj.create(res)
+            location_id = order.production_id.product_template_id.property_stock_production.id
+            location_dest_id = order.production_id.location_dest_id.id
 
-                else:
-                    picking += pickings[0]
+            res = {
+                'picking_type_id': order.production_id.picking_type_production.id,
+                'partner_id': order.partner_id.id or False,
+                'location_id': location_id,
+                'location_dest_id': location_dest_id,
+                'origin': ''.join('%s:%s' % (order.production_id.name, order.origin)),
+                'production_id': order.production_id.id,
+                'group_id': order.production_id.procurement_group_id.id,
+                'company_id': order.production_id.company_id.id,
+                'product_select_type': 'goods',
+            }
+            return self.env['stock.picking'].create(res)
 
-                # moves = moves.filtered(lambda x: x.state not in ('done', 'cancel'))
-        return picking
+
+# def _generate_finished_picking(self):
+#     picking_obj = self.env['stock.picking']
+#     picking = self.env['stock.picking'].browse()
+#     for order in self:
+#         if any([ptype in ['product', 'consu'] for ptype in order.qc_ids.mapped('product_id.type')]):
+#             pickings = order.production_id.picking_finished_product_ids.filtered(
+#                 lambda x: x.production_id and x.state not in ('done', 'cancel'))
+#             location_id = order.production_id.product_template_id.property_stock_production.id
+#             location_dest_id = order.production_id.location_dest_id.id
+#             if not pickings:
+#                 res = {
+#                     'picking_type_id': order.production_id.picking_type_production.id,
+#                     'partner_id': order.partner_id.id or False,
+#                     'location_id': location_id,
+#                     'location_dest_id': location_dest_id,
+#                     'origin': order.production_id.name,
+#                     'production_id': order.production_id.id,
+#                     'group_id': order.production_id.procurement_group_id.id,
+#                     'company_id': order.production_id.company_id.id,
+#                     'product_select_type': 'goods',
+#                 }
+#                 picking += picking_obj.create(res)
+#
+#             else:
+#                 picking += pickings[0]
+#
+#             # moves = moves.filtered(lambda x: x.state not in ('done', 'cancel'))
+#     return picking
 
 
 class MrpWorkOrderQcLine(models.Model):
@@ -483,17 +542,20 @@ class MrpWorkOrderQcLine(models.Model):
     is_updated_from_prev_workorder = fields.Boolean(string="Is Updated From Prev Work Order", readonly=True)
     progress_record_ids = fields.One2many(comodel_name="workorder_qc.log.line", inverse_name="qc_id",
                                           string="Progress Record")
-    move_finished_created = fields.Boolean(string="Move Finish Goods Created")
-    show_picking = fields.Boolean(string="Show Picking Reference", compute="check_workorder_id")
 
-    @api.depends(
-        'next_work_order_id')
-    def check_workorder_id(self):
-        for order in self:
-            if order.next_work_order_id:
-                order.show_picking = True
+
+    qc_finished_ids = fields.One2many(comodel_name="mrp_workorder.qc_finished_move", inverse_name="qc_id",
+                                      string="Product Finished Move")
+
+    is_work_order_finishing = fields.Boolean(string="Check Work Order Finishing", compute="_compute_workorder_type")
+
+    @api.depends('next_work_order_id', 'is_cutting')
+    def _compute_workorder_type(self):
+        for line in self:
+            if not line.next_work_order_id and not line.is_cutting:
+                line.is_work_order_finishing = True
             else:
-                order.show_picking = False
+                line.is_work_order_finishing = False
 
     @api.multi
     @api.depends('production_id.move_finished_ids',
@@ -505,61 +567,43 @@ class MrpWorkOrderQcLine(models.Model):
             mapping = dict((r.product_id.id, r.quantity_done) for r in moves)
             line.receive_good = mapping.get(line.product_id.id, 0.0)
 
-    def generate_finished_moves(self):
-        moves = self.env['stock.move']
-        done = self.env['stock.move'].browse()
 
-        for order in self:
-            move_finished = order.production_id.move_finished_ids.filtered(
-                lambda x: (x.product_id.id == order.product_id.id) and (x.state not in ('done', 'cancel')))
-            if not move_finished:
-                for line in order.prepare_finished_moves():
-                    done += moves.create(line)
-                    order.move_finished_created = True
-        return done
-
-    def _compute_price_unit(self):
-        for order in self:
-            plan_id = order.production_id.mapped('assembly_plan_id')
-            values = self.env['report.textile_assembly.assembly_plan_cost_report'].get_lines(plan_id)
-
-            result = {'lines': values}
-            return result
-
-    def prepare_finished_moves(self):
-        self.ensure_one()
-        res = []
-        if self.product_id.type not in ['product', 'consu']:
-            return res
-        result_plan = self._compute_price_unit()
-        total_unit_cost = []
-        if self.product_id:
-            for line in result_plan['lines']:
-                if (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[0].name) or (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[1].name):
-                    total_unit_cost.append(line['unit_cost'])
-
-        template = {
-            'picking_type_id': self.production_id.picking_type_production.id,
-            'partner_id': self.workorder_id.partner_id.id,
-            'name': ''.join('%s:%s' % (self.production_id.name, self.product_id.display_name)),
-            'date': self.production_id.date_planned_start,
-            'date_expected': self.production_id.date_planned_start,
-            'product_id': self.product_id.id,
-            'price_unit': sum(total_unit_cost),
-            'product_uom': self.product_uom_id.id,
-            'product_uom_qty': self.qc_good + self.qc_sample,
-            'location_id': self.production_id.product_template_id.property_stock_production.id,
-            'location_dest_id': self.production_id.location_dest_id.id,
-            'company_id': self.production_id.company_id.id,
-            'production_id': self.production_id.id,
-            'origin': self.production_id.name,
-            'group_id': self.production_id.procurement_group_id.id,
-            'propagate': self.production_id.propagate,
-            'move_dest_ids': [(4, x.id) for x in self.production_id.move_dest_ids],
-            'state': 'draft',
-        }
-        res.append(template)
-        return res
+    # def prepare_finished_moves(self):
+    #     self.ensure_one()
+    #     res = []
+    #     if self.product_id.type not in ['product', 'consu']:
+    #         return res
+    #     result_plan = self._compute_price_unit()
+    #     total_unit_cost = []
+    #     if self.product_id:
+    #         for line in result_plan['lines']:
+    #             if (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[0].name) or (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[1].name):
+    #                 total_unit_cost.append(line['unit_cost'])
+    #
+    #     location_id = self.production_id.product_template_id.property_stock_production.id
+    #     location_dest_id = self.production_id.location_dest_id.id
+    #     template = {
+    #         'picking_type_id': self.production_id.picking_type_production.id,
+    #         'partner_id': self.workorder_id.partner_id.id,
+    #         'name': ''.join('%s:%s' % (self.production_id.name, self.product_id.display_name)),
+    #         'date': self.production_id.date_planned_start,
+    #         'date_expected': self.production_id.date_planned_start,
+    #         'product_id': self.product_id.id,
+    #         'price_unit': sum(total_unit_cost),
+    #         'product_uom': self.product_uom_id.id,
+    #         'product_uom_qty': self.qc_good + self.qc_sample,
+    #         'location_id': location_id,
+    #         'location_dest_id': location_dest_id,
+    #         'company_id': self.production_id.company_id.id,
+    #         'production_id': self.production_id.id,
+    #         'origin': self.production_id.name,
+    #         'group_id': self.production_id.procurement_group_id.id,
+    #         'propagate': self.production_id.propagate,
+    #         'move_dest_ids': [(4, x.id) for x in self.production_id.move_dest_ids],
+    #         'state': 'draft',
+    #     }
+    #     res.append(template)
+    #     return res
 
     @api.multi
     def button_done(self):
@@ -651,10 +695,10 @@ class MrpWorkOrderQcLine(models.Model):
 
 class QcLogLine(models.Model):
     _name = 'workorder_qc.log.line'
+    _rec_name = 'product_id'
     _description = 'Log Input Quantity Good Dan Quantity Reject'
 
     qc_id = fields.Many2one(comodel_name="mrp.workorder.qc.line", string="Order Qc", ondelete="cascade", index=True)
-    name = fields.Char(string="No Picking", compute="_compute_picking_reference")
     product_id = fields.Many2one(comodel_name="product.product", string="Products")
     date_start = fields.Datetime('Date', copy=False, index=True, readonly=True)
     quantity_good = fields.Float(string="Quantity Good", digits=dp.get_precision('Product Unit of Measure'))
@@ -668,24 +712,102 @@ class QcLogLine(models.Model):
                                                  ('adjustment', 'Adjustment'), ],
                                       readonly=True, index=True, copy=False, track_visibility='onchange')
 
-    @api.depends('qc_id', 'qc_id.next_work_order_id', 'qc_id.is_cutting')
-    def _compute_picking_reference(self):
-        for line in self:
-            next_work_order_id, is_cutting = line.qc_id.next_work_order_id, line.qc_id.is_cutting
-            production_id = line.qc_id.production_id
-            if not next_work_order_id and not is_cutting:
-                line.name = line.get_picking_reference(production_id, line.product_id)
-        return True
+    # @api.depends('qc_id', 'qc_id.next_work_order_id', 'qc_id.is_cutting')
+    # def _compute_picking_reference(self):
+    #     for line in self:
+    #         next_work_order_id, is_cutting = line.qc_id.next_work_order_id, line.qc_id.is_cutting
+    #         production_id = line.qc_id.production_id
+    #         if not next_work_order_id and not is_cutting:
+    #             line.name = line.get_picking_reference(production_id, line.product_id)
+    #     return True
+    #
+    # @api.multi
+    # def get_picking_reference(self, production_id, product_id):
+    #     move_object = self.env['stock.move']
+    #     picking_reference = False
+    #     if not picking_reference:
+    #         picking_reference = move_object.search(
+    #             [('production_id', '=', production_id.id),
+    #              ('product_id', '=', product_id.id)], limit=1)
+    #     return picking_reference.picking_id.name or False
 
-    @api.multi
-    def get_picking_reference(self, production_id, product_id):
-        move_object = self.env['stock.move']
-        picking_reference = False
-        if not picking_reference:
-            picking_reference = move_object.search(
-                [('production_id', '=', production_id.id),
-                 ('product_id', '=', product_id.id)], limit=1)
-        return picking_reference.picking_id.name or False
+
+class MrpQcFinished(models.Model):
+    _name = 'mrp_workorder.qc_finished_move'
+    _rec_name = 'name'
+    _description = 'Products Finished Move'
+
+    name = fields.Char(string="Reference Number")
+    picking_id = fields.Many2one(comodel_name="stock.picking", string="Picking Reference")
+    move_id = fields.Many2one(comodel_name="stock.move", string="Move Reference")
+    qc_log_id = fields.Many2one(comodel_name="workorder_qc.log.line", string="QC Log Reference")
+    qc_id = fields.Many2one(comodel_name="mrp.workorder.qc.line", string="QC Reference")
+
+    product_id = fields.Many2one(comodel_name="product.product", string="Products")
+    product_qty = fields.Float(string="Quantity", digits=dp.get_precision('Product Unit of Measure'))
+    product_uom_id = fields.Many2one(
+        'product.uom', 'Product Unit of Measure')
+    received_qty = fields.Float(string="Received Quantity", digits=dp.get_precision('Product Unit of Measure'))
+
+    stock_move_created = fields.Boolean(string="Product Moves Created")
+    move_state = fields.Selection(string="State", related="picking_id.state")
+
+    def generate_finished_moves(self):
+        moves = self.env['stock.move']
+        done = self.env['stock.move'].browse()
+
+        for order in self:
+            for line in order.prepare_finished_moves():
+                done += moves.create(line)
+        return done
+
+    def _compute_price_unit(self):
+        for order in self:
+            plan_id = order.qc_id.production_id.mapped('assembly_plan_id')
+            values = self.env['report.textile_assembly.assembly_plan_cost_report'].get_lines(plan_id)
+
+            result = {'lines': values}
+            return result
+
+    def prepare_finished_moves(self):
+        self.ensure_one()
+        res = []
+        if self.product_id.type not in ['product', 'consu']:
+            return res
+        result_plan = self._compute_price_unit()
+        total_unit_cost = []
+        if self.product_id:
+            for line in result_plan['lines']:
+                if (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[0].name) or (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[1].name):
+                    total_unit_cost.append(line['unit_cost'])
+
+        location_id = self.product_id.property_stock_production.id
+        location_dest_id = self.qc_id.production_id.location_dest_id.id
+
+        # location_id = self.production_id.product_template_id.property_stock_production.id
+        # location_dest_id = self.production_id.location_dest_id.id
+        template = {
+            'picking_type_id': self.qc_id.production_id.picking_type_production.id,
+            'partner_id': self.qc_id.workorder_id.partner_id.id,
+            'name': ''.join('%s:%s' % (self.qc_id.production_id.name, self.product_id.display_name)),
+            'date': self.qc_id.production_id.date_planned_start,
+            'date_expected': self.qc_id.production_id.date_planned_start,
+            'product_id': self.product_id.id,
+            'price_unit': sum(total_unit_cost),
+            'product_uom': self.product_uom_id.id,
+            'product_uom_qty': self.product_qty,
+            'location_id': location_id,
+            'location_dest_id': location_dest_id,
+            'company_id': self.qc_id.production_id.company_id.id,
+            'production_id': self.qc_id.production_id.id,
+            'origin': ''.join('%s:%s' % (self.qc_id.production_id.name, self.qc_id.production_id.origin)),
+            'group_id': self.qc_id.production_id.procurement_group_id.id,
+            'propagate': self.qc_id.production_id.propagate,
+            'move_dest_ids': [(4, x.id) for x in self.qc_id.production_id.move_dest_ids],
+            'state': 'draft',
+        }
+        res.append(template)
+        return res
 
 
 class MrpWorkorderServiceLine(models.Model):

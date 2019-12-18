@@ -35,24 +35,8 @@ class AssemblyPlan(models.Model):
             limit=1).id
 
     @api.model
-    def _get_default_location_src_id(self):
-        location = False
-        if self._context.get('default_picking_type_id'):
-            location = self.env['stock.picking.type'].browse(
-                self.env.context['default_picking_type_id']).default_location_src_id
-        if not location:
-            location = self.env.ref('stock.stock_location_stock', raise_if_not_found=False)
-        return location and location.id or False
-
-    @api.model
-    def _get_default_location_dest_id(self):
-        location = False
-        if self._context.get('default_picking_type_id'):
-            location = self.env['stock.picking.type'].browse(
-                self.env.context['default_picking_type_id']).default_location_dest_id
-        if not location:
-            location = self.env.ref('stock.stock_location_stock', raise_if_not_found=False)
-        return location and location.id or False
+    def _get_default_location_stock(self):
+        return self.env.ref('stock.stock_location_stock').id
 
     name = fields.Char('Plan Reference', required=True, copy=False, readonly=True, index=True, default='New', track_visibility='always')
     origin = fields.Char(string="Source", copy=False, help="Sumber Dokumen Yang Membuat Dokumen Assembly Plan Ini")
@@ -78,12 +62,11 @@ class AssemblyPlan(models.Model):
     product_uom_id = fields.Many2one('product.uom', 'Product Unit of Measure')
 
     # List Data Untuk Buat Record mrp.production
-    picking_type_id = fields.Many2one('stock.picking.type', 'Operation Type',default=_get_default_picking_type)
-    location_id = fields.Many2one(comodel_name="stock.location", string="Location")
-    location_src_id = fields.Many2one('stock.location', 'Raw Materials Location',
-                                      default=_get_default_location_src_id, readonly=True)
-    location_dest_id = fields.Many2one('stock.location', 'Finished Products Location',
-                                       default=_get_default_location_dest_id, readonly=True)
+    warehouse_id = fields.Many2one(comodel_name="stock.warehouse", string="Warehouse")
+    picking_type_id = fields.Many2one('stock.picking.type', 'Operation Type')
+    location_id = fields.Many2one(comodel_name="stock.location", string="Raw Materials Location",
+                                  default=_get_default_location_stock)
+    location_dest_id = fields.Many2one(comodel_name="stock.location", string="Finished Products Location")
     partner_id = fields.Many2one(comodel_name="res.partner", string="CMT Vendor", track_visibility='onchange')
     date_planned_start = fields.Datetime('Schedule Date', copy=False, default=fields.Datetime.now, index=True,
                                          required=True, help="Penjadwalan Kapan Manufacturing Order Akan Diproduksi ")
@@ -125,6 +108,15 @@ class AssemblyPlan(models.Model):
     # Total Raw Material + Aksesoris + Biaya Produksi
     amount_total = fields.Float('Total', digits=dp.get_precision('Product Unit of Measure'),
                                 compute="_compute_amount_total")
+
+    @api.onchange('warehouse_id')
+    def _onchange_warehouse(self):
+        picking_type_id = self.env['stock.picking.type'].search(
+            [('code', '=', 'mrp_operation'),
+             ('warehouse_id', '=', self.warehouse_id.id)], limit=1)
+        if picking_type_id:
+            self.location_dest_id = picking_type_id.default_location_src_id.id
+            self.picking_type_id = picking_type_id.id
 
     @api.multi
     @api.depends('produce_ids',
@@ -413,6 +405,8 @@ class AssemblyPlan(models.Model):
             if any([ptype in ['product', 'consu'] for ptype in order.plan_line_ids.mapped('product_id.type')]):
                 production_ids = order.mo_ids.filtered(lambda mo: mo.assembly_plan_id and mo.state not in ('done', 'cancel'))
                 if not production_ids:
+                    # location_src_id = order.picking_type_id.default_location_src_id
+                    # location_dest_id = order.picking_type_id.default_location_dest_id
                     res = {
                         'partner_id': order.partner_id.id,
                         'product_template_id': order.product_template_id.id,
@@ -422,10 +416,10 @@ class AssemblyPlan(models.Model):
                         'picking_type_id': order.picking_type_id.id,
                         'company_id': order.company_id.id,
                         'date_planned_start': order.date_planned_start,
-                        'location_src_id': order.location_src_id.id,
+                        'location_src_id': order.location_id.id,
                         'location_dest_id': order.location_dest_id.id,
                         'assembly_plan_id': order.id,
-                        'origin': order.origin,
+                        'origin': order.name,
                     }
                     production_id = self.env['mrp.production'].create(res)
                 else:

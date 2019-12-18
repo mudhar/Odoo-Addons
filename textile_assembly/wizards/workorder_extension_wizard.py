@@ -57,6 +57,7 @@ class WorkOrderExtensionWizard(models.TransientModel):
                         product_ids = order.action_generate_new_product_ids()
                         product_ids.update({'work_order_id': service.id})
                         self.env['mrp.workorder.service.line'].create(product_ids)
+                order.generate_new_product_to_plan()
                 order.generate_new_product_to_assembly()
 
             if created_workorder:
@@ -86,25 +87,39 @@ class WorkOrderExtensionWizard(models.TransientModel):
         cmt_services = self.env['assembly.cmt.product.service']
         assembly_id = self.previous_workorder_id.production_id.assembly_plan_id.mapped('assembly_id')
         new_products = self.action_generate_new_product_ids()
-        new_products.update({'assembly_id': assembly_id.id})
-        cmt_services |= self.env['assembly.cmt.product.service'].create(new_products)
+        if assembly_id:
+            new_products.update({'assembly_id': assembly_id.id})
+            cmt_services |= self.env['assembly.cmt.product.service'].create(new_products)
+
         return cmt_services
+
+    @api.multi
+    def generate_new_product_to_plan(self):
+        plan_services = self.env['assembly.plan.services']
+        plan_id = self.previous_workorder_id.production_id.mapped('assembly_plan_id')
+        new_products = self.action_generate_new_product_ids()
+        if plan_id:
+            new_products.update({
+                'plan_id': plan_id.id})
+            plan_services |= self.env['assembly.plan.services'].create(new_products)
+
+        return plan_services
 
     @api.multi
     def action_generate_new_product_ids(self):
         return {
-                'product_id': self.product_service_id.id,
-                'product_qty': self.product_qty,
-                'product_uom_id': self.product_uom_id.id,
-                'price_unit': self.price_unit,
-            }
+            'product_id': self.product_service_id.id,
+            'product_qty': self.product_qty,
+            'product_uom_id': self.product_uom_id.id,
+            'price_unit': self.price_unit,
+        }
 
     @api.multi
     def action_create_workorder(self):
         workorders = self.env['mrp.workorder']
         for order in self:
             quantity = order.product_id.uom_id._compute_quantity(order.previous_workorder_id.qty_production,
-                                                              order.bom_id.product_uom_id) / order.bom_id.product_qty
+                                                                 order.bom_id.product_uom_id) / order.bom_id.product_qty
             boms, lines = order.bom_id.explode_template(order.product_id, quantity)
 
             new_workorder = order._generate_new_workorder(boms)
@@ -116,7 +131,8 @@ class WorkOrderExtensionWizard(models.TransientModel):
                 order.previous_workorder_id.write({'next_work_order_id': new_workorder.id})
 
             workorder_ids = self.env['mrp.workorder'].search(
-                [('production_id', '=', new_workorder.production_id.id)]).sorted(key=lambda x: not x.next_work_order_id and x.sequence)
+                [('production_id', '=', new_workorder.production_id.id)]).sorted(
+                key=lambda x: not x.next_work_order_id and x.sequence)
 
             for count, workorder_id in enumerate(workorder_ids):
                 workorder_id.update({'sequence': count + 1})
@@ -173,8 +189,11 @@ class WorkOrderExtensionWizard(models.TransientModel):
                 'product_uom_id': order.product_uom_id.id,
                 'is_updated_from_prev_workorder': True if order.state == 'done' else False,
                 'ratio': order.ratio,
-                'qc_id': work_order_id.id
+                'workorder_id': work_order_id.id
             })
             variants += variant
         return variants
+
+
+
 
