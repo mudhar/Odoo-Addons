@@ -1,0 +1,39 @@
+<odoo>
+    <data>
+         <record id="action_production_journal_wip" model="ir.actions.act_window">
+            <field name="name">Adjust WIP Material</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">production_journal.wip_wizard</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="production_journal_wip_wizard_view_form"/>
+            <field name="target">new</field>
+        </record>
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_production_form_view_inherit_production_journal_wip" model="ir.ui.view">
+            <field name="name">mrp.production.form.view.inherit.production_journal_wip</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//button[@name='button_mark_done']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <button name="button_adjust_wip" type="object"
+                            string="Adjust WIP Material" attrs="{'invisible': ['|',('state','in',('done','cancel')),
+                            ('is_wip_differ','=',False)]}"/>
+                </xpath>
+                <xpath expr="//field[@name='picking_type_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="account_expense_material_id"/>
+                    <field name="account_valuation_material_id"/>
+                    <field name="account_valuation_service_id"/>
+                    <field name="amount_wip_differ"/>
+                    <field name="is_wip_differ"/>
+                    <field name="account_move_ids"/>
+
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_workorder_service_line_form_inherit_journal" model="ir.ui.view">
+            <field name="name">mrp.workorder.service.line.form.journal</field>
+            <field name="model">mrp.workorder.service.line</field>
+            <field name="inherit_id" ref="textile_assembly.mrp_workorder_service_line_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//group/group" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <group string="Journal Entries">
+                        <field name="account_move_ids" nolabel="1"/>
+                    </group>
+                </xpath>
+
+            </field>
+        </record>
+
+    </data>
+</odoo>
