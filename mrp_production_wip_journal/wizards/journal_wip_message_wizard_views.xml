@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="journal_wip_message_wizard_view_form" model="ir.ui.view">
+            <field name="name">journal.wip.message.wizard.view.form</field>
+            <field name="model">journal_wip.message_wizard</field>
+            <field name="arch" type="xml">
+                <form string="Warning">
+                    <div class="oe_title">
+                        <h4>
+                            Anda Tidak Dapat Melakukan Adjust WIP
+                            Karena Anda Belum Selesai Melakukan Return Untuk Material Yang Lebih
+                            Apakah Anda Ingin Melakukan Return Terlebih Dahulu?
+                        </h4>
+                    </div>
+                    <group>
+                        <div class="options">
+                            <label for="choice"/>
+                            <field name="choice" widget="radio"/>
+                        </div>
+                    </group>
+
+                    <footer>
+                        <button name="action_confirm" type="object" string="Confirm"
+                                class="btn-primary" colspan="1"/>
+                        <button string="Cancel" class="btn-default" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

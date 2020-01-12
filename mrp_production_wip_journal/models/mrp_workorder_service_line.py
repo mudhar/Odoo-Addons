@@ -8,3 +8,4 @@ class WorkOrderService(models.Model):
     account_move_ids = fields.One2many(comodel_name="account.move", inverse_name="work_order_service_id",
                                        string="Work Order Service Reference")
 
+

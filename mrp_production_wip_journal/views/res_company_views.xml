@@ -9,7 +9,6 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='location_reject_id']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <field name="account_valuation_material_id"/>
                     <field name="account_valuation_service_id"/>
                     <field name="account_expense_material_id"/>
                 </xpath>

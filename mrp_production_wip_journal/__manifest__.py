@@ -28,10 +28,12 @@ Terbentuk Dua Jurnal Pada Produksi
     'data': [
         # 'security/ir.model.access.csv',
         'wizards/production_journal_wip_wizard_views.xml',
+        'wizards/journal_wip_message_wizard_views.xml',
 
         'views/res_company_views.xml',
         'views/mrp_production_views.xml',
         'views/mrp_workorder_service_line_views.xml',
+        'views/account_move_views.xml',
 
 
     ],

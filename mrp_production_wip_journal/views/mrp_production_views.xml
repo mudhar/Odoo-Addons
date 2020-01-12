@@ -1,6 +1,6 @@
 <odoo>
     <data>
-         <record id="action_production_journal_wip" model="ir.actions.act_window">
+        <record id="action_production_journal_wip" model="ir.actions.act_window">
             <field name="name">Adjust WIP Material</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">production_journal.wip_wizard</field>
@@ -25,15 +25,41 @@
                 <xpath expr="//field[@name='picking_type_id']" position="after">
                     <!-- Add your fields or attributes here -->
                     <field name="account_expense_material_id"/>
-                    <field name="account_valuation_material_id"/>
                     <field name="account_valuation_service_id"/>
-                    <field name="amount_wip_differ"/>
-                    <field name="is_wip_differ"/>
-                    <field name="account_move_ids"/>
 
+                    <field name="is_wip_differ"/>
+                </xpath>
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="amount_wip_differ"/>
+                    <field name="is_wip_differ" invisible="1"/>
+                </xpath>
+
+                <xpath expr="//div[@name='button_box']/button[@name='%(mrp.action_mrp_workorder_production_specific)d']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <button name="action_get_account_moves"
+                            type="object"
+                            class="oe_stat_button"
+                            string="Accounting Entries"
+                            icon="fa-usd"/>
                 </xpath>
 
             </field>
         </record>
+
+<!--        <record id="mrp_production_tree_view_inherit_journal_wip" model="ir.ui.view">-->
+<!--            <field name="name">mpr.production.tree.view.inherit.journal.wip</field>-->
+<!--            <field name="model">mrp.production</field>-->
+<!--            <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>-->
+<!--            <field name="arch" type="xml">-->
+
+<!--                <xpath expr="//field[@name='state']" position="after">-->
+<!--                    &lt;!&ndash; Add new fields here &ndash;&gt;-->
+<!--                    <field name="amount_wip_differ"/>-->
+<!--                    <field name="amount_wip_assembly"/>-->
+<!--                </xpath>-->
+
+<!--            </field>-->
+<!--        </record>-->
     </data>
 </odoo>
