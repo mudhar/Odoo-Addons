@@ -5,11 +5,7 @@
             <field name="model">production_journal.wip_wizard</field>
             <field name="arch" type="xml">
                 <form string="Adjust WIP Material Differ">
-                    <div class="oe_title">
-                        <h1>
-                            <field name="production_id" nolabel="1"/>
-                        </h1>
-                    </div>
+                    <field name="production_id" invisible="1"/>
                     <group>
                         <group>
                             <field name="account_expense_material_id"/>
@@ -28,6 +24,5 @@
                 </form>
             </field>
         </record>
-
     </data>
 </odoo>

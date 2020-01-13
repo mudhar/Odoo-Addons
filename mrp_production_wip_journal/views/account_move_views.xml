@@ -19,7 +19,8 @@
             <field name="model">mrp.production</field>
             <field name="priority">17</field>
             <field name="arch" type="xml">
-                <tree string="MO To Adjust WIP">
+                <tree string="MO To Adjust WIP" create="false">
+                    <field name="is_wip_differ" invisible="1"/>
                     <field name="name"/>
                     <field name="product_qty"/>
                     <field name="amount_wip_assembly"/>

@@ -18,21 +18,22 @@
 
                 <xpath expr="//button[@name='button_mark_done']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <button name="button_adjust_wip" type="object"
+                    <button name="button_adjust_wip" type="object" class="btn-danger" groups="account.group_account_manager"
                             string="Adjust WIP Material" attrs="{'invisible': ['|',('state','in',('done','cancel')),
                             ('is_wip_differ','=',False)]}"/>
                 </xpath>
                 <xpath expr="//field[@name='picking_type_id']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <field name="account_expense_material_id"/>
-                    <field name="account_valuation_service_id"/>
+                    <field name="account_expense_material_id" invisible="1"/>
+                    <field name="account_valuation_service_id" invisible="1"/>
 
-                    <field name="is_wip_differ"/>
+                    
                 </xpath>
                 <xpath expr="//field[@name='partner_id']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <field name="amount_wip_differ"/>
                     <field name="is_wip_differ" invisible="1"/>
+                    <field name="amount_wip_differ" invisible="1"/>
+                    <field name="amount_wip_differ_context" invisible="1"/>
                 </xpath>
 
                 <xpath expr="//div[@name='button_box']/button[@name='%(mrp.action_mrp_workorder_production_specific)d']" position="after">

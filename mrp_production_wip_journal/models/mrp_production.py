@@ -20,7 +20,7 @@ class MrpProduction(models.Model):
                                        string="Reference WIP Material")
     amount_wip_differ = fields.Float(string="Total WIP Materials Differ", compute="_compute_wip_material_differ",
                                      help="Total Amount Consumed Minus Amount Returned Minus Amount Assembly")
-    amount_wip_differ_context = fields.Float(string="Total WIP Materials Differ", compute="_compute_wip_material_final", store=True)
+    amount_wip_differ_context = fields.Float(string="Total WIP Materials Differ", compute="_compute_wip_material_final")
     amount_wip_assembly = fields.Float(string="Total WIP Assembly", compute="_compute_wip_material_assembly")
     is_wip_differ = fields.Boolean(string="Check Amount WIP Differ", compute="_compute_is_wip_differ", store=True)
     has_finished_move = fields.Boolean(compute="_has_finished_moves")
@@ -29,14 +29,15 @@ class MrpProduction(models.Model):
     @api.multi
     @api.depends('amount_wip_differ',
                  'account_move_ids',
-                 'account_move_ids.amount')
+                 'account_move_ids.amount',
+                 'has_returned_move')
     def _compute_wip_material_final(self):
         for production in self:
-            account_amount = sum(production.account_move_ids.mapped('amount'))
-            if production.amount_wip_differ > account_amount:
-                production.amount_wip_differ_context = production.amount_wip_differ - account_amount
-            if production.amount_wip_differ < account_amount:
-                production.amount_wip_differ_context = account_amount - production.amount_wip_differ
+          
+            if production.has_returned_move and production.account_move_ids:
+                production.amount_wip_differ_context = (sum(production.account_move_ids.mapped('amount')) - production.amount_wip_differ)
+            if production.has_returned_move and not production.account_move_ids:
+                production.amount_wip_differ_context = production.amount_wip_differ
 
     @api.multi
     @api.depends('assembly_plan_id',
@@ -68,7 +69,7 @@ class MrpProduction(models.Model):
     @api.depends('amount_wip_differ_context')
     def _compute_is_wip_differ(self):
         for production in self:
-            production.is_wip_differ = production.amount_wip_differ_context > 0.0
+            production.is_wip_differ = sum(production.amount_wip_differ_context) > 0.0
 
     @api.depends('has_finished_move',
                  'move_raw_ids',
