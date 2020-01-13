@@ -2,25 +2,73 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 
+class StockWarehouse(models.Model):
+    _inherit = 'stock.warehouse'
+
+    is_warehouse = fields.Boolean(string="Is Warehouse?")
+    is_store = fields.Boolean(string="Is Store?")
+
+    @api.constrains('is_warehouse', 'is_store')
+    def _check_wh_store(self):
+        for wh in self:
+            if wh.is_warehouse and not wh.is_store:
+                return True
+            elif not wh.is_warehouse and wh.is_store:
+                return True
+            elif not wh.is_warehouse and not wh.is_store:
+                raise UserError(_("Apakah Ini Warehouse Atau Store"))
+
+
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
-
-    # product_select_type = fields.Selection(string="Jenis Produk", related="move_lines.product_select_type")
 
     product_select_type = fields.Selection(string="Jenis Produk",
                                            selection=[('materials', 'Materials'),
                                                       ('goods', 'Goods'), ],
                                            index=True, copy=True, track_visibility='onchange')
 
+    picking_report_type = fields.Char(string="Internal Transfer Type",
+                                      compute="_compute_picking_report_type")
+
+    @api.depends('picking_type_code')
+    def _compute_picking_report_type(self):
+        for picking in self:
+            picking_name = picking.name.split(sep='/')
+            if picking_name[0] == 'SJ':
+                picking.picking_report_type = 'SJ'
+            elif picking_name[0] == 'SMB':
+                picking.picking_report_type = 'SMB'
+            elif picking_name[0] == 'SRB':
+                picking.picking_report_type = 'SRB'
+            elif picking_name[0] == 'STBJ':
+                picking.picking_report_type = 'STBJ'
+            elif picking_name[0] == 'STBN':
+                picking.picking_report_type = 'STBN'
+            else:
+                return False
+
+        return True
+
+    @api.multi
+    def check_warehouse_type(self):
+        for picking in self:
+            
+            if picking.location_id.usage == 'internal' and \
+                    picking.location_dest_id.usage == 'internal':
+                if not picking.location_id.get_warehouse().is_store or \
+                        not picking.location_dest_id.get_warehouse().is_warehouse:
+                    raise UserError(_("Anda Belum Menceklist Is Warehouse ? / Is Store ?\n"
+                                      "Pada Menu Warehouse"))
+
     @api.model
     def create(self, vals):
-        # defaults = self.default_get(['name', 'picking_type_id'])
+        # Cek Apakah Sudah Diceklis Identitas Warehouse
+        # Digunakan Untuk Penamaan Internal Transfer SJ, SRB, SMB
+        #self.check_warehouse_type()
+        location_object = self.env['stock.location']
         picking_cmt_consume = self.env.ref('textile_assembly.picking_cmt_consume')
         picking_cmt_produce = self.env.ref('textile_assembly.picking_cmt_produce')
-        wh_stock = self.env.ref('stock.stock_location_stock')
-        store_stock = self.env['stock.location'].search([('usage', '=', 'internal'),
-                                                         ('company_id', '=', [self.env.user.company_id.id, False]),
-                                                         ('id', '!=', wh_stock.id)])
+
         transit_location = self.env['stock.location'].search(
             [('usage', '=', 'transit'),
              ('company_id', '=', [self.env.user.company_id.id, False]),
@@ -43,38 +91,28 @@ class StockPicking(models.Model):
         if operation.code == 'internal' and operation.id == picking_cmt_produce.id:
             if vals.get('product_select_type', 'goods') == 'goods':
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.goods_incoming')
+
+        # PICKING REFERENCE SRB, SMB, SJ
         if operation.code == 'internal' and operation.id not in [picking_cmt_consume.id, picking_cmt_produce.id]:
-            if operation.warehouse_id.id == 1 and \
-                    vals.get('location_id') == wh_stock.id and \
-                    vals.get('location_dest_id') in store_stock.ids:
+
+            if location_object.browse(vals.get('location_id')).get_warehouse().is_warehouse and \
+                    location_object.browse(vals.get('location_dest_id')).get_warehouse().is_store:
                 vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.wh.store')
-            elif operation.warehouse_id.id != 1 \
-                    and vals.get('location_id') in store_stock.ids \
-                    and vals.get('location_dest_id') == wh_stock.id:
+
+            elif location_object.browse(vals.get('location_id')).get_warehouse().is_store and \
+                    location_object.browse(vals.get('location_dest_id')).get_warehouse().is_warehouse:
                 vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.store.wh')
-            elif operation.warehouse_id.id == 1 \
-                    and vals.get('location_id') in store_stock.ids \
-                    and vals.get('location_dest_id') == wh_stock.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.store.wh')
-            elif operation.warehouse_id.id != 1 \
-                    and vals.get('location_id') in store_stock.ids \
-                    and vals.get('location_dest_id') in store_stock.ids:
+
+            elif location_object.browse(vals.get('location_id')).get_warehouse().is_store and \
+                    location_object.browse(vals.get('location_dest_id')).get_warehouse().is_store:
                 vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.store.store')
-            elif operation.warehouse_id.id == 1 \
-                    and vals.get('location_id') == wh_stock.id \
-                    and vals.get('location_dest_id') == transit_location.id:
+
+            # PICKING REFERENCE TRANSIT LOCATION
+            elif vals.get('location_dest_id') == transit_location.id and \
+                    vals.get('location_id') != transit_location.id:
                 vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.transit.out')
-            elif operation.warehouse_id.id == 1 \
-                    and vals.get('location_id') == transit_location.id \
-                    and vals.get('location_dest_id') == wh_stock.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.transit.in')
-            elif operation.warehouse_id.id != 1 \
-                    and vals.get('location_id') in store_stock.ids \
-                    and vals.get('location_dest_id') == transit_location.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.transit.out')
-            elif operation.warehouse_id.id != 1 \
-                    and vals.get('location_id') == transit_location.id \
-                    and vals.get('location_dest_id') == store_stock.ids:
+            elif vals.get('location_id') == transit_location.id and \
+                    vals.get('location_dest_id') != transit_location.id:
                 vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.transit.in')
 
         return super(StockPicking, self).create(vals)
@@ -87,24 +125,6 @@ class StockMove(models.Model):
                                            selection=[('materials', 'Materials'),
                                                       ('goods', 'Goods'), ],
                                            index=True, copy=True, track_visibility='onchange')
-
-    internal_transfer_type_name = fields.Char(string="Internal Transfer Type",
-                                              compute="_compute_internal_transfer_name")
-
-    @api.depends('picking_id')
-    def _compute_internal_transfer_name(self):
-        for move in self:
-            picking_name = move.picking_id.name.split(sep='/')
-            origin = move.picking_id.origin.split(sep='/')
-            if move.picking_id and move.picking_id.picking_type_code == 'internal':
-                if picking_name[0] == 'SJ':
-                    move.internal_transfer_type_name = 'SJ'
-                elif picking_name[0] == 'SMB':
-                    move.internal_transfer_type_name = 'SMB'
-                elif picking_name[0] == 'SRB':
-                    move.internal_transfer_type_name = 'SRB'
-                elif origin:
-                    move.internal_transfer_type_name = origin[0].strip()
 
     def _get_new_picking_values(self):
         res = super(StockMove, self)._get_new_picking_values()
