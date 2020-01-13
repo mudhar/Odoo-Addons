@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="template_open_assembly_bom" model="ir.actions.act_window">
+            <field name="context">{'default_assembly_prod_id': active_id, 'search_default_assembly_prod_id': active_id}</field>
+            <field name="name">Assembly Bom</field>
+            <field name="res_model">mrp.bom</field>
+            <field name="view_type">form</field>
+        </record>
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_bom_form_view_inherit_assembly" model="ir.ui.view">
+            <field name="name">mrp.bom.form.view.inherit.assembly</field>
+            <field name="model">mrp.bom</field>
+            <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='product_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="assembly_prod_id" invisible="1"/>
+                </xpath>
+                <xpath expr="//field[@name='product_id']" position="attributes">
+                    <!-- Add your fields or attributes here -->
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+<!--                <xpath expr="//field[@name='bom_line_ids']/tree/field[@name='product_uom_id']" position="after">-->
+<!--                    &lt;!&ndash; Add your fields or attributes here &ndash;&gt;-->
+<!--                    <field name="quantity_produce" readonly="1"/>-->
+<!--                    <field name="ratio" readonly="1"/>-->
+<!--                </xpath>-->
+                <xpath expr="//field[@name='bom_line_ids']/tree/field[@name='attribute_value_ids']" position="attributes">
+                    <!-- Add your fields or attributes here -->
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+                <xpath expr="//field[@name='bom_line_ids']/tree/field[@name='operation_id']" position="attributes">
+                    <!-- Add your fields or attributes here -->
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+
+                <xpath expr="//field[@name='bom_line_ids']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <group>
+                        <field name="cmt_service_ids" invisible="1"/>
+                    </group>
+
+                </xpath>
+
+
+
+            </field>
+        </record>
+
+        <!--MRP BOM VIEW FILTER-->
+        <!-- Inherit Form View to Modify it -->
+        <record id="view_mrp_bom_filter_inherit_assembly" model="ir.ui.view">
+            <field name="name">view.mrp.bom.filter.inherit.assembly</field>
+            <field name="model">mrp.bom</field>
+            <field name="inherit_id" ref="mrp.view_mrp_bom_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='product_tmpl_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="assembly_prod_id" string="Assembly"/>
+
+                </xpath>
+                <xpath expr="//group" position="inside">
+                    <!-- Add your fields or attributes here -->
+                    <filter string="Assembly" domain="[]" context="{'group_by': 'assembly_prod_id'}"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="product_template_inherited_view_form" model="ir.ui.view">
+            <field name="name">product.template.inherited.view.form</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='categ_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+
+                    <field name="template_code" placeholder="Referensi Code Produk Assembly"
+                           attrs="{'invisible': [('is_goods','=',False)], 'required': [('is_goods','=',True)]}"/>
+                    <field name="code_pola" placeholder="Referensi Code Pola"
+                           attrs="{'invisible': [('is_goods','=',False)], 'required': [('is_goods','=',True)]}"/>
+
+
+
+                </xpath>
+                <xpath expr="//div[@name='options']//div" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <div>
+                        <field name="is_roll"/>
+                        <label for="is_roll"/>
+                    </div>
+
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

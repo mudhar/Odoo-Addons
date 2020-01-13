@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="open_assembly_mo" model="ir.actions.act_window">
+            <field name="context">{'default_assembly_plan_id': active_id, 'search_default_assembly_plan_id': active_id}</field>
+            <field name="name">Assembly MO</field>
+            <field name="res_model">mrp.production</field>
+            <field name="view_type">form</field>
+        </record>
+        <record id="open_assembly_po" model="ir.actions.act_window">
+            <field name="context">{'default_assembly_plan_id': active_id, 'search_default_assembly_plan_id': active_id}</field>
+            <field name="name">Assembly PO</field>
+            <field name="res_model">purchase.order</field>
+            <field name="view_type">form</field>
+        </record>
+        <record id="template_open_assembly_plan" model="ir.actions.act_window">
+            <field name="context">{'default_assembly_id': active_id, 'search_default_assembly_id': active_id}</field>
+            <field name="name">Assembly Plan</field>
+            <field name="res_model">assembly.plan</field>
+            <field name="view_type">form</field>
+        </record>
+
+
+        <record id="assembly_plan_view_tree" model="ir.ui.view">
+            <field name="name">assembly.plan.view.tree</field>
+            <field name="model">assembly.plan</field>
+            <field name="arch" type="xml">
+                <tree string="Assembly Plan" default_order="date_planned_start desc" decoration-info="state=='draft'" decoration-muted="state in ('done','cancel')" create="false" delete="false">
+                    <field name="name" string="Reference"/>
+                    <field name="origin" string="Source"/>
+                    <field name="product_template_id"/>
+                    <field name="date_planned_start"/>
+                    <field name="state"/>
+                    <field name="amount_total"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="assembly_plan_view_form" model="ir.ui.view">
+            <field name="name">assembly.plan.view.form</field>
+            <field name="model">assembly.plan</field>
+            <field name="arch" type="xml">
+                <form string="Assembly Plan" create="false" delete="false">
+                    <header>
+                        <button name="%(action_plan_change_vendor_wizard)d" type="action" string="Change Vendor" states="draft" class="btn-info"/>
+                        <button name="action_create_purchase_order" type="object" string="Create Procurement" attrs="{'invisible': ['&amp;','&amp;','|',('state','in',('draft','procurement','done','cancel')), ('check_raw_procurement', '=', False),('check_cmt_procurement','=',False)]}" class="btn-warning"/>
+                        <button name="check_qty_available" type="object" string="Check Available" class="btn-info" states="on process,procurement"/>
+                        <!--                        <button name="do_print_picking" states="done" type="object" string="Print Report" class="btn-success"/>-->
+                        <button name="button_to_approve" type="object" string="Confirm" states="draft" class="btn-primary"/>
+                        <button name="button_done" type="object" string="Done" class="oe_highlight" attrs="{'invisible':['|','|',('check_raw_procurement', '=', True), ('check_cmt_procurement', '=', True), ('state','not in',('on process','procurement'))]}"/>
+                        <button name="button_cancel" type="object" string="Cancel" attrs="{'invisible': ['|',('state','=','cancel'),('mo_done','=',True)]}" class="btn-danger"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,done"/>
+                    </header>
+                    <sheet>
+                        <field name="check_raw_procurement" invisible="1"/>
+                        <field name="check_cmt_procurement" invisible="1"/>
+                        <field name="assembly_id" invisible="1"/>
+                        <field name="show_cmt_consumed" invisible="1"/>
+                        <field name="is_locked" invisible="1"/>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" name="%(textile_assembly.open_assembly_mo)d" type="action"
+                                    icon="fa-list-alt" attrs="{'invisible': [('mo_count', '=', 0)]}">
+                                <field string="Manufacturing Order" name="mo_count" widget="statinfo" />
+                            </button>
+                            <button class="oe_stat_button" name="%(textile_assembly.open_assembly_po)d" type="action"
+                                    icon="fa-list-alt" attrs="{'invisible': [('po_count', '=', 0)]}">
+                                <field string="Purchase Order" name="po_count" widget="statinfo" />
+                            </button>
+                        </div>
+                        <div class="oe_title">
+                            <label string="Production Plan Order"/>
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <label for="product_template_id"/>
+                                <div class="o_row">
+                                    <field name="product_template_id" attrs="{'readonly': [('is_locked','=',True)]}"/>
+                                    <field name="product_uom_id" attrs="{'readonly': [('is_locked','=',True)]}"/>
+                                </div>
+                                <field name="partner_id" attrs="{'readonly': [('is_locked','=',True)]}"/>
+                                <field name="user_id" attrs="{'readonly': [('is_locked','=',True)]}"/>
+                            </group>
+                            <group>
+                                <field name="date_planned_start" attrs="{'readonly': [('state', 'in', ('done', 'cancel'))]}"/>
+                                <field name="purchase_date" string="PO Date"
+                                       attrs="{'readonly': [('state', 'in', ('done', 'cancel'))]}"/>
+                                <field name="origin" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="warehouse_id"
+                                       attrs="{'required':[('state','=','draft')], 'readonly':[('state','!=','draft')]}"
+                                       string="WH Finished Goods"/>
+                                <field name="location_id" string="Raw Materials Location"/>
+                            </group>
+                        </group>
+                        <field name="active" invisible="1"/>
+                        <field name="check_quantity_produce" invisible="1"/>
+                        <div>
+                            <button name="button_update_quantity" type="object"
+                                    colspan="1" string="Update" class="btn-danger" attrs="{'invisible':[('state','=','done')]}"/>
+                        </div>
+                        <field name="produce_ids" widget="one2many_list" nolabel="1">
+                            <tree editable="bottom" create="false" delete="false">
+                                <field name="editable_quantity" invisible="1"/>
+                                <field name="attribute_id" readonly="1"/>
+                                <field name="quantity_plan" attrs="{'readonly': [('state','!=','draft')]}"/>
+                                <field name="quantity_maximum" readonly="1"/>
+                                <field name="quantity_actual" attrs="{'readonly': ['|',('state','in',('draft','done','cancel')),('editable_quantity','=',True)]}"/>
+                                <field name="state" invisible="1"/>
+                                <field name="original_quantity_plan" invisible="1"/>
+                                <field name="original_quantity_actual" invisible="1"/>
+                            </tree>
+
+                        </field>
+                        <notebook>
+                            <page string="Raw Material Estimasi">
+                                <field name="raw_line_ids" widget="one2many_list" attrs="{'readonly': [('is_locked','=',True)]}">
+                                    <tree string="Raw Material Estimasi">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="product_id"/>
+                                        <field name="product_qty"/>
+                                        <field name="product_uom_id" />
+                                        <field name="total_ratio" invisible="1"/>
+                                        <field name="price_unit"/>
+                                        <field name="price_subtotal" sum="Total" string="Subtotal"/>
+                                        <field name="attribute_id"/>
+                                        <field name="state" invisible="1"/>
+                                    </tree>
+                                    <form string="Raw Material Estimasi">
+                                        <header>
+                                            <field name="state" widget="statusbar"/>
+                                        </header>
+                                        <sheet>
+                                            <group>
+                                                <group>
+                                                    <field name="product_id"/>
+                                                    <field name="attribute_id"/>
+                                                    <label for="product_qty"/>
+                                                    <div class="o_row">
+                                                        <field name="product_qty"/>
+                                                        <field name="product_uom_id"/>
+                                                    </div>
+                                                </group>
+                                                <group>
+                                                    <field name="price_unit"/>
+                                                    <field name="price_subtotal"/>
+                                                </group>
+                                            </group>
+                                        </sheet>
+                                    </form>
+                                </field>
+                            </page>
+                            <page string="Raw Material Actual">
+                                <field name="raw_actual_line_ids" widget="one2many_list" attrs="{'readonly': [('is_locked','=',True)]}">
+                                    <tree string="Raw Material Actual" decoration-danger="qty_to_actual&gt;qty_available">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="product_id"/>
+                                        <field name="product_qty" invisible="1"/>
+                                        <field name="qty_to_plan"/>
+                                        <field name="qty_to_actual" string="Exp Consu Revised"/>
+                                        <field name="total_actual_quantity" invisible="1"/>
+                                        <field name="qty_available"/>
+                                        <field name="product_uom_id"/>
+                                        <field name="price_unit"/>
+                                        <field name="price_subtotal_actual" sum="Total" string="Subtotal"/>
+                                        <field name="state" invisible="1"/>
+                                    </tree>
+                                    <form string="Raw Material Actual">
+                                        <header>
+                                            <field name="state" widget="statusbar"/>
+                                        </header>
+                                        <sheet>
+                                            <group>
+                                                <group>
+                                                    <field name="product_id"/>
+                                                    <label for="qty_to_plan"/>
+                                                    <div>
+                                                        <field name="qty_to_plan" class="oe_inline"/> /
+                                                        <field name="qty_to_actual" string="Exp Consu Revised" class="oe_inline"/> /
+                                                        <field name="total_actual_quantity" string="Max QTY To Produce" class="oe_inline"/> /
+                                                        <span class="oe_inline">.</span>
+                                                        <field name="product_uom_id" class="oe_inline"/>
+                                                    </div>
+                                                </group>
+                                                <group>
+                                                    <field name="price_unit"/>
+                                                    <field name="price_subtotal_actual"/>
+                                                </group>
+                                            </group>
+                                        </sheet>
+                                    </form>
+                                </field>
+                            </page>
+                        </notebook>
+                        <notebook>
+                            <page string="Accessories Plan">
+                                <field name="cmt_material_line_ids" widget="one2many_list" attrs="{'readonly': [('is_locked','=',True)]}">
+                                    <tree string="Accessories Plan" decoration-danger="qty_to_plan&gt;qty_available">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="product_id"/>
+                                        <field name="product_qty" invisible="1"/>
+                                        <field name="qty_to_plan" string="Exp Consu Plan"/>
+                                        <field name="qty_available"/>
+                                        <field name="product_uom_id"/>
+                                        <field name="ratio" invisible="1"/>
+                                        <field name="price_unit"/>
+                                        <field name="price_subtotal_plan" sum="Total" string="Subtotal"/>
+                                        <field name="need_procurement" invisible="1"/>
+                                        <field name="state" invisible="1"/>
+                                    </tree>
+                                    <form string="Accessories Plan">
+                                        <header>
+                                            <field name="state" widget="statusbar"/>
+                                        </header>
+                                        <sheet>
+                                            <group>
+                                                <group>
+                                                    <field name="product_id"/>
+                                                    <label for="qty_to_plan"/>
+                                                    <div class="o_row">
+                                                        <field name="qty_to_plan" string="Exp Consu Plan"/>
+                                                        <field name="product_uom_id"/>
+                                                    </div>
+                                                </group>
+                                                <group>
+                                                    <field name="qty_available"/>
+                                                    <field name="price_unit"/>
+                                                    <field name="price_subtotal_plan"/>
+                                                </group>
+                                            </group>
+                                        </sheet>
+                                    </form>
+                                </field>
+                            </page>
+                            <page string="Accessories On Hand">
+                                <field name="cmt_material_actual_line_ids" widget="one2many_list" attrs="{'readonly': [('is_locked','=',True)]}">
+                                    <tree string="Accessories On Hand" decoration-danger="quantity_to_actual&gt;qty_available">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="product_id"/>
+                                        <field name="product_qty" invisible="1"/>
+                                        <field name="quantity_to_actual" string="Exp Consu Revised"/>
+                                        <field name="qty_available"/>
+                                        <field name="product_uom_id"/>
+                                        <field name="ratio" invisible="1"/>
+                                        <field name="price_unit"/>
+                                        <field name="price_subtotal_actual" sum="Total" string="Subtotal"/>
+                                        <field name="state" invisible="1"/>
+                                    </tree>
+                                    <form string="Accessories On Hand">
+                                        <header>
+                                            <field name="state" widget="statusbar"/>
+                                        </header>
+                                        <sheet>
+                                            <group>
+                                                <group>
+                                                    <field name="product_id"/>
+                                                    <label for="quantity_to_actual" string="Exp Consu Revised"/>
+                                                    <div class="o_row">
+                                                        <field name="quantity_to_actual"/>
+                                                        <field name="product_uom_id"/>
+                                                    </div>
+                                                </group>
+                                                <group>
+                                                    <field name="qty_available"/>
+                                                    <field name="price_unit"/>
+                                                    <field name="price_subtotal_actual" string="Subtotal"/>
+                                                </group>
+                                            </group>
+                                        </sheet>
+                                    </form>
+                                </field>
+                            </page>
+                        </notebook>
+                        <group string="Biaya Produksi">
+                            <field name="cmt_service_ids" widget="one2many_list" nolabel="1" attrs="{'readonly': [('is_locked','=',True)]}">
+                                <tree string="Biaya Produksi">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="product_qty" invisible="1"/>
+                                    <field name="quantity_plan"/>
+                                    <field name="quantity_actual"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="price_unit"/>
+                                    <field name="price_subtotal" sum="Total" string="Subtotal"/>
+                                </tree>
+                                <form string="Biaya Produksi">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="product_id"/>
+                                                <label for="quantity_plan"/>
+                                                <div>
+                                                    <field name="quantity_plan" class="oe_inline"/> /
+                                                    <field name="quantity_actual" class="oe_inline"/>
+                                                    <span class="oe_inline">.</span>
+                                                    <field name="product_uom_id" class="oe_inline"/>
+                                                </div>
+                                            </group>
+                                            <group>
+                                                <field name="price_unit"/>
+                                                <field name="price_subtotal" string="Subtotal"/>
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </group>
+                        <group class="oe_subtotal_footer oe_right" colspan="2">
+                            <div class="oe_subtotal_footer_separator oe_inline o_td_label">
+                                <label for="amount_total" />
+                            </div>
+                            <field name="amount_total" nolabel="1" class="oe_subtotal_footer_separator" widget='monetary' options="{'currency_field': 'currency_id'}"/>
+                        </group>
+                        <notebook>
+                            <page string="Variants Plan">
+                                <field name="plan_line_ids" widget="one2many_list">
+                                    <tree string="Variants Plan" editable="bottom" create="false" delete="false">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="product_id" readonly="1"/>
+                                        <field name="product_uom_id" readonly="1"/>
+                                        <field name="attribute_value_ids" widget="many2many_tags" readonly="1"/>
+                                        <field name="ratio" sum="Total Ratio" readonly="1"/>
+                                        <field name="new_qty" sum="Total Plan Qty" attrs="{'readonly': [('state','!=','draft')]}"/>
+                                        <field name="state" invisible="1"/>
+                                    </tree>
+                                    <form string="Variants Plan">
+                                        <header>
+                                            <field name="state" widget="statusbar"/>
+                                        </header>
+                                        <sheet>
+                                            <group>
+                                                <group>
+                                                    <field name="product_id" readonly="1"/>
+                                                    <label for="ratio"/>
+                                                    <div>
+                                                        <field name="ratio" readonly="1" class="oe_inline"/> /
+                                                        <field name="new_qty" attrs="{'readonly': [('state','!=','draft')]}"  class="oe_inline"/>
+                                                        <span class="oe_inline">.</span>
+                                                        <field name="product_uom_id" readonly="1" class="oe_inline"/>
+                                                    </div>
+                                                </group>
+                                            </group>
+                                        </sheet>
+                                    </form>
+                                </field>
+                            </page>
+                            <page string="Variants On Hand">
+                                <field name="plan_line_actual_ids" widget="one2many_list">
+                                    <tree string="Variants On Hand" editable="bottom" create="false" delete="false">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="product_id" readonly="1"/>
+                                        <field name="product_uom_id" readonly="1"/>
+                                        <field name="attribute_value_ids" widget="many2many_tags" readonly="1"/>
+                                        <field name="ratio" sum="Total Ratio" readonly="1"/>
+                                        <field name="actual_quantity" sum="Total On Hand Qty" attrs="{'readonly':[('state','in',('done','cancel','draft'))]}"/>
+                                        <field name="state" invisible="1"/>
+                                    </tree>
+                                    <form string="Variants On Hand">
+                                        <header>
+                                            <field name="state" widget="statusbar"/>
+                                        </header>
+                                        <sheet>
+                                            <group>
+                                                <group>
+                                                    <field name="product_id" readonly="1"/>
+                                                    <label for="ratio"/>
+                                                    <div>
+                                                        <field name="ratio" readonly="1" class="oe_inline"/> /
+                                                        <field name="actual_quantity" attrs="{'readonly':[('state','in',('done','cancel','draft'))]}" class="oe_inline"/>
+                                                        <span class="oe_inline">.</span>
+                                                        <field name="product_uom_id" readonly="1" class="oe_inline"/>
+                                                    </div>
+                                                </group>
+                                            </group>
+                                        </sheet>
+                                    </form>
+                                </field>
+                            </page>
+                        </notebook>
+                        <group>
+                            <field name="mo_ids" invisible="1"/>
+                            <field name="mo_done" invisible="1"/>
+                        </group>
+
+                        <group>
+                            <field name="picking_type_id" invisible="1"/>
+                            <field name="location_id" invisible="1"/>
+                            <field name="location_dest_id" invisible="1"/>
+                            <field name="bom_id" invisible="1"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+
+
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" widget="mail_followers"/>
+                        <field name="activity_ids" widget="mail_activity"/>
+                        <field name="message_ids" widget="mail_thread"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <record id="assembly_plan_view_filter" model="ir.ui.view">
+            <field name="name">assembly.plan.list.select</field>
+            <field name="model">assembly.plan</field>
+            <field name="arch" type="xml">
+                <search string="Search Assembly Plan">
+                    <field name="name" string="Plan Order" filter_domain="['|','|',('name','ilike',self),('origin','ilike',self),('partner_id','child_of',self)]"/>
+                    <field name="assembly_id" string="Assemblies"/>
+                    <field name="partner_id" operator="child_of"/>
+                    <separator/>
+                    <filter string="My Orders" domain="[('user_id','=',uid)]" name="my_plan_orders_filter"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Assembly" domain="[]" context="{'group_by': 'assembly_id'}"/>
+                        <filter name="vendor" string="Vendor" domain="[]" context="{'group_by':'partner_id'}"/>
+                        <filter string="Order Month" domain="[]" context="{'group_by':'date_planned_start'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Inherit Form View to Modify it -->
+        <record id="assembly_plan_view_search_inherit_plan" model="ir.ui.view">
+            <field name="name">assembly.plan.search.inherit.plan</field>
+            <field name="model">assembly.plan</field>
+            <field name="mode">primary</field>
+            <field name="inherit_id" ref="assembly_plan_view_filter"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//filter[@name='my_plan_orders_filter']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <separator/>
+                    <filter string="Plans" name="plans" domain="[('state','in',('draft','on process','done'))]"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="assembly_plan_action" model="ir.actions.act_window">
+            <field name="name">Assembly Production Plan</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">assembly.plan</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="assembly_plan_view_search_inherit_plan"/>
+            <field name="context">{'search_default_my_plan_orders_filter': 1}</field>
+            <field name="domain">[('state', '!=', 'cancel')]</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    List Dokumen Yang Terbentuk Dari Dokumen Assembly
+                </p><p>
+                Pada Halaman Ini, Aktifitas Yang Dapat Dilakukan Yaitu \n
+            </p>
+                <ul>
+                    <li>User Dapat Mengtahui Berapa Unit Produk Yang Dapat Diproduksi Berdasarkan Stok Yang Ada</li>
+                    <li>User Dapat Mengtahui Jumlah Biaya Produksi Yang Dibutuhkan Berdasarkan Perencanaan Produksi Yang Dibuat</li>
+                    <li>User Dapat Mengtahui Aksesoris Aksesoris Yang Digunakan Dalam Produksi</li>
+                </ul>
+            </field>
+        </record>
+
+        <!--MRP Production VIEW FILTER-->
+        <!-- Inherit Form View to Modify it -->
+        <record id="view_mrp_production_filter_inherit_assembly_plan" model="ir.ui.view">
+            <field name="name">view.mrp.production.filter.inherit.assembly.plan</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.view_mrp_production_filter"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='name']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="assembly_plan_id" string="Assembly Plan"/>
+                </xpath>
+                <xpath expr="//group" position="inside">
+                    <!-- Add your fields or attributes here -->
+                    <filter string="Assembly Plan" domain="[('state','=', 'confirmed')]" context="{'group_by': 'assembly_plan_id'}"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!--Purchase Order VIEW FILTER-->
+        <!-- Inherit Form View to Modify it -->
+        <record id="view_purchase_order_filter_inherit_assembly_plan" model="ir.ui.view">
+            <field name="name">purchase.order.filter.inherit.assembly_plan</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.view_purchase_order_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='name']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="assembly_plan_id" string="Assembly Plan"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
