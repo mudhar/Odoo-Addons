@@ -7,18 +7,28 @@
             <field name="model">product.template</field>
             <field name="inherit_id" ref="product.product_template_form_view"/>
             <field name="arch" type="xml">
-
-                <xpath expr="//field[@name='categ_id']" position="after">
+                <xpath expr="//page[@name='general_information']" position="after">
                     <!-- Add your fields or attributes here -->
-
-                    <field name="template_code" placeholder="Referensi Code Produk Assembly"
-                           attrs="{'invisible': [('is_goods','=',False)], 'required': [('is_goods','=',True)]}"/>
-                    <field name="code_pola" placeholder="Referensi Code Pola"
-                           attrs="{'invisible': [('is_goods','=',False)], 'required': [('is_goods','=',True)]}"/>
-
-
-
+                    <page string="Assembly" name="textile_assembly_information">
+                        <group>
+                            <group>
+                                <field name="template_code" placeholder="Referensi Code Produk Assembly"
+                                       attrs="{'invisible': [('is_goods','=',False)], 'required': [('is_goods','=',True)]}"/>
+                                <field name="code_pola" placeholder="Referensi Code Pola"
+                                       attrs="{'invisible': [('is_goods','=',False)], 'required': [('is_goods','=',True)]}"/>
+                            </group>
+                        </group>
+                    </page>
                 </xpath>
+
+                <!--                <xpath expr="//field[@name='categ_id']" position="after">-->
+                <!--                    &lt;!&ndash; Add your fields or attributes here &ndash;&gt;-->
+
+                <!--                    <field name="template_code" placeholder="Referensi Code Produk Assembly"-->
+                <!--                           attrs="{'invisible': [('is_goods','=',False)], 'required': [('is_goods','=',True)]}"/>-->
+                <!--                    <field name="code_pola" placeholder="Referensi Code Pola"-->
+                <!--                           attrs="{'invisible': [('is_goods','=',False)], 'required': [('is_goods','=',True)]}"/>-->
+                <!--                </xpath>-->
                 <xpath expr="//div[@name='options']//div" position="after">
                     <!-- Add your fields or attributes here -->
                     <div>
@@ -29,6 +39,5 @@
                 </xpath>
             </field>
         </record>
-
     </data>
 </odoo>
