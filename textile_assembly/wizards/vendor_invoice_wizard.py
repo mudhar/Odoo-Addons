@@ -23,8 +23,7 @@ class VendorInvoiceWizard(models.TransientModel):
         'product.uom', 'Product Unit of Measure', related="product_id.uom_id")
     price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'),
                               default=0.0, help="Estimasi Biaya Produksi Produk Per Unit")
-    date_order = fields.Datetime('Date', copy=False, default=fields.Datetime.now, index=True,
-                                         required=True)
+    purchase_date = fields.Datetime(string="Order Date")
 
     @api.model
     def default_get(self, fields_list):
@@ -53,62 +52,14 @@ class VendorInvoiceWizard(models.TransientModel):
             price_unit = self.work_order_id.product_service_ids.filtered(lambda x: x.product_id.id == self.product_id.id).mapped('price_unit')
             self.price_unit = sum(price_unit)
 
-    # @api.model
-    # def _default_journal(self):
-    #     if self._context.get('default_journal_id', False):
-    #         return self.env['account.journal'].browse(self._context.get('default_journal_id'))
-    #     domain = [
-    #         ('type', '=', 'purchase'),
-    #         ('company_id', '=', self.work_order_id.company_id.id),
-    #     ]
-    #     return self.env['account.journal'].search(domain, limit=1)
-
     @api.multi
     def action_confirm(self):
+        self.ensure_one()
+        if not self.purchase_date:
+            raise UserError(_("Input Tanggal Order Date Untuk Purchase Proses Ini"))
         self.action_create_purchase_order()
         self.work_order_id.write({'purchase_created': True})
         return {'type': 'ir.actions.act_window_close'}
-
-    # @api.multi
-    # def create_invoice(self):
-    #     invoice_obj = self.env['account.invoice']
-    #     for record in self:
-    #         journal_id = self._default_journal()
-    #         account_id = record.partner_id.property_account_payable_id.id
-    #         partner_id = record.partner_id
-    #
-    #         invoice_domain = invoice_obj.search([('work_order_id', '=', record.work_order_id.id),
-    #                                              ('state', 'not in', ('paid', 'open', 'cancel'))])
-    #
-    #         if not invoice_domain:
-    #             invoice_data = {'type': 'in_invoice',
-    #                             'partner_id': partner_id.id,
-    #                             'account_id': account_id,
-    #                             'currency_id': record.work_order_id.currency_id.id,
-    #                             'journal_id': journal_id.id,
-    #                             'company_id': record.work_order_id.company_id.id,
-    #                             'work_order_id': record.work_order_id.id,
-    #                             'origin': record.work_order_id.production_id.name,
-    #                             }
-    #             invoice_id = invoice_obj.create(invoice_data)
-    #
-    #             invoice_lines = []
-    #             inv_line_data = record._prepare_invoice_line(invoice_id, journal_id, partner_id)
-    #             invoice_lines.append((0, 0, inv_line_data))
-    #
-    #             invoice_id.write({'invoice_line_ids': invoice_lines})
-    #             view_id = self.env.ref('account.invoice_supplier_form')
-    #             return {'name': _("New Invoice"),
-    #                     'view_mode': 'form',
-    #                     'view_id': view_id.ids,
-    #                     'view_type': 'form',
-    #                     'res_model': 'account.invoice',
-    #                     'type': 'ir.actions.act_window',
-    #                     'nodestroy': True,
-    #                     'res_id': invoice_id.id,
-    #                     'target': 'current',
-    #                     'context': {'default_type': 'in_invoice'}
-    #                     }
 
     @api.multi
     def action_create_purchase_order(self):
@@ -130,7 +81,7 @@ class VendorInvoiceWizard(models.TransientModel):
                     'partner_id': order.partner_id.id,
                     'company_id': order.work_order_id.company_id.id,
                     'currency_id': order.work_order_id.currency_id.id,
-                    'date_order': order.date_order,
+                    'date_order': order.purchase_date,
                     'origin': production_reference + '->' + workorder_reference,
                     'product_select_type': 'subpo',
                 }
@@ -146,7 +97,7 @@ class VendorInvoiceWizard(models.TransientModel):
             seller = wiz.product_id._select_seller(
                 partner_id=wiz.partner_id,
                 quantity=po_uom_qty,
-                date=wiz.date_order,
+                date=wiz.purchase_date,
                 uom_id=wiz.product_id.uom_po_id
             )
             taxes = wiz.product_id.supplier_taxes_id
@@ -176,7 +127,7 @@ class VendorInvoiceWizard(models.TransientModel):
                 'product_id': wiz.product_id.id,
                 'product_uom': wiz.product_id.uom_po_id.id,
                 'price_unit': price_unit or wiz.price_unit,
-                'date_planned': wiz.date_order,
+                'date_planned': wiz.purchase_date,
                 'taxes_id': [(6, 0, taxes_id.ids)],
                 'order_id': po_id.id
             }

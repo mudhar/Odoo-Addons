@@ -6,8 +6,9 @@ from odoo.tools import html2plaintext
 class AssemblyProd(models.Model):
     _name = 'assembly.production'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+    _date_name = 'date_planned_start'
     _description = 'Assembly Production'
-    _order = "create_date desc, id desc"
+    _order = 'date_planned_start asc,id'
 
     @api.model
     def name_search(self, name='', args=None, operator='ilike', limit=100):
@@ -29,6 +30,14 @@ class AssemblyProd(models.Model):
 
     name = fields.Char('Assembly Reference', copy=False, readonly=True, default=lambda x: _('New'),
                        track_visibility='onchange')
+
+    date_planned_start = fields.Datetime(
+        'Scheduled Date Start', copy=False,
+        states={'approve': [('readonly', True)], 'cancel': [('readonly', True)]})
+    date_planned_finished = fields.Datetime(
+        'Scheduled Date Finished', copy=False,
+        states={'approve': [('readonly', True)], 'cancel': [('readonly', True)]})
+
     product_tmpl_id = fields.Many2one(comodel_name="product.template", string="Product To Produce",
                                       index=True, track_visibility='onchange', ondelete='cascade',
                                       help="Acuan Produk Yang Akan Diproduksi")
@@ -36,7 +45,8 @@ class AssemblyProd(models.Model):
                                        related="product_tmpl_id.categ_id", string="Category Product",
                                        index=True, readonly=True)
     partner_id = fields.Many2one(comodel_name="res.partner", string="CMT Vendor", required=True,
-                                 track_visibility='onchange')
+                                 track_visibility='onchange', states={'approve': [('readonly', True)],
+                                                                      'cancel': [('readonly', True)]})
     code_pola = fields.Char(string="Code Pola", related="product_tmpl_id.code_pola")
     user_id = fields.Many2one('res.users', string='Responsible', index=True, track_visibility='onchange',
                               default=lambda self: self.env.user, copy=False)
@@ -166,6 +176,8 @@ class AssemblyProd(models.Model):
                     'origin': order.name,
                     'product_template_id': order.product_tmpl_id.id,
                     'partner_id': order.partner_id.id,
+                    'date_planned_start': order.date_planned_start,
+                    'date_planned_finished': order.date_planned_finished,
                 }
                 plan_id = assembly_plan_model.create(res)
             else:

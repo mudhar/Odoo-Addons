@@ -44,6 +44,7 @@ class MrpProduction(models.Model):
     product_template_id = fields.Many2one(comodel_name="product.template", string="Product",
                                           domain=[('type', 'in', ['product', 'consu'])],
                                           readonly=True, states={'confirmed': [('readonly', False)]})
+    backdate_finished = fields.Datetime('End Date', copy=False, index=True)
 
     def _compute_picking_count(self):
         read_group_res = self.env['stock.picking'].read_group([('production_id', 'in', self.ids)],
@@ -62,18 +63,6 @@ class MrpProduction(models.Model):
         for record in self:
             record.picking_raw_count = mapped_data.get(record.id, 0)
 
-    # Hitung Total Biaya Proses Cutting Hingga Finishing
-    # @api.multi
-    # @api.depends('workorder_ids.state')
-    # def _get_produced_price(self):
-    #     for production in self:
-    #         wo_done = production.workorder_ids.filtered(lambda x: x.state == 'done'
-    #                                                               and x.production_id.id == production.id)
-    #         if wo_done:
-    #             price = sum(wo_done.mapped('price_invoiced'))
-    #             production.work_order_price = price
-    #     return True
-
     @api.depends('workorder_ids.state', 'move_finished_ids', 'is_locked')
     def _get_produced_qty(self):
         for production in self:
@@ -83,9 +72,6 @@ class MrpProduction(models.Model):
                                                                              production.product_template_id.id)
                 qty_produced = sum(done_moves.mapped('quantity_done'))
 
-                # done_wo = production.workorder_ids.filtered(lambda x: x.state == 'done')
-                # wo_produced = sum(done_wo.mapped('qc_final'))
-
                 if any([x.state not in ('done', 'cancel') for x in production.workorder_ids]):
                     wo_done = False
                 else:
@@ -93,22 +79,9 @@ class MrpProduction(models.Model):
                 production.check_to_done = production.is_locked and done_moves and (
                         production.state not in ('done', 'cancel')) and wo_done
                 production.qty_produced = qty_produced
-                # production.work_order_qty_produced = wo_produced
                 production.check_work_order_done = wo_done
             else:
                 return super(MrpProduction, self)._get_produced_qty()
-
-    # @api.multi
-    # def _update_price_unit_product(self):
-    #     for production in self:
-    #         move_to_price = production.move_finished_ids.filtered(lambda x: x.state == 'done')
-    #         for move in move_to_price:
-    #             if move.product_id:
-    #                 total_quantity = move.quantity_done / production.work_order_qty_produced
-    #                 price_unit = total_quantity * production.work_order_price / move.quantity_done
-    #
-    #                 move.product_id.write({'standard_price': price_unit})
-    #         return True
 
     # Original Method mrp.production
     @api.multi
@@ -121,62 +94,56 @@ class MrpProduction(models.Model):
 
     @api.multi
     def action_cancel(self):
-        result = super(MrpProduction, self).action_cancel()
+        for production in self:
+            move_consumed = production.move_raw_ids.filtered(
+                lambda x: (not x.scrapped and not x.returned_picking) and x.raw_material_production_id)
+            move_returned = production.move_raw_ids.filtered(
+                lambda x: (not x.scrapped and x.returned_picking) and x.raw_material_production_id)
 
-        move_consumed = self.move_raw_ids.filtered(
-            lambda x: (not x.scrapped and not x.returned_picking) and x.raw_material_production_id)
-        move_returned = self.move_raw_ids.filtered(
-            lambda x: (not x.scrapped and x.returned_picking) and x.raw_material_production_id)
+            if move_consumed:
+                if (move_consumed and not move_returned) and all(
+                        move.state == 'done' for move in move_consumed):
+                    raise UserError(_("Bahan Baku Sudah Terkonsumsi, Apabila Anda Ingin Membatalkan Manufacturing Order"
+                                      "\n Anda Harus Mengembalikan Bahan Baku Yang Terkonsumsi Ke Gudang"
+                                      "\n Anda Dapat Melakukan Tersebut Pada Halaman Picking Consume"
+                                      "\n Dengan Mengklik Tombol Return"))
+                elif (move_consumed and move_returned) and all(
+                        move.state != 'done' for move in move_returned
+                ):
+                    raise UserError(_("Status Bahan Baku Yang Direturn Belum Selesai Ditransfer"))
+                production.assembly_plan_id.button_cancel()
 
-        if move_consumed:
-            if (move_consumed and not move_returned) and all(
-                    move.state == 'done' for move in move_consumed):
-                raise UserError(_("Bahan Baku Sudah Terkonsumsi, Apabila Anda Ingin Membatalkan Manufacturing Order"
-                                  "\n Anda Harus Mengembalikan Bahan Baku Yang Terkonsumsi Ke Gudang"
-                                  "\n Anda Dapat Melakukan Tersebut Pada Halaman Picking Consume"
-                                  "\n Dengan Mengklik Tombol Return"))
-            elif (move_consumed and move_returned) and all(
-                    move.state != 'done' for move in move_returned
-            ):
-                raise UserError(_("Status Bahan Baku Yang Direturn Belum Selesai Ditransfer"))
-            self.assembly_plan_id.button_cancel()
-
-        return result
+        return super(MrpProduction, self).action_cancel()
 
     @api.multi
     def button_mark_done(self):
         self.ensure_one()
         # self.post_inventory()
-        for production in self:
-            if production.assembly_plan_id:
-                return production.action_mark_done()
-            else:
-                return super(MrpProduction, self).button_mark_done()
+        if self.assembly_plan_id:
+            return self.action_mark_done()
+        else:
+            return super(MrpProduction, self).button_mark_done()
+        # for production in self:
+        #     if production.assembly_plan_id:
+        #         return production.action_mark_done()
+        #     else:
+        #         return super(MrpProduction, self).button_mark_done()
 
     @api.multi
     def action_mark_done(self):
-        for production in self:
-            for wo in production.workorder_ids:
-                if wo.time_ids.filtered(
-                        lambda x: (not x.date_end) and (x.loss_type in ('productive', 'performance'))):
-                    raise UserError(_('Work order %s is still running') % wo.name)
+        self.ensure_one()
+        for wo in self.workorder_ids:
+            if wo.time_ids.filtered(
+                    lambda x: (not x.date_end) and (x.loss_type in ('productive', 'performance'))):
+                raise UserError(_('Work order %s is still running') % wo.name)
 
-            # Cek Apakah Jumlah Produk Jadi Yang Ditransfer Sama Dengan Jumlah Work Order
-            # production._check_quantity_produced()
-
-
-            moves_to_cancel = (production.move_raw_ids | production.move_finished_ids).filtered(
-                lambda x: x.state not in ('done', 'cancel'))
-            moves_to_cancel._action_cancel()
-            # production.action_update_plan_produced()
-            # production.action_update_plan_consumed()
-
-            # Update standard_price Pada Setiap Produk Jadi
-            # production._update_price_unit_product()
-
-            production.write({'state': 'done', 'date_finished': fields.Datetime.now()})
-            production.write({'state': 'done'})
-        return True
+        if not self.backdate_finished:
+            raise UserError(_("Date End Wajib Diisi"))
+        moves_to_cancel = (self.move_raw_ids | self.move_finished_ids).filtered(
+            lambda x: x.state not in ('done', 'cancel'))
+        moves_to_cancel._action_cancel()
+        self.write({'state': 'done', 'date_finished': self.backdate_finished})
+        return self.write({'state': 'done'})
 
     @api.multi
     def _generate_moves(self):

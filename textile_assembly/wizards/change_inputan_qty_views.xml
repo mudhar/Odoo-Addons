@@ -26,7 +26,7 @@
 
 
                         <field name="qc_id" invisible="1"/>
-                        <field name="qty_produced"/>
+                        <field name="qty_produced" attrs="{'readonly':[('next_work_order_id','!=',False)]}"/>
                         <field name="quantity_sample" attrs="{'invisible': [('is_work_order_finishing','=',False)]}"/>
                     </group>
                     <group>

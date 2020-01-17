@@ -41,15 +41,22 @@
             <field name="arch" type="xml">
                 <form string="Create Purchase Order">
                     <group>
-                        <field name="partner_id" readonly="1"/>
-                        <field name="product_id" options="{'no_create': True}" domain="[('id', 'in', context.get('product_ids', []))]"/>
-                        <label for="product_qty"/>
-                        <div class="o_row">
-                            <field name="product_qty" readonly="1"/>
-                            <field name="product_uom_id" readonly="1"/>
-                        </div>
-                        <field name="price_unit"/>
-                        <field name="work_order_id" readonly="1" invisible="1"/>
+                        <group>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="product_id" options="{'no_create': True}" domain="[('id', 'in', context.get('product_ids', []))]"/>
+                            <label for="product_qty"/>
+                            <div class="o_row">
+                                <field name="product_qty" readonly="1"/>
+                                <field name="product_uom_id" readonly="1"/>
+                            </div>
+                        </group>
+                        <group>
+                            <field name="price_unit"/>
+                            <field name="purchase_date"/>
+                            <field name="work_order_id" readonly="1" invisible="1"/>
+                        </group>
+
+
                     </group>
                     <footer>
                         <button name="action_confirm" type="object" string="Confirm"

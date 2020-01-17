@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from odoo import api, fields, models, _
 from odoo.addons import decimal_precision as dp
 from odoo.exceptions import UserError
@@ -47,6 +48,13 @@ class MrpWorkOrder(models.Model):
         help='Technical: used in views only.', store=True)
     sequence = fields.Integer(string='Sequence', default=100)
 
+    backdate_start = fields.Datetime(
+        'Effective Start Date',
+        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
+    backdate_finished = fields.Datetime(
+        'Effective End Date',
+        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
+
     partner_id = fields.Many2one(comodel_name="res.partner", string="CMT Vendor")
     qc_ids = fields.One2many(comodel_name="mrp.workorder.qc.line", inverse_name="workorder_id", string="QC Lines")
     product_service_ids = fields.One2many(comodel_name="mrp.workorder.service.line", inverse_name="work_order_id",
@@ -73,8 +81,6 @@ class MrpWorkOrder(models.Model):
     tot_qc_qty_produced = fields.Float(string="Total QC Qty Produced", digits=dp.get_precision('Product Unit of Measure'),
                                        compute="compute_total_qc_produced")
 
-    date_start = fields.Datetime('Start Date', copy=False, default=fields.Datetime.now,
-                                 index=True, required=True)
     po_count = fields.Integer(string="#PO", compute="_compute_po_count")
     currency_id = fields.Many2one(comodel_name="res.currency", string="Currency", required=True,
                                   default=lambda self: self.env.user.company_id.currency_id.id)
@@ -188,7 +194,18 @@ class MrpWorkOrder(models.Model):
         self.ensure_one()
         res = super(MrpWorkOrder, self).button_start()
 
-        if self.check_assembly_plan_id:
+        if self.check_assembly_plan_id and res:
+            if not self.backdate_start:
+                raise UserError(_("Input Tanggal Mulai Proses %s") % self.name)
+            self.write({'date_start': self.backdate_start,
+                        'date_planned_start': self.backdate_start})
+            if self.time_ids and self.mapped('time_ids').filtered(
+                    lambda wo: wo.workorder_id and wo.date_start != self.backdate_start):
+                self.mapped('time_ids').write({'date_start': self.backdate_start})
+
+            if self.production_id.date_start != self.backdate_start:
+                self.production_id.write({'date_start': self.backdate_start})
+
             if self.next_work_order_id and self.is_cutting:
                 return True
 
@@ -201,8 +218,17 @@ class MrpWorkOrder(models.Model):
                 for work_order in self.env['mrp.workorder'].search([('production_id', '=', self.production_id.id)]):
                     if any(work.state != 'done' for work in work_order.filtered(lambda x: x.is_cutting)):
                         raise UserError(_("Work Order belum Done"))
-
         return res
+
+    @api.multi
+    def button_finish(self):
+        self.ensure_one()
+        result = super(MrpWorkOrder, self).button_finish()
+        if not self.backdate_finished:
+            raise UserError(_("Input Tanggal Selesai Process %s") % self.name)
+        if self.backdate_finished and result:
+            self.write({'date_finished': self.backdate_finished})
+        return result
 
     @api.multi
     @api.depends('qty_production', 'qty_produced')
@@ -510,19 +536,31 @@ class MrpWorkOrder(models.Model):
         self.update({'location_reject_id': location_reject_id.id})
 
     @api.multi
+    def check_backdate(self):
+        self.ensure_one()
+        if not self.backdate_start or not self.backdate_finished:
+            raise UserError(_("Harap Isi Tanggal Mulai Dan Selesai Process %s") % self.name)
+
+    @api.multi
     def button_receive_good(self):
+        self.check_backdate()
         for order in self:
             picking_dict = dict()
             if not order.location_reject_id:
-                self.set_location_reject_id()
+                order.set_location_reject_id()
             move_ids = self.env['stock.move']
             qc_finished_moves = order.qc_ids.mapped('qc_finished_ids').filtered(lambda x: not x.stock_move_created)
+            consume_move_lines = order.production_id.move_raw_ids.filtered(
+                lambda x: x.state == 'done' and not x.returned_picking).mapped('active_move_line_ids')
             if qc_finished_moves:
                 moves = order.create_finished_moves(qc_finished_moves)
+
                 for qc_finished in qc_finished_moves:
                     for move in moves.filtered(lambda x: x.product_id.id == qc_finished.product_id.id):
                         qc_finished.write({'stock_move_created': True,
                                            'move_id': move.id})
+                        move.write({'consume_line_ids': [(6, 0, [x for x in consume_move_lines.ids])]})
+
                 move_ids |= moves
 
             if move_ids:
@@ -549,6 +587,7 @@ class MrpWorkOrder(models.Model):
                     for move_reject in moves_reject.filtered(lambda x: x.product_id.id == qc_reject.product_id.id):
                         qc_reject.write({'stock_move_created': True,
                                          'move_id': move_reject.id})
+                        move_reject.write({'consume_line_ids': [(6, 0, [x for x in consume_move_lines.ids])]})
                 move_reject_ids |= moves_reject
             if move_reject_ids:
                 picking_reject_id = order.create_finished_picking(goods=False, rejects=True)
@@ -564,8 +603,7 @@ class MrpWorkOrder(models.Model):
                     picking_reject_id.write({'backorder_id': picking_dict['picking_finished_id']})
                 picking_reject_id.write({'is_rejected': True})
                 picking_reject_id.action_assign()
-
-        return {}
+        return True
 
     @api.multi
     def create_finished_moves(self, values):
@@ -610,36 +648,6 @@ class MrpWorkOrder(models.Model):
             return self.env['stock.picking'].create(res)
 
 
-# def _generate_finished_picking(self):
-#     picking_obj = self.env['stock.picking']
-#     picking = self.env['stock.picking'].browse()
-#     for order in self:
-#         if any([ptype in ['product', 'consu'] for ptype in order.qc_ids.mapped('product_id.type')]):
-#             pickings = order.production_id.picking_finished_product_ids.filtered(
-#                 lambda x: x.production_id and x.state not in ('done', 'cancel'))
-#             location_id = order.production_id.product_template_id.property_stock_production.id
-#             location_dest_id = order.production_id.location_dest_id.id
-#             if not pickings:
-#                 res = {
-#                     'picking_type_id': order.production_id.picking_type_production.id,
-#                     'partner_id': order.partner_id.id or False,
-#                     'location_id': location_id,
-#                     'location_dest_id': location_dest_id,
-#                     'origin': order.production_id.name,
-#                     'production_id': order.production_id.id,
-#                     'group_id': order.production_id.procurement_group_id.id,
-#                     'company_id': order.production_id.company_id.id,
-#                     'product_select_type': 'goods',
-#                 }
-#                 picking += picking_obj.create(res)
-#
-#             else:
-#                 picking += pickings[0]
-#
-#             # moves = moves.filtered(lambda x: x.state not in ('done', 'cancel'))
-#     return picking
-
-
 class MrpWorkOrderQcLine(models.Model):
     _name = 'mrp.workorder.qc.line'
     _rec_name = 'product_id'
@@ -655,6 +663,9 @@ class MrpWorkOrderQcLine(models.Model):
     workorder_id = fields.Many2one(comodel_name="mrp.workorder", string="Order Workorder",
                                    ondelete="cascade", index=True)
     sequence = fields.Integer('Sequence', default=1)
+
+    backdate_start = fields.Datetime(string="Effective Start Date", related="workorder_id.backdate_start")
+    backdate_finished = fields.Datetime(string="Effective End Date", related="workorder_id.backdate_finished")
 
     qc_good = fields.Float(string="QC Good", digits=dp.get_precision('Product Unit of Measure'))
     qc_reject = fields.Float(string="QC Reject", digits=dp.get_precision('Product Unit of Measure'))
@@ -918,9 +929,11 @@ class MrpQcReject(models.Model):
     product_uom_id = fields.Many2one(
         'product.uom', 'Product Unit of Measure')
 
+    backdate_start = fields.Datetime(string="Effective Start Date", related="qc_id.backdate_start")
+    backdate_finished = fields.Datetime(string="Effective End Date", related="qc_id.backdate_finished")
+
     stock_move_created = fields.Boolean(string="Product Moves Created")
     move_state = fields.Selection(string="State", related="picking_id.state")
-
 
     def _compute_price_unit(self):
         for order in self:
@@ -952,8 +965,8 @@ class MrpQcReject(models.Model):
             'picking_type_id': self.qc_id.production_id.picking_type_production.id,
             'partner_id': self.qc_id.workorder_id.partner_id.id,
             'name': ''.join('%s:%s' % (self.qc_id.production_id.name, self.product_id.display_name)),
-            'date': self.qc_id.production_id.date_planned_start,
-            'date_expected': self.qc_id.production_id.date_planned_start,
+            'date': self.backdate_start,
+            'date_expected': self.backdate_finished,
             'product_id': self.product_id.id,
             'price_unit': sum(total_unit_cost),
             'product_uom': self.product_uom_id.id,
@@ -988,6 +1001,9 @@ class MrpQcFinished(models.Model):
     product_uom_id = fields.Many2one(
         'product.uom', 'Product Unit of Measure')
 
+    backdate_start = fields.Datetime( string="Effective Start Date", related="qc_id.backdate_start")
+    backdate_finished = fields.Datetime(string="Effective End Date", related="qc_id.backdate_finished")
+
     stock_move_created = fields.Boolean(string="Product Moves Created")
     move_state = fields.Selection(string="State", related="picking_id.state")
 
@@ -1020,8 +1036,8 @@ class MrpQcFinished(models.Model):
             'picking_type_id': self.qc_id.production_id.picking_type_production.id,
             'partner_id': self.qc_id.workorder_id.partner_id.id,
             'name': ''.join('%s:%s' % (self.qc_id.production_id.name, self.product_id.display_name)),
-            'date': self.qc_id.production_id.date_planned_start,
-            'date_expected': self.qc_id.production_id.date_planned_start,
+            'date': self.backdate_start,
+            'date_expected': self.backdate_finished,
             'product_id': self.product_id.id,
             'price_unit': sum(total_unit_cost),
             'product_uom': self.product_uom_id.id,

@@ -21,21 +21,24 @@
         </record>
 
 
+        <!-- TREE -->
         <record id="assembly_plan_view_tree" model="ir.ui.view">
             <field name="name">assembly.plan.view.tree</field>
             <field name="model">assembly.plan</field>
             <field name="arch" type="xml">
-                <tree string="Assembly Plan" default_order="date_planned_start desc" decoration-info="state=='draft'" decoration-muted="state in ('done','cancel')" create="false" delete="false">
+                <tree decoration-bf="message_needaction==True" string="Assembly Plan" default_order="date_planned_start desc" decoration-info="state=='draft'" decoration-muted="state in ('done','cancel')" create="false" delete="false">
+                    <field name="message_needaction" invisible="1"/>
                     <field name="name" string="Reference"/>
+                    <field name="date_planned_start"/>
                     <field name="origin" string="Source"/>
                     <field name="product_template_id"/>
-                    <field name="date_planned_start"/>
                     <field name="state"/>
                     <field name="amount_total"/>
                 </tree>
             </field>
         </record>
 
+        <!-- FORM -->
         <record id="assembly_plan_view_form" model="ir.ui.view">
             <field name="name">assembly.plan.view.form</field>
             <field name="model">assembly.plan</field>
@@ -84,17 +87,13 @@
                                 <field name="user_id" attrs="{'readonly': [('is_locked','=',True)]}"/>
                             </group>
                             <group>
-                                <field name="date_planned_start" attrs="{'readonly': [('state', 'in', ('done', 'cancel'))]}"/>
-                                <field name="purchase_date" string="PO Date"
-                                       attrs="{'readonly': [('state', 'in', ('done', 'cancel'))]}"/>
+                                <field name="warehouse_id"
+                                       attrs="{'required':[('state','=','draft')], 'readonly':[('state','in', ('done','cancel'))]}"
+                                       string="WH Finished Goods"/>
+                                <field name="location_id" string="Raw Materials Location" attrs="{'readonly': [('state','in',('done','cancel'))]}"/>
                                 <field name="origin" readonly="1"/>
                             </group>
-                            <group>
-                                <field name="warehouse_id"
-                                       attrs="{'required':[('state','=','draft')], 'readonly':[('state','!=','draft')]}"
-                                       string="WH Finished Goods"/>
-                                <field name="location_id" string="Raw Materials Location"/>
-                            </group>
+
                         </group>
                         <field name="active" invisible="1"/>
                         <field name="check_quantity_produce" invisible="1"/>
@@ -102,19 +101,34 @@
                             <button name="button_update_quantity" type="object"
                                     colspan="1" string="Update" class="btn-danger" attrs="{'invisible':[('state','=','done')]}"/>
                         </div>
-                        <field name="produce_ids" widget="one2many_list" nolabel="1">
-                            <tree editable="bottom" create="false" delete="false">
-                                <field name="editable_quantity" invisible="1"/>
-                                <field name="attribute_id" readonly="1"/>
-                                <field name="quantity_plan" attrs="{'readonly': [('state','!=','draft')]}"/>
-                                <field name="quantity_maximum" readonly="1"/>
-                                <field name="quantity_actual" attrs="{'readonly': ['|',('state','in',('draft','done','cancel')),('editable_quantity','=',True)]}"/>
-                                <field name="state" invisible="1"/>
-                                <field name="original_quantity_plan" invisible="1"/>
-                                <field name="original_quantity_actual" invisible="1"/>
-                            </tree>
+                        <notebook>
+                            <page string="To Produce">
+                                <field name="produce_ids" widget="one2many_list" nolabel="1">
+                                    <tree editable="bottom" create="false" delete="false">
+                                        <field name="editable_quantity" invisible="1"/>
+                                        <field name="attribute_id" readonly="1"/>
+                                        <field name="quantity_plan" attrs="{'readonly': [('state','!=','draft')]}"/>
+                                        <field name="quantity_maximum" readonly="1"/>
+                                        <field name="quantity_actual" attrs="{'readonly': ['|',('state','in',('draft','done','cancel')),('editable_quantity','=',True)]}"/>
+                                        <field name="state" invisible="1"/>
+                                        <field name="original_quantity_plan" invisible="1"/>
+                                        <field name="original_quantity_actual" invisible="1"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Information Date">
+                                <group>
+                                    <label for="date_planned_start" string="Schedule Date"/>
+                                    <div class="o_row">
+                                        <field name="date_planned_start"/>
+                                        <strong class="mr8">to</strong>
+                                        <field name="date_planned_finished"/>
+                                    </div>
+                                    <field name="purchase_date"/>
+                                </group>
+                            </page>
+                        </notebook>
 
-                        </field>
                         <notebook>
                             <page string="Raw Material Estimasi">
                                 <field name="raw_line_ids" widget="one2many_list" attrs="{'readonly': [('is_locked','=',True)]}">
@@ -405,6 +419,7 @@
             </field>
         </record>
 
+        <!-- FILTER -->
         <record id="assembly_plan_view_filter" model="ir.ui.view">
             <field name="name">assembly.plan.list.select</field>
             <field name="model">assembly.plan</field>
@@ -418,7 +433,7 @@
                     <group expand="0" string="Group By">
                         <filter string="Assembly" domain="[]" context="{'group_by': 'assembly_id'}"/>
                         <filter name="vendor" string="Vendor" domain="[]" context="{'group_by':'partner_id'}"/>
-                        <filter string="Order Month" domain="[]" context="{'group_by':'date_planned_start'}"/>
+                        <filter string="Scheduled Month" domain="[]" context="{'group_by':'date_planned_start'}" help="Scheduled Date by Month"/>
                     </group>
                 </search>
             </field>

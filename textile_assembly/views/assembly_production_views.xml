@@ -6,8 +6,10 @@
             <field name="name">assembly.production.view.tree</field>
             <field name="model">assembly.production</field>
             <field name="arch" type="xml">
-                <tree string="Assembly Production" default_order="create_date des" decoration-info="state=='process'"  decoration-muted="state in ('approve','cancel')">
+                <tree string="Assembly Production" decoration-bf="message_needaction" default_order="date_planned_start desc" decoration-info="state=='process'"  decoration-muted="state in ('approve','cancel')">
+                    <field name="message_needaction" invisible="1"/>
                     <field name="name" string="Reference"/>
+                    <field name="date_planned_start"/>
                     <field name="code_pola"/>
                     <field name="product_tmpl_id" string="Finish Goods"/>
                     <field name="state"/>
@@ -22,7 +24,6 @@
                 <form string="Assembly Production">
                     <field name="mo_done" invisible="1"/>
                     <header>
-                        <!--                        <button name="do_print_picking" states="approve" type="object" string="Print Report" class="btn-success"/>-->
                         <button name="button_process" states="draft" type="object" class="oe_highlight" string="Confirm"/>
                         <button name="button_need_approval" states="process,reject" type="object" class="btn-success" string="Done"/>
                         <button name="button_approve" type="object" string="Approve" states="waiting" class="btn-success" groups="mrp.group_mrp_manager"/>
@@ -63,25 +64,28 @@
                                 <field name="product_categ_id"/>
                                 <field name="routing_id" attrs="{'required': [('state', '=', 'draft')], 'readonly': [('state', 'not in' , ('draft'))]}" groups="mrp.group_mrp_routings"/>
                                 <field name="partner_id" context="{'search_default_is_cmt':1, 'default_supplier':1, 'default_customer':0, 'default_is_cmt':1 }"
-                                       domain="['&amp;',('supplier', '=', True), ('is_cmt','=',True)]"
-                                       attrs="{'readonly': [('state','in',('done','cancel'))]}"/>
+                                       domain="['&amp;',('supplier', '=', True), ('is_cmt','=',True)]"/>
                                 <field name="code_pola" readonly="1"/>
                             </group>
-
                             <group>
-                                <separator/>
                                 <div>
                                     <field name="product_image" widget="image" class="oe_avatar" nolabel="1" options="{'size': [300, 300]}"/>
                                 </div>
-
                             </group>
                         </group>
-
+                        <form string="Schedule Date">
+                            <group>
+                                <label for="date_planned_start" string="Schedule Date"/>
+                                <div class="o_row">
+                                    <field name="date_planned_start" attrs="{'required': [('state','not in',('approve','cancel'))]}"/>
+                                    <strong class="mr8">to</strong>
+                                    <field name="date_planned_finished" attrs="{'required': [('state','not in',('approve','cancel'))]}"/>
+                                </div>
+                            </group>
+                        </form>
                         <field name="currency_id" invisible="1"/>
                         <field name="active" invisible="1"/>
                         <field name="version" invisible="1"/>
-
-
                         <group string="Product Variants Ratio">
                             <field name="variant_line_ids" nolabel="1" attrs="{'readonly': [('state', 'in', ('draft','approve', 'cancel'))]}">
                                 <tree string="Product Variants Ratio" editable="bottom">
@@ -256,13 +260,14 @@
                     <field name="product_tmpl_id" string="Finish Goods"/>
                     <separator/>
                     <filter string="My Assembly" domain="[('user_id','=',uid)]" name="my_assembly_filter"/>
-                     <filter string="Archived" name="inactive" domain="[('active','=',False)]"/>
+                    <filter string="Archived" name="inactive" domain="[('active','=',False)]"/>
                     <filter name="draft" string="Draft" domain="[('state','=','draft')]"/>
                     <filter name="process" string="On Process" domain="[('state','=','process')]"/>
                     <filter name="approve" string="Approved" domain="[('state','=','approve')]"/>
                     <group expand="0" string="Group By">
                         <filter name="vendor" string="Vendor" domain="[]" context="{'group_by': 'partner_id'}"/>
                         <filter name="product" string="Product" domain="[]" context="{'group_by': 'product_tmpl_id'}"/>
+                        <filter string="Scheduled Month" domain="[]" context="{'group_by':'date_planned_start'}" help="Scheduled Date by Month"/>
                     </group>
                 </search>
             </field>

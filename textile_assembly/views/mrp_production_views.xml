@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
+        <record model="ir.actions.act_window" id="action_mrp_workorder_production_specific_assembly">
+            <field name="name">Work Orders</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">mrp.workorder</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form,gantt,calendar,pivot,graph</field>
+            <field name="domain">[('skipped','=',False),('production_id', '=', active_id)]</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    Work Orders are operations to be processed at a Work Center to realize a
+                    Manufacturing Order. Work Orders are trigerred by Manufacturing Orders,
+                    they are based on the Routing defined on these ones
+                </p>
+            </field>
+        </record>
         <record id="template_open_picking" model="ir.actions.act_window">
             <field name="context">{'default_production_id': active_id, 'search_default_production_id': active_id}</field>
             <field name="name">Picking Finished Product</field>
@@ -25,7 +40,7 @@
                 </xpath>
                 <xpath expr="//field[@name='date_planned_finished']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <field name="date_finished" attrs="{'invisible': [('check_to_done','=',False)]}"/>
+                    <field name="backdate_finished" attrs="{'invisible': [('check_to_done','=',False)]}"/>
                 </xpath>
 
                 <xpath expr="//group/group" position="after">
@@ -57,7 +72,19 @@
                     <!-- Disable Button Post Inventory -->
                     <attribute name="attrs">{'invisible':[('assembly_plan_id','!=',False)]}</attribute>
                 </xpath>
-                <xpath expr="//button[@name='%(mrp.action_mrp_workorder_production_specific)d']" position="before">
+
+                <!-- Replace Action Work Order -->
+                <xpath expr="//div[@name='button_box']/button[@name='%(mrp.action_mrp_workorder_production_specific)d']" position="replace">
+                    <!-- Add your fields or attributes here -->
+                    <button name="%(textile_assembly.action_mrp_workorder_production_specific_assembly)d" type="action"
+                            attrs="{'invisible': [('workorder_count', '=', 0)]}" class="oe_stat_button" icon="fa-play-circle-o">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_value"><field name="workorder_done_count" widget="statinfo" nolabel="1"/> / <field name="workorder_count" widget="statinfo" nolabel="1"/></span>
+                            <span class="o_stat_text">Work Orders</span>
+                        </div>
+                    </button>
+                </xpath>
+                <xpath expr="//button[@name='%(textile_assembly.action_mrp_workorder_production_specific_assembly)d']" position="before">
                     <!-- Button BOX Picking Production dan Picking Consume -->
                     <button class="oe_stat_button" name="%(template_open_picking_raw)d" type="action"
                             icon="fa-truck" attrs="{'invisible': ['|','|',('picking_raw_count', '=', 0),('bom_id','=',False),('state','=','cancel')]}">
@@ -126,8 +153,8 @@
                     <attribute name="delete">false</attribute>
                 </xpath>
                 <xpath expr="//field[@name='product_id']" position="replace">
-                   <field name="product_template_id"/> 
-               </xpath>
+                    <field name="product_template_id"/>
+                </xpath>
             </field>
         </record>
 

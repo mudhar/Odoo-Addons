@@ -13,9 +13,10 @@ _logger = logging.getLogger(__name__)
 class AssemblyPlan(models.Model):
     _name = 'assembly.plan'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+    _date_name = 'date_planned_start'
     _rec_name = 'name'
     _description = 'Assembly Plan'
-    _order = 'id'
+    _order = 'date_planned_start asc,id'
 
     @api.model
     def _get_default_picking_type(self):
@@ -69,10 +70,15 @@ class AssemblyPlan(models.Model):
                                   default=_get_default_location_stock)
     location_dest_id = fields.Many2one(comodel_name="stock.location", string="Finished Products Location")
     partner_id = fields.Many2one(comodel_name="res.partner", string="CMT Vendor", track_visibility='onchange')
-    date_planned_start = fields.Datetime('Schedule Date', copy=False, default=fields.Datetime.now, index=True,
-                                         required=True, help="Penjadwalan Kapan Manufacturing Order Akan Diproduksi ")
-    purchase_date = fields.Datetime('Purchase Schedule Date', copy=False, default=fields.Datetime.now, index=True,
-                                    required=True, help="Penjadwalan Kapan Purchase Order Akan Dikirim")
+    date_planned_start = fields.Datetime(
+        'Scheduled Date Start',
+        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
+    date_planned_finished = fields.Datetime(
+        'Scheduled Date Finished',
+        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
+    purchase_date = fields.Datetime('Purchase Schedule Date',
+                                    states={'done': [('readonly', True)],
+                                            'cancel': [('readonly', True)]})
 
     bom_id = fields.Many2one('mrp.bom', 'Bill of Material', readonly=True)
     company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env['res.company']._company_default_get('mrp.production'))
@@ -429,6 +435,7 @@ class AssemblyPlan(models.Model):
                         'picking_type_id': order.picking_type_id.id,
                         'company_id': order.company_id.id,
                         'date_planned_start': order.date_planned_start,
+                        'date_planned_finished': order.date_planned_finished,
                         'location_src_id': order.location_id.id,
                         'location_dest_id': order.location_dest_id.id,
                         'assembly_plan_id': order.id,
@@ -641,6 +648,8 @@ class AssemblyPlan(models.Model):
         orders_to_procurement = self.filtered(lambda x: x.check_raw_procurement or x.check_cmt_procurement
                                                         and x.state == 'on process')
         for order in orders_to_procurement:
+            if not order.purchase_date:
+                raise UserError(_("Silahkan Dipilih Tanggal Purchase Date Terlebih Dahulu\n"))
             if order.check_raw_procurement:
                 for raw_line in order.raw_line_ids.filtered(lambda x: x.product_id and x.need_procurement):
                     order.create_purchase_order(raw_line)
