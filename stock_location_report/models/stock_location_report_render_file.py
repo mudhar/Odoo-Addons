@@ -37,7 +37,7 @@ class ReportRender(models.AbstractModel):
         location_transit = self.env['stock.location'].search(
             [('usage', '=', 'transit'),
              ('company_id', 'in', [company[0], False]),
-             ('id', 'child of', 1)], limit=1)
+             ('location_id', '=', self.env.ref('stock.stock_location_locations').id)], limit=1)
         # if location_stock_ids:
         #     raise UserError(_("Test"))
 

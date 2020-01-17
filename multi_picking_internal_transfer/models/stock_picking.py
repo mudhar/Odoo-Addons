@@ -8,12 +8,22 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     final_location_dest_id = fields.Many2one(comodel_name="stock.location", string="Final Destination Location", copy=False)
-    check_final_location = fields.Boolean(string="Final Destination Location?", copy=False)
+    check_final_location = fields.Boolean(string="Final Destination Location?", copy=False,
+                                          help="Tick Jika Ingin Transfer Dengan Lokasi Transit")
+    has_transit_location = fields.Boolean(string="Transit Location?", copy=False,
+                                          help="Tick Jika Ingin Mengembalikan Lokasi Tujuan awal")
 
     @api.onchange('check_final_location')
     def _onchange_final_location(self):
-        location_dest_id = self._default_location_dest_transit_id()
-        self.location_dest_id = location_dest_id
+        location_transit_id = self._default_location_dest_transit_id()
+        if self.check_final_location:
+            self.update({'location_dest_id': location_transit_id.id})
+
+    @api.onchange('has_transit_location')
+    def _onchange_transit_location(self):
+        if self.has_transit_location and self.check_final_location:
+            self.update({'location_dest_id': self.picking_type_id.default_location_src_id.id,
+                         'check_final_location': False})
 
     @api.multi
     def button_validate(self):

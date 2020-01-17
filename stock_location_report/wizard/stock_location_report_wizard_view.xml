@@ -17,7 +17,7 @@
 						<field name="company" groups="base.group_multi_company" options='{"no_open": True, "no_create": True}'/>
 					</group>
 					<group>
-						<field name="location_stock_ids" widget="many2many_tags" invisible="1"/>
+						<field name="location_stock_ids" widget="many2many_tags" domain="[('usage','=','internal')]"/>
 					</group>
                 </group>
         		<footer>

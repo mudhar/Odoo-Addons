@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
-from odoo.tools import float_compare
+from odoo.tools import float_is_zero, float_compare
 from odoo.exceptions import UserError
 
 
@@ -18,26 +18,38 @@ class MrpProduction(models.Model):
 
     account_move_ids = fields.One2many(comodel_name="account.move", inverse_name="material_production_id",
                                        string="Reference WIP Material")
-    amount_wip_differ = fields.Float(string="Total WIP Materials Differ", compute="_compute_wip_material_differ",
+    amount_wip_differ = fields.Float(string="Total WIP Materials Differ",index=True, compute="_compute_wip_material_differ",
                                      help="Total Amount Consumed Minus Amount Returned Minus Amount Assembly")
-    amount_wip_differ_context = fields.Float(string="Total WIP Materials Differ", compute="_compute_wip_material_final")
+    amount_wip_differ_context = fields.Float(string="Total WIP Materials Differ", index=True,
+                                             compute="_compute_wip_material_final")
     amount_wip_assembly = fields.Float(string="Total WIP Assembly", compute="_compute_wip_material_assembly")
-    is_wip_differ = fields.Boolean(string="Check Amount WIP Differ", compute="_compute_is_wip_differ", store=True)
-    has_finished_move = fields.Boolean(compute="_has_finished_moves")
+    wip_balance = fields.Boolean(string="WIP Materials Balance", compute="_compute_wip_balance",
+                                 index=True)
+    has_balanced = fields.Boolean(string="Has Balanced?")
+
     has_returned_move = fields.Boolean(compute="_has_returned_moves")
 
     @api.multi
-    @api.depends('amount_wip_differ',
-                 'account_move_ids',
-                 'account_move_ids.amount',
-                 'has_returned_move')
+    def _compute_wip_balance(self):
+        for production in self:
+            production.wip_balance = float_is_zero(production.amount_wip_differ_context,
+                                                   precision_digits=production.company_id.currency_id.decimal_places)
+
+    @api.multi
+    @api.depends('amount_wip_differ')
     def _compute_wip_material_final(self):
         for production in self:
-          
-            if production.has_returned_move and production.account_move_ids:
-                production.amount_wip_differ_context = (sum(production.account_move_ids.mapped('amount')) - production.amount_wip_differ)
-            if production.has_returned_move and not production.account_move_ids:
+            currency_id = production.company_id.currency_id
+            amount_move = sum(production.account_move_ids.mapped('amount')) if production.account_move_ids else 0.0
+            if float_is_zero(production.amount_wip_differ, precision_digits=currency_id.decimal_places) and \
+                    not float_is_zero(amount_move, precision_digits=currency_id.decimal_places):
+                production.amount_wip_differ_context += 0.0
+            elif float_is_zero(amount_move, precision_digits=currency_id.decimal_places) and \
+                    not float_is_zero(production.amount_wip_differ, precision_digits=currency_id.decimal_places):
                 production.amount_wip_differ_context = production.amount_wip_differ
+            elif not float_is_zero(production.amount_wip_differ, precision_digits=currency_id.decimal_places) and \
+                    not float_is_zero(amount_move, precision_digits=currency_id.decimal_places):
+                production.amount_wip_differ_context = production.amount_wip_differ - amount_move
 
     @api.multi
     @api.depends('assembly_plan_id',
@@ -60,25 +72,14 @@ class MrpProduction(models.Model):
             move_returned = mo.move_raw_ids.filtered(lambda x: x.returned_picking and x.state == 'done')
             mo.has_returned_move = any(move_returned)
 
-    @api.multi
-    @api.depends('move_finished_ids')
-    def _has_finished_moves(self):
-        for mo in self:
-            mo.has_finished_move = any(mo.move_finished_ids)
-
-    @api.depends('amount_wip_differ_context')
-    def _compute_is_wip_differ(self):
-        for production in self:
-            production.is_wip_differ = sum(production.amount_wip_differ_context) > 0.0
-
-    @api.depends('has_finished_move',
+    @api.depends('workorder_ids',
                  'move_raw_ids',
                  'move_raw_ids.state',
                  'move_raw_ids.account_move_ids',
                  'move_raw_ids.account_move_ids.amount')
     def _compute_wip_material_differ(self):
         for production in self.filtered(
-                lambda order_id: order_id.state not in ['done', 'cancel'] and order_id.has_finished_move):
+                lambda order_id: order_id.state not in ['done', 'cancel'] and order_id.workorder_ids):
             move_consumed = production.move_raw_ids.filtered(lambda x: x.state == 'done' and not x.returned_picking)
             move_returned = production.move_raw_ids.filtered(lambda x: x.state == 'done' and x.returned_picking)
             amount_total = 0.0
@@ -200,29 +201,23 @@ class MrpProduction(models.Model):
     @api.multi
     def button_adjust_wip(self):
         self.ensure_one()
-        if not self.has_returned_move:
-            return {
-                'name': _('Warning Message'),
-                'view_type': 'form',
-                'view_mode': 'form',
-                'res_model': 'journal_wip.message_wizard',
-                'view_id': self.env.ref('mrp_production_wip_journal.journal_wip_message_wizard_view_form').id,
-                'type': 'ir.actions.act_window',
-                'context': self.env.context,
-                'target': 'new',
-            }
-        else:
-            return {
-                'name': _('Adjust WIP Differ'),
-                'view_type': 'form',
-                'view_mode': 'form',
-                'res_model': 'production_journal.wip_wizard',
-                'view_id': self.env.ref('mrp_production_wip_journal.production_journal_wip_wizard_view_form').id,
-                'type': 'ir.actions.act_window',
-                'context': self.env.context,
-                'target': 'new',
-            }
+        return {
+            'name': _('Adjust WIP Differ'),
+            'view_type': 'form',
+            'view_mode': 'form',
+            'res_model': 'production_journal.wip_wizard',
+            'view_id': self.env.ref('mrp_production_wip_journal.production_journal_wip_wizard_view_form').id,
+            'type': 'ir.actions.act_window',
+            'context': self.env.context,
+            'target': 'new',
+        }
 
+    @api.multi
+    def action_cancel(self):
+        if any(account_move.state == 'posted' for account_move in self.mapped('account_move_ids')):
+            raise UserError(_("You can not cancel production order, an account move is posted\n"))
+
+        return super(MrpProduction, self).action_cancel()
 
     @api.multi
     def action_get_account_moves(self):
@@ -233,4 +228,13 @@ class MrpProduction(models.Model):
         action_data = action_ref.read()[0]
         action_data['domain'] = [('id', 'in', self.account_move_ids.ids)]
         return action_data
+
+    @api.multi
+    def action_mark_done(self):
+        self.ensure_one()
+        if self.amount_wip_differ_context == 0.0:
+            return super(MrpProduction, self).action_mark_done()
+        else:
+            raise UserError(_("Masih Ada Selisih WIP Material Yang Perlu Di Adjust"))
+
 

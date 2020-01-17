@@ -18,7 +18,8 @@
                     <tbody>
                         <tr>
                             <td><span t-esc="user_by"/></td>
-                            <td><span t-field="o.generate_date" eval="(Datetime.today())"/></td>
+                            <td><span t-esc="time.strftime('%Y-%m-%d')"
+                                      t-options='{"widget": "date"}'/></td>
                         </tr>
                     </tbody>
                 </table>
@@ -46,7 +47,7 @@
             <!-- Keterangan STBN SPJB -->
             <xpath expr="//table[@t-if='o.move_line_ids']/thead/tr/th[last()]" position="after">
                 <!-- Add your fields or attributes here -->
-                <t t-if="has_stbn or has_sjpb">
+                <t t-if="has_sjpb">
                     <th width="20%">
                         Keterangan
                     </th>
@@ -54,7 +55,7 @@
             </xpath>
             <xpath expr="//table[@t-if='o.move_line_ids']/tbody/tr/td[last()]" position="after">
                 <!-- Add your fields or attributes here -->
-                <t t-if="has_stbn or has_sjpb">
+                <t t-if="has_sjpb">
                     <td>
                     </td>
                 </t>
@@ -123,20 +124,20 @@
             </xpath>
 
             <!-- Table Lebar Kain dan Berat Kain -->
-            <xpath expr="//table[@t-if='o.move_line_ids']/thead/tr/th[3]" position="after">
-                <!-- Add your fields or attributes here -->
-                <t t-if="has_stbn">
-                    <th width="10%" class="text-center">Lebar Kain</th>
-                    <th width="10%" class="text-center">Berat Kain</th>
-                </t>
-            </xpath>
-            <xpath expr="//table[@t-if='o.move_line_ids']/tbody/tr/td[3]" position="after">
-                <!-- Add your fields or attributes here -->
-                <t t-if="has_stbn">
-                    <td> </td>
-                    <td> </td>
-                </t>
-            </xpath>
+            <!--            <xpath expr="//table[@t-if='o.move_line_ids']/thead/tr/th[3]" position="after">-->
+            <!--                &lt;!&ndash; Add your fields or attributes here &ndash;&gt;-->
+            <!--                <t t-if="has_stbn">-->
+            <!--                    <th width="10%" class="text-center">Lebar Kain</th>-->
+            <!--                    <th width="10%" class="text-center">Berat Kain</th>-->
+            <!--                </t>-->
+            <!--            </xpath>-->
+            <!--            <xpath expr="//table[@t-if='o.move_line_ids']/tbody/tr/td[3]" position="after">-->
+            <!--                &lt;!&ndash; Add your fields or attributes here &ndash;&gt;-->
+            <!--                <t t-if="has_stbn">-->
+            <!--                    <td> </td>-->
+            <!--                    <td> </td>-->
+            <!--                </t>-->
+            <!--            </xpath>-->
         </template>
     </data>
 </odoo>

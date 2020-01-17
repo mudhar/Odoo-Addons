@@ -29,5 +29,6 @@ PICKING REPORT TYPE STBJ STBN
     # always loaded
     'data': [
         'views/picking_report_type_templates.xml',
+        'views/purchase_order_views.xml',
     ],
 }

@@ -22,7 +22,7 @@
     'version': '1.0',
 
     # any module necessary for this one to work correctly
-    'depends': ['base', 'stock', 'textile_assembly'],
+    'depends': ['stock', 'textile_assembly'],
 
     # always loaded
     'data': [
@@ -32,4 +32,6 @@
     'demo': [
 
     ],
+    'installable': True,
+    'application': True,
 }

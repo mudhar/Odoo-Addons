@@ -33,7 +33,7 @@ Terbentuk Dua Jurnal Pada Produksi
         'views/res_company_views.xml',
         'views/mrp_production_views.xml',
         'views/mrp_workorder_service_line_views.xml',
-        'views/account_move_views.xml',
+        # 'views/account_move_views.xml',
 
 
     ],

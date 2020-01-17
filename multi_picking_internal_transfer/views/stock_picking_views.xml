@@ -6,16 +6,22 @@
             <field name="model">stock.picking</field>
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
-
-                <xpath expr="//field[@name='location_dest_id']" position="after">
+                <xpath expr="//field[@name='location_id']" position="replace">
                     <!-- Add your fields or attributes here -->
-
-                    <div class="o_raw"  attrs="{'invisible': ['|','|','|',('picking_type_code','in',('incoming','outgoing')),('backorder_id','!=',False), ('raw_material_production_id', '!=', False), ('production_id', '!=', False)]}">
-                        <label for="check_final_location"/>
-                        <field name="check_final_location"/>
-                        <field name="final_location_dest_id" attrs="{'invisible': [('check_final_location','=',False)], 'required': [('check_final_location','=',True)]}"/>
+                    <label for="location_id"/>
+                    <div class="o_row">
+                        <field name="location_id" groups="stock.group_stock_multi_locations" attrs="{'invisible': [('picking_type_code', '=', 'outgoing')]}"/>
+                        <field name="check_final_location" attrs="{'invisible': ['|','|','|',('picking_type_code','in',('incoming','outgoing')),('backorder_id','!=',False), ('raw_material_production_id', '!=', False), ('production_id', '!=', False)]}"/>
+                        <field name="has_transit_location" attrs="{'invisible':['|','|','|','|',('check_final_location','=',False), ('picking_type_code','in',('incoming','outgoing')),('backorder_id','!=',False), ('raw_material_production_id', '!=', False), ('production_id', '!=', False)]}"/>
                     </div>
-
+                </xpath>
+                <xpath expr="//field[@name='location_dest_id']" position="replace">
+                    <!-- Add your fields or attributes here -->
+                    <label for="location_dest_id"/>
+                    <div class="o_row">
+                        <field name="location_dest_id" groups="stock.group_stock_multi_locations" attrs="{'invisible': [('picking_type_code', '=', 'incoming')]}"/>
+                        <field name="final_location_dest_id" groups="stock.group_stock_multi_locations" attrs="{'invisible': [('check_final_location','=',False)], 'required': [('check_final_location','=',True)]}"/>
+                    </div>
                 </xpath>
 
             </field>

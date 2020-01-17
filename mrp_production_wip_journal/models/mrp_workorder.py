@@ -44,11 +44,13 @@ class MrpWorkOrder(models.Model):
                                                                                       order_ids=cmt_service_ids,
                                                                                       wip='wip_service')
 
-                        date = fields.Date.context_today(self)
+                        if not order_id.backdate_finished:
+                            raise UserError(_("Harap Isi Tanggal Selesai Proses %s") % order_id.name)
+
                         new_account_move = account_move_object.create({
                             'journal_id': account_data['stock_journal'].id,
                             'line_ids': move_lines,
-                            'date': date,
+                            'date': order_id.backdate_finished,
                             'work_order_service_id': service.id,
                         })
                         new_account_move.post()

@@ -44,27 +44,32 @@ class StockPicking(models.Model):
                 picking.picking_report_type = 'STBJ'
             elif picking_name[0] == 'STBN':
                 picking.picking_report_type = 'STBN'
+            elif picking_name[0] == 'SJPB':
+                picking.picking_report_type = 'SJPB'
             else:
                 return False
 
         return True
 
-    @api.multi
+    @api.model
     def check_warehouse_type(self):
-        for picking in self:
-            
-            if picking.location_id.usage == 'internal' and \
-                    picking.location_dest_id.usage == 'internal':
-                if not picking.location_id.get_warehouse().is_store or \
-                        not picking.location_dest_id.get_warehouse().is_warehouse:
-                    raise UserError(_("Anda Belum Menceklist Is Warehouse ? / Is Store ?\n"
-                                      "Pada Menu Warehouse"))
-
+        wh_object = self.env['stock.warehouse']
+        for wh in wh_object.search([]):
+            if wh.is_warehouse and not wh.is_store:
+                return True
+            elif not wh.is_warehouse and wh.is_store:
+                return True
+            else:
+                raise UserError(_("Warehouse %s Belum Dikonfigurasi Sebagai Gudang Atau Toko\n"
+                                  "Harap Anda MengKonfigurasi Terlebih Dahulu Agar Memudahkan\n"
+                                  "Penaman SJ, SRB, SMB\n")
+                                % wh.display_name)
+                
     @api.model
     def create(self, vals):
         # Cek Apakah Sudah Diceklis Identitas Warehouse
         # Digunakan Untuk Penamaan Internal Transfer SJ, SRB, SMB
-        #self.check_warehouse_type()
+        self.check_warehouse_type()
         location_object = self.env['stock.location']
         picking_cmt_consume = self.env.ref('textile_assembly.picking_cmt_consume')
         picking_cmt_produce = self.env.ref('textile_assembly.picking_cmt_produce')
@@ -110,10 +115,10 @@ class StockPicking(models.Model):
             # PICKING REFERENCE TRANSIT LOCATION
             elif vals.get('location_dest_id') == transit_location.id and \
                     vals.get('location_id') != transit_location.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.transit.out')
+                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.wh.store')
             elif vals.get('location_id') == transit_location.id and \
                     vals.get('location_dest_id') != transit_location.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.transit.in')
+                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.wh.store')
 
         return super(StockPicking, self).create(vals)
 
