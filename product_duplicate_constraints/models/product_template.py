@@ -9,6 +9,20 @@ class ProductTemplate(models.Model):
 
     assembly_code_ref = fields.Char(string="Reference Assembly Code", copy=False)
 
+    _sql_constraints = [('assembly_code_ref_unique', 'unique (assembly_code_ref, company_id)',
+                         "The Assembly Code must be unique per Company.")]
+
+    # Perlu Revisi Untuk Override Fungsi Write
+    @api.model
+    def create(self, values):
+        template = super(ProductTemplate, self).create(values)
+        related_values = {}
+        if values.get('assembly_code_ref'):
+            related_values['assembly_code_ref'] = values['assembly_code_ref']
+        if related_values:
+            template.write(related_values)
+        return template
+
     @api.onchange('template_code')
     def _onchange_assembly_code(self):
         for product in self:
@@ -26,7 +40,7 @@ class ProductTemplate(models.Model):
                 assembly_code_unique = ''.join(code.lower() for code in res_name_split)
         return assembly_code_unique
 
-    @api.constrains('template_code')
+    @api.constrains('assembly_code_ref')
     def _check_assembly_code(self):
         for res in self:
             if res.assembly_code_ref and res.template_code:
