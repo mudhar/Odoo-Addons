@@ -683,6 +683,7 @@ class AssemblyPlan(models.Model):
             'lang': partner_id.lang,
             'partner_id': partner_id.id,
         })
+        uom_po_id = product_id.uom_po_id.id
         name = product_lang.display_name
         taxes = product_id.supplier_taxes_id
         fpos = po.fiscal_position_id
@@ -694,7 +695,7 @@ class AssemblyPlan(models.Model):
             'name': name,
             'product_qty': procurement_uom_po_qty,
             'product_id': product_id.id,
-            'product_uom': product_uom_id.id,
+            'product_uom': uom_po_id,
             'price_unit': price_unit,
             'date_planned': self.purchase_date,
             'order_id': po.id,
