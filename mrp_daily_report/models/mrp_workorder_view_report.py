@@ -34,8 +34,9 @@ class WorkOrderViewReport(models.Model):
             left join mrp_production mp on (mp.id = wo.production_id)
             left join mrp_workorder_qc_line ql on (ql.workorder_id = wo.id)
             left join product_product pp on (pp.id = ql.product_id)
+            where mp.state not in ('done','cancel')
+            and wo.skipped = False
             group by wo.id, wo.production_id, ql.product_id, mp.state, wo.date_start
-            having mp.state not in ('done','cancel')
             order by wo.production_id
             )
         """)
