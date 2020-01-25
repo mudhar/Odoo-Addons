@@ -111,7 +111,7 @@ class MrpProduction(models.Model):
                         move.state != 'done' for move in move_returned
                 ):
                     raise UserError(_("Status Bahan Baku Yang Direturn Belum Selesai Ditransfer"))
-                production.assembly_plan_id.button_cancel()
+                production.assembly_plan_id._action_cancel()
 
         return super(MrpProduction, self).action_cancel()
 

@@ -584,22 +584,15 @@ class AssemblyPlan(models.Model):
         if any(production.state != 'cancel' for production in self.mapped('mo_ids')):
             raise UserError(_("Anda Tidak Dapat Membatalkan Assembly Plan."
                               "\n Manufacturing Order Harus Dibatalkan Terlebih Dahulu"))
-        if self.check_cmt_procurement or self.check_raw_procurement:
-            self.check_cmt_procurement = False
-            self.check_raw_procurement = False
-
-        self.warning_action_cancel()
+        self._action_cancel()
         return True
-
-    @api.multi
-    def do_print_picking(self):
-        return self.env.ref('textile_assembly.action_report_plan_price').report_action(self)
 
     # Informasi Apabila Membatalkan Dokumen Assembly Plan Ini
     @api.multi
-    def warning_action_cancel(self):
+    def _action_cancel(self):
         # cek po yang terbentuk jika masih di draft, confirmed
         po_ids = self.env['purchase.order'].search([('assembly_plan_id', '=', self.id)])
+
         if any(po.state not in ['done', 'purchase', 'cancel'] for po in po_ids):
             message = _('\t\tApakah Anda Yakin Membatalkan Dokumen Ini ? \n'
                         '\t\tAda Purchase Order Yang Terbentuk Dari Dokumen Ini Sedang Dalam Proses\n'
@@ -609,8 +602,7 @@ class AssemblyPlan(models.Model):
             self.action_cancel()
             self.assembly_id.action_cancel()
             self.assembly_id.unlink_bom()
-        if all(po.state == 'draft' for po in po_ids):
-            po_ids.button_cancel()
+
         return True
 
     @api.multi
