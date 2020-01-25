@@ -45,6 +45,21 @@
             </field>
         </record>
 
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_production_view_form_inherit_wip" model="ir.ui.view">
+            <field name="name">mrp.production.view.form.inherit.wip</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp_workorder.mrp_production_view_form_inherit_planning"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//button[@name='button_plan']" position="attributes">
+                    <!-- Add your fields or attributes here -->
+                    <attribute name="attrs">{'invisible': ['|', ('state', 'not in', ('confirmed', 'planned')), '|', ('routing_id', '=', False), '|',('has_returned_move','=',True)]}</attribute>
+                </xpath>
+
+            </field>
+        </record>
+
         <record id="mrp_production_tree_view_inherit_production_journal_wip" model="ir.ui.view">
             <field name="name">production.journal.wip.tree</field>
             <field name="model">mrp.production</field>

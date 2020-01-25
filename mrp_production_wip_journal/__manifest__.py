@@ -8,8 +8,8 @@
     'description': """
 Terbentuk Dua Jurnal Pada Produksi
 ==================================
-1. Bila Ada Stock Move Pada Finish Goods, Terbentuk Jurnal WIP Untuk Biaya Produksi. \n
-2. Bila Terdapat Selisih Pada WIP Material, User Dapat Adjust Selisih WIP Tsb. \n
+1. Bila Ada Stock Move Pada Finish Goods, Terbentuk Jurnal WIP Untuk Biaya Produksi.
+2. Bila Terdapat Selisih Pada WIP Material, User Dapat Melakukan Penyesuain Selisih WIP Tsb.
  """,
 
     'author': "odoo-consultants",
