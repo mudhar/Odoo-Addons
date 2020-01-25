@@ -15,7 +15,7 @@ class AssemblyProductionCostReport(models.Model):
                 if attrib.id:
                     product_line = {
                         'assembly': assembly.name,
-                        'code_pola': assembly.code_pola,
+                        'pattern_code': assembly.pattern_code,
                         'image': assembly.product_image,
                         'routing_id': assembly.routing_id.name,
                         'currency': assembly.currency_id,

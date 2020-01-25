@@ -10,7 +10,7 @@
                     <field name="message_needaction" invisible="1"/>
                     <field name="name" string="Reference"/>
                     <field name="date_planned_start"/>
-                    <field name="code_pola"/>
+                    <field name="pattern_code"/>
                     <field name="product_tmpl_id" string="Finish Goods"/>
                     <field name="state"/>
                 </tree>
@@ -58,14 +58,15 @@
                                            options="{'no_create': True}"
                                            attrs="{'required': [('state', '=', 'draft')],
                                            'readonly': [('state', 'not in' , ('draft'))]}"
-                                           domain="[('template_code', '!=', False), ('code_pola','!=',False)]"/>
+                                    />
                                     <field name="product_uom_id" readonly="1" invisible="1"/>
                                 </div>
                                 <field name="product_categ_id"/>
-                                <field name="routing_id" attrs="{'required': [('state', '=', 'draft')], 'readonly': [('state', 'not in' , ('draft'))]}" groups="mrp.group_mrp_routings"/>
+                                <field name="routing_id" attrs="{'required': [('state', '=', 'draft')], 'readonly': [('state', 'not in' , ('draft'))]}"
+                                       groups="mrp.group_mrp_routings"/>
                                 <field name="partner_id" context="{'search_default_is_cmt':1, 'default_supplier':1, 'default_customer':0, 'default_is_cmt':1 }"
                                        domain="['&amp;',('supplier', '=', True), ('is_cmt','=',True)]"/>
-                                <field name="code_pola" readonly="1"/>
+                                <field name="pattern_code" readonly="1"/>
                             </group>
                             <group>
                                 <div>
@@ -87,14 +88,13 @@
                         <field name="active" invisible="1"/>
                         <field name="version" invisible="1"/>
                         <group string="Product Variants Ratio">
-                            <field name="variant_line_ids" nolabel="1" attrs="{'readonly': [('state', 'in', ('draft','approve', 'cancel'))]}">
+                            <field name="variant_line_ids" nolabel="1" attrs="{'readonly': [('state', 'in', ('approve', 'cancel'))]}">
                                 <tree string="Product Variants Ratio" editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_id" options="{'no_create': True}"/>
                                     <field name="product_uom_id"/>
                                     <field name="attribute_value_ids" widget="many2many_tags" groups="product.group_product_variant"/>
-                                    <field name="ratio" attrs="{'required': [('state', '=', 'process')]}" sum="Total Ratio"/>
-                                    <field name="state" invisible="1"/>
+                                    <field name="ratio"/>
                                 </tree>
                                 <form string="Assembly Variant Lines">
                                     <sheet>

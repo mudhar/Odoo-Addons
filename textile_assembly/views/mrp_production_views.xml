@@ -122,10 +122,7 @@
                 </xpath>
 
                 <xpath expr="//field[@name='product_template_id']" position="before">
-                    <!--                    &lt;!&ndash; Info Work Order &ndash;&gt;-->
-                    <!--                    <field name="work_order_qty_produced" invisible="1"/>-->
                     <field name="check_work_order_done" invisible="1"/>
-                    <!--                    <field name="work_order_price" invisible="1"/>-->
                 </xpath>
             </field>
         </record>

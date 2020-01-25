@@ -19,8 +19,8 @@ class AssemblyPlanCmtMaterial(models.Model):
     product_uom_id = fields.Many2one(comodel_name="product.uom", string="UoM")
     ratio = fields.Float(string="Ratio Of")
     qty_to_plan = fields.Float(string="Expected Consume Qty",
-                                    digits=dp.get_precision('Product Unit of Measure'),
-                                    compute="_compute_quantity_consume", store=True)
+                               digits=dp.get_precision('Product Unit of Measure'),
+                               compute="_compute_quantity_consume", store=True)
     quantity_to_actual = fields.Float(string="Expected Consume Revised",
                                       digits=dp.get_precision('Product Unit of Measure'),
                                       compute="_compute_quantity_actual", store=True)
@@ -73,8 +73,8 @@ class AssemblyPlanCmtMaterial(models.Model):
             if cmt.product_id and not cmt.product_id.attribute_value_ids:
                 quantity_to_plan = sum(cmt.plan_id.produce_ids.mapped('quantity_plan'))
                 cmt.update({'qty_to_plan': float_round((cmt.product_qty * quantity_to_plan),
-                                                            precision_rounding=cmt.product_uom_id.rounding,
-                                                            rounding_method='UP')})
+                                                       precision_rounding=cmt.product_uom_id.rounding,
+                                                       rounding_method='UP')})
         return True
 
     @api.multi

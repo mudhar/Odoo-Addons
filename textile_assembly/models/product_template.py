@@ -6,7 +6,7 @@ class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     template_code = fields.Char(string="Assembly Code", copy=False)
-    code_pola = fields.Char(string="Code Pola", copy=False)
+    pattern_code = fields.Char(string="Code Pola", copy=False)
     is_roll = fields.Boolean(string="Is Roll?")
     has_goods = fields.Boolean(compute="_has_goods")
 

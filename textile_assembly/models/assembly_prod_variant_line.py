@@ -1,5 +1,7 @@
 from odoo import api, fields, models
 from odoo.tools.translate import _
+from odoo.addons import decimal_precision as dp
+from odoo.tools.float_utils import float_is_zero
 from odoo.exceptions import UserError
 
 
@@ -19,7 +21,7 @@ class AssemblyProdVariantLine(models.Model):
         'product.uom', 'UoM', readonly=True, related="product_id.uom_id")
     attribute_value_ids = fields.Many2many('product.attribute.value', string="Attributes",
                                            related="product_id.attribute_value_ids")
-    ratio = fields.Float(string="Of Ratio")
+    ratio = fields.Float(string="Of Ratio",  digits=dp.get_precision('Product Unit of Measure'), required=True)
     state = fields.Selection(related="assembly_id.state", string="State Production")
     product_template_id = fields.Many2one(comodel_name="product.template", related="assembly_id.product_tmpl_id",
                                           string="Template Product")
@@ -35,16 +37,6 @@ class AssemblyProdVariantLine(models.Model):
 
     @api.onchange('product_id')
     def _onchange_product_id(self):
-        vals = {}
-        # if not self.product_id:
-        #     self.attribute_value_ids = False
-        #
-        # attribute_ids = self.product_id.mapped('attribute_value_ids')
-        # if self.product_id and not self.attribute_value_ids:
-        #     vals['attribute_value_ids'] = [(6, 0, attribute_ids.ids)]
-        #
-        # self.update(vals)
-
         domain = {'product_id': [('product_tmpl_id', '=', self.product_template_id.id)]}
         result = {'domain': domain}
         return result

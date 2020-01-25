@@ -24,7 +24,7 @@
                             </div>
                              <div class="col-xs-3">
                                 <strong>Code Pola</strong><br/>
-                                <t t-esc="line['code_pola']"/>
+                                <t t-esc="line['pattern_code']"/>
                             </div>
                             <t t-if="line['image']">
                                 <div class="col-xs-3 pull-right">
@@ -153,6 +153,9 @@
 
                     </div>
                 </t>
+            </t>
+            <t t-if="not lines">
+                <p>No Data To Display</p>
             </t>
         </t>
     </template>

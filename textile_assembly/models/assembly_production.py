@@ -47,7 +47,7 @@ class AssemblyProd(models.Model):
     partner_id = fields.Many2one(comodel_name="res.partner", string="CMT Vendor", required=True,
                                  track_visibility='onchange', states={'approve': [('readonly', True)],
                                                                       'cancel': [('readonly', True)]})
-    code_pola = fields.Char(string="Code Pola", related="product_tmpl_id.code_pola")
+    pattern_code = fields.Char(string="Code Pola", related="product_tmpl_id.pattern_code")
     user_id = fields.Many2one('res.users', string='Responsible', index=True, track_visibility='onchange',
                               default=lambda self: self.env.user, copy=False)
     version = fields.Integer(string="Ver", default=1, index=True)
@@ -110,16 +110,24 @@ class AssemblyProd(models.Model):
     def _compute_amount_total_text(self):
         """ Menghitung Total Keseluruhan Biaya Pada Tiap Variant
          :return total_amount_text """
-        assemblies = self
-        report_model = self.env['report.textile_assembly.assembly_production_cost_report']
-        # Panggil Fungsi Report Untuk Mengenerate Total Variant
-        value_ids = report_model.get_lines(assemblies)
-        result = {'lines': value_ids}
-        amount_total_text = ''.join('%s:' % (line['attributes']) + '{:,.2f}\n' .format(line['total'])
-                                    for line in result['lines'])
+        # assemblies = self
+        # report_model = self.env['report.textile_assembly.assembly_production_cost_report']
+        # # Panggil Fungsi Report Untuk Mengenerate Total Variant
+        # value_ids = report_model.get_lines(assemblies)
+        # result = {'lines': value_ids}
+        # amount_total_text = ''.join('%s:' % (line['attributes']) + '{:,.2f}\n' .format(line['total'])
+        #                             for line in result['lines'])
 
         for assembly in self:
-            assembly.amount_total_text = html2plaintext(amount_total_text)
+            report_model = self.env['report.textile_assembly.assembly_production_cost_report']
+            value_ids = report_model.get_lines(assembly)
+            if value_ids:
+                result = {'lines': value_ids}
+                amount_total_text = ''.join('%s:' % (line['attributes']) + '{:,.2f}\n'.format(line['total'])
+                                            for line in result['lines'])
+                assembly.amount_total_text = html2plaintext(amount_total_text)
+            else:
+                return None
 
     @api.multi
     def _compute_plan_count(self):
@@ -157,6 +165,25 @@ class AssemblyProd(models.Model):
         domain = {'routing_id': [('id', 'in', routing_ids.ids)]}
         result = {'domain': domain}
         return result
+
+    @api.onchange('product_tmpl_id')
+    def _onchange_product_tmpl_id(self):
+        product_ids = self._get_product_finish_goods()
+        domain = {'product_tmpl_id': [('id', 'in', product_ids)]}
+        result = {'domain': domain}
+        return result
+
+    @api.multi
+    def _get_product_finish_goods(self):
+        product_object = self.env['product.template']
+        product_ids = []
+        for product in product_object.search(
+                [('template_code', '!=', False),
+                 ('pattern_code', '!=', False),
+                 ('sale_ok', '=', True),
+                 ('purchase_ok', '=', False)]):
+            product_ids.append(product.id)
+        return product_ids
 
     @api.multi
     def compute_routing_cutting(self):
