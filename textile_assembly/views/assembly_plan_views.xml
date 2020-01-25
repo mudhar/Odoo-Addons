@@ -99,7 +99,7 @@
                         <field name="check_quantity_produce" invisible="1"/>
                         <div>
                             <button name="button_update_quantity" type="object"
-                                    colspan="1" string="Update" class="btn-danger" attrs="{'invisible':[('state','=','done')]}"/>
+                                    colspan="1" string="Update" class="btn-danger" attrs="{'invisible':[('state','in',('done','cancel'))]}"/>
                         </div>
                         <notebook>
                             <page string="To Produce">
