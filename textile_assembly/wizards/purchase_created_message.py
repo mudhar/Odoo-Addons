@@ -10,7 +10,7 @@ class PurchaseCreatedMessage(models.TransientModel):
     name = fields.Char(related="work_order_id.name")
     choice = fields.Selection(string="Your Choice",
                               selection=[('yes', 'Yes'),
-                                         ('no', 'No'), ])
+                                         ('no', 'No'), ], default='no')
 
     @api.model
     def default_get(self, fields_list):

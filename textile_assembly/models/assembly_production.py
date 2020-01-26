@@ -535,14 +535,6 @@ class AssemblyProd(models.Model):
         return self.write({'state': 'waiting'})
 
     @api.multi
-    def unlink_bom(self):
-        for assembly in self:
-            if assembly.state == 'cancel':
-                bom_id = assembly.bom_ids.filtered(lambda x: x.assembly_prod_id == assembly.id)
-                bom_id.write({'active': False})
-        return True
-
-    @api.multi
     def action_cancel(self):
         for assembly in self:
             assembly.write({'state': 'cancel', 'active': False})

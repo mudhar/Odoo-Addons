@@ -16,6 +16,27 @@
                         <div name="options">
                             <label for="choice"/>
                             <field name="choice" widget="radio"/>
+                            <p colspan="2" class="oe_edit_only" attrs="{'invisible': [('choice','=','yes')]}">
+                                <ul>
+                                    <li>
+                                        Jika Anda Memilih No, Maka Proses Saat Ini Diangap Selesai
+                                        Dan Tagihan Tidak Berlaku Untuk Proses ini
+                                    </li>
+                                </ul>
+
+                            </p>
+                            <p colspan="2" class="oe_edit_only" attrs="{'invisible': [('choice','=','no')]}">
+                                <ul>
+                                    <li>
+                                        Jika Anda Memilih Yes, Maka Anda Dibawa Kembali Ke Halam Work Order
+                                        Yang Sedang Anda Proses
+                                    </li>
+                                    <li>
+                                        Pada Halaman Work Order Terdapat Tombol Create Purchase Order,
+                                        Klik Tombol Tersebut Untuk Membuat Tagihan Pada Proses Yang Akan Selsesai
+                                    </li>
+                                </ul>
+                            </p>
                         </div>
                     </group>
                     <footer>

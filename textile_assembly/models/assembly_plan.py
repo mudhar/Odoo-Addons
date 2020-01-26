@@ -601,7 +601,7 @@ class AssemblyPlan(models.Model):
         else:
             self.action_cancel()
             self.assembly_id.action_cancel()
-            self.assembly_id.unlink_bom()
+            self.bom_id.sudo().write({'active': False})
 
         return True
 
