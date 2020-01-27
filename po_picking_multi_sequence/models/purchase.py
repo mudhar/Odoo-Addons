@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
-    product_select_type = fields.Selection(string="Jenis Produk",
+    product_select_type = fields.Selection(string="Report Type",
                                            selection=[('materials', 'Materials'),
                                                       ('goods', 'Goods'),
                                                       ('subpo', 'Sub PO')], default='materials',
                                            index=True, copy=True,  track_visibility='onchange', required=True)
+
+    @api.multi
+    def button_confirm(self):
+        for order in self:
+            if order.product_select_type and order.product_select_type == 'subpo':
+                if any(line.type in ['consu','product'] for line in order.order_line.mapped('product_id')):
+                    raise ValidationError(_("Dokumen Picking Untuk Sub PO Tidak Ditemukan\n"
+                                            "Cek Tipe Produk, Apakah Sudah Bertipe Service?\n"))
+        return super(PurchaseOrder, self).button_confirm()
 
     @api.model
     def create(self, vals):
@@ -51,6 +60,5 @@ class PurchaseOrderLine(models.Model):
         res = super(PurchaseOrderLine, self)._prepare_stock_moves(picking)
         if len(res) == 1:
             res[0].update({'product_select_type': self.order_id.product_select_type})
-        # res.append({'product_select_type': self.order_id.product_select_type})
         return res
 
