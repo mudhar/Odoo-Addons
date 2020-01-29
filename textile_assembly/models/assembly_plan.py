@@ -671,6 +671,7 @@ class AssemblyPlan(models.Model):
     @api.model
     def _prepare_purchase_order_line(self, po, product_id, product_qty, product_uom_id, price_unit, partner_id):
         procurement_uom_po_qty = product_uom_id._compute_quantity(product_qty, product_id.uom_po_id)
+        procurement_uom_po_price = product_uom_id._compute_price(price_unit, product_id.uom_po_id)
         product_lang = product_id.with_context({
             'lang': partner_id.lang,
             'partner_id': partner_id.id,
@@ -688,7 +689,7 @@ class AssemblyPlan(models.Model):
             'product_qty': procurement_uom_po_qty,
             'product_id': product_id.id,
             'product_uom': uom_po_id,
-            'price_unit': price_unit,
+            'price_unit': procurement_uom_po_price,
             'date_planned': self.purchase_date,
             'order_id': po.id,
             'taxes_id': [(6, 0, taxes_id.ids)],

@@ -111,9 +111,18 @@ class MrpWorkOrder(models.Model):
 
     prev_wo_done = fields.Boolean(string="Check Prev Work Order State", compute="_compute_prev_wo_done")
     is_locked = fields.Boolean('Is Locked', default=True, copy=False)
+    purchase_visible = fields.Boolean(string='Visible button purchase', compute="_compute_button_purchase")
     produced_less_than_planned = fields.Boolean(string="Check Quantity Input less Than Planned",
                                                 compute="_compute_produced_less_than_panned")
     is_work_order_finish = fields.Boolean(compute="_compute_is_work_order_finish")
+
+    @api.multi
+    @api.depends('check_qc_to_done',
+                 'state')
+    def _compute_button_purchase(self):
+        for work_order in self:
+            work_order.purchase_visible = work_order.check_qc_to_done and \
+                                          work_order.state not in ('done', 'cancel')
 
     @api.multi
     @api.depends('next_work_order_id', 'is_cutting')
@@ -125,8 +134,8 @@ class MrpWorkOrder(models.Model):
     def _compute_produced_less_than_panned(self):
         for work_order in self:
             work_order.produced_less_than_planned = float_compare(
-               work_order.qc_done, work_order.qty_producing,
-               precision_rounding=work_order.product_uom_id.rounding) == -1
+                work_order.qc_done, work_order.qty_producing,
+                precision_rounding=work_order.product_uom_id.rounding) == -1
 
     @api.multi
     @api.depends('next_work_order_id', 'is_cutting')
@@ -277,7 +286,7 @@ class MrpWorkOrder(models.Model):
 
             if work_order.next_work_order_id and work_order.is_cutting:
                 work_order.qty_produced += float_round(work_order.qc_done,
-                                                 precision_rounding=work_order.production_id.product_uom_id.rounding)
+                                                       precision_rounding=work_order.production_id.product_uom_id.rounding)
 
                 work_order.update_product_variant_quantity()
 
@@ -297,7 +306,7 @@ class MrpWorkOrder(models.Model):
                     raise UserError(_("Anda Tidak Bisa Menyelesaikan Pekerjaan"
                                       "\n Karena Work Order Sebelumnya Masih Dalam Proses"))
                 work_order.qty_produced += float_round(work_order.qc_done,
-                                                 precision_rounding=work_order.production_id.product_uom_id.rounding)
+                                                       precision_rounding=work_order.production_id.product_uom_id.rounding)
                 work_order.next_work_order_id.write(
                     {'additional_quantity': float_round(work_order.qc_done,
                                                         precision_rounding=work_order.production_id.product_uom_id.rounding),
@@ -313,7 +322,7 @@ class MrpWorkOrder(models.Model):
                     raise UserError(_("Anda Tidak Bisa Menyelesaikan Pekerjaan"
                                       "\n Karena Work Order Sebelumnya Masih Dalam Proses"))
                 work_order.qty_produced += float_round(work_order.qc_done,
-                                                 precision_rounding=work_order.production_id.product_uom_id.rounding)
+                                                       precision_rounding=work_order.production_id.product_uom_id.rounding)
                 # self.action_update_plan_workorder()
                 # self.action_update_plan_sample()
                 if all(not qc_move.stock_move_created for qc_move in work_order.qc_ids.mapped('qc_finished_ids')):
@@ -348,9 +357,15 @@ class MrpWorkOrder(models.Model):
             'view_id': self.env.ref('textile_assembly.vendor_invoice_wizard_view_form').id,
             'type': 'ir.actions.act_window',
             'context': {
-                'product_ids': self.product_service_ids.mapped('product_id').ids},
+                'product_ids': self.product_service_ids.filtered(
+                    lambda x: not x.has_po).mapped('product_id').ids},
             'target': 'new',
         }
+
+    def action_toggle_is_locked(self):
+        self.ensure_one()
+        self.is_locked = not self.is_locked
+        return True
 
     @api.multi
     def button_show_message_warning(self):
@@ -443,7 +458,8 @@ class MrpWorkOrder(models.Model):
         product_ids = []
         work_order_ids = self.env['mrp.workorder'].search([('production_id', '=', self.production_id.id)])
         if work_order_ids:
-            product_service_ids = work_order_ids.mapped('product_service_ids').mapped('product_id')
+            product_service_ids = work_order_ids.mapped('product_service_ids').filtered(
+                lambda x: not x.has_po).mapped('product_id')
             for product in product_service_ids:
                 product_ids.append(product.id)
 
@@ -570,8 +586,8 @@ class MrpWorkOrder(models.Model):
                     for receive_line in self.env['mrp_workorder.qc_finished_move'].search(
                             [('move_id', 'in', move_ids.ids)]).filtered(
                         lambda x: not x.picking_id
-                                and x.stock_move_created
-                                and x.product_id.id == picking_finished.product_id.id):
+                                  and x.stock_move_created
+                                  and x.product_id.id == picking_finished.product_id.id):
                         receive_line.write({'name': picking_finished_id.name,
                                             'picking_id': picking_finished_id.id})
 
@@ -581,6 +597,7 @@ class MrpWorkOrder(models.Model):
             move_reject_ids = self.env['stock.move']
 
             qc_reject_moves = order.qc_ids.mapped('qc_reject_ids').filtered(lambda x: not x.stock_move_created)
+            # Jika Input Quantity Good Bersaman Quantity Reject Baru Bikin Picking
             if qc_finished_moves and qc_reject_moves:
                 moves_reject = order.create_finished_moves(qc_reject_moves)
                 for qc_reject in qc_reject_moves:
@@ -603,6 +620,35 @@ class MrpWorkOrder(models.Model):
                     picking_reject_id.write({'backorder_id': picking_dict['picking_finished_id']})
                 picking_reject_id.write({'is_rejected': True})
                 picking_reject_id.action_assign()
+
+            # Jika Input Quantity Good Tidak Bersamaan Dengan Quantity Reject Baru Bikin Picking
+            finished_move_exist = order.qc_ids.mapped('qc_finished_ids').filtered(lambda x: x.picking_id and x.stock_move_created)
+            if finished_move_exist and qc_reject_moves:
+                moves_reject = order.create_finished_moves(qc_reject_moves)
+                for qc_reject in qc_reject_moves:
+                    for move_reject in moves_reject.filtered(lambda x: x.product_id.id == qc_reject.product_id.id):
+                        qc_reject.write({'stock_move_created': True,
+                                         'move_id': move_reject.id})
+                        move_reject.write({'consume_line_ids': [(6, 0, [x for x in consume_move_lines.ids])]})
+                move_reject_ids |= moves_reject
+            if move_reject_ids:
+                picking_reject_id = order.create_finished_picking(goods=False, rejects=True)
+                picking_dict['picking_reject_id'] = picking_reject_id.id
+                move_reject_ids.write({'picking_id': picking_reject_id.id})
+                for picking in picking_reject_id.move_lines:
+                    for reject_line in self.env['mrp_workorder.qc_reject_move'].search(
+                            [('move_id', 'in', move_reject_ids.ids),
+                             ]).filtered(lambda x: not x.picking_id and x.product_id.id == picking.product_id.id):
+                        reject_line.write({'name': picking_reject_id.name,
+                                           'picking_id': picking_reject_id.id})
+                if len(finished_move_exist.mapped('picking_id')) == 1:
+                    picking_reject_id.write({'backorder_id': finished_move_exist.mapped('picking_id').id})
+                    picking_reject_id.write({'is_rejected': True})
+                    picking_reject_id.action_assign()
+                else:
+                    picking_reject_id.write({'is_rejected': True})
+                    picking_reject_id.action_assign()
+
         return True
 
     @api.multi
@@ -1063,16 +1109,31 @@ class MrpWorkorderServiceLine(models.Model):
 
     work_order_id = fields.Many2one(comodel_name="mrp.workorder", string="Order WorkOrder",
                                     ondelete="cascade", index=True)
+    production_id = fields.Many2one(comodel_name='mrp.production', string='Production_id', related="work_order_id.production_id")
     product_id = fields.Many2one(comodel_name="product.product", string="Products",
                                  track_visibility='onchange', domain=[('type', '=', 'service')])
     product_qty = fields.Float(string="Quantity Per Pcs", digits=dp.get_precision('Product Unit of Measure'))
     product_uom_id = fields.Many2one(comodel_name="product.uom", string="UoM",
                                      related="product_id.uom_id")
     price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'))
+    has_po = fields.Boolean(string='Has_po', compute="_has_po")
 
+    @api.depends('production_id')
+    def _has_po(self):
+        for service in self:
+            workorder_ids = service.production_id.mapped('workorder_ids')
+            product_ids = service._get_product_inpurchase(workorder_ids)
+            if product_ids:
+                service.has_po = service.product_id in product_ids
 
-
-
+    def _get_product_inpurchase(self, work_order_ids):
+        purchase_ids = self.env['purchase.order'].search([('work_order_id', 'in', work_order_ids.ids)])
+        product_ids = []
+        if purchase_ids:
+            for purchase_id in purchase_ids:
+                for line in self.env['purchase.order.line'].browse(purchase_id.id):
+                    product_ids.append(line.product_id)
+        return product_ids
 
 
 

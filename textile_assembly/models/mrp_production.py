@@ -34,7 +34,7 @@ class MrpProduction(models.Model):
                                                    string="Picking Finished Products", copy=False,
                                                    states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
     # Work Order
-    check_work_order_done = fields.Boolean(string="Check Work Order Done", compute="_get_produced_qty",
+    check_work_order_done = fields.Boolean(string="Check Work Order Done", compute="_check_work_order_done",
                                            help="Informasi Untuk Mengecek Status Work Order Yang Done")
     # Begin override field
     product_id = fields.Many2one(
@@ -45,6 +45,14 @@ class MrpProduction(models.Model):
                                           domain=[('type', 'in', ['product', 'consu'])],
                                           readonly=True, states={'confirmed': [('readonly', False)]})
     backdate_finished = fields.Datetime('End Date', copy=False, index=True)
+
+    @api.multi
+    @api.depends('workorder_ids',
+                 'workorder_ids.product_service_ids')
+    def _check_work_order_done(self):
+        for production in self:
+            production.check_work_order_done = all(wo.has_po
+                                                   for wo in production.workorder_ids.mapped('product_service_ids'))
 
     def _compute_picking_count(self):
         read_group_res = self.env['stock.picking'].read_group([('production_id', 'in', self.ids)],
@@ -67,10 +75,8 @@ class MrpProduction(models.Model):
     def _get_produced_qty(self):
         for production in self:
             if production.assembly_plan_id:
-                done_moves = production.move_finished_ids.filtered(lambda x: x.state == 'done' and
-                                                                             x.product_id.product_tmpl_id.id ==
-                                                                             production.product_template_id.id)
-                qty_produced = sum(done_moves.mapped('quantity_done'))
+                done_moves = all(move.state == 'done' for move in production.move_finished_ids)
+                qty_produced = sum(production.move_finished_ids.mapped('quantity_done'))
 
                 if any([x.state not in ('done', 'cancel') for x in production.workorder_ids]):
                     wo_done = False
@@ -79,7 +85,6 @@ class MrpProduction(models.Model):
                 production.check_to_done = production.is_locked and done_moves and (
                         production.state not in ('done', 'cancel')) and wo_done
                 production.qty_produced = qty_produced
-                production.check_work_order_done = wo_done
             else:
                 return super(MrpProduction, self)._get_produced_qty()
 
@@ -123,11 +128,6 @@ class MrpProduction(models.Model):
             return self.action_mark_done()
         else:
             return super(MrpProduction, self).button_mark_done()
-        # for production in self:
-        #     if production.assembly_plan_id:
-        #         return production.action_mark_done()
-        #     else:
-        #         return super(MrpProduction, self).button_mark_done()
 
     @api.multi
     def action_mark_done(self):
@@ -136,6 +136,20 @@ class MrpProduction(models.Model):
             if wo.time_ids.filtered(
                     lambda x: (not x.date_end) and (x.loss_type in ('productive', 'performance'))):
                 raise UserError(_('Work order %s is still running') % wo.name)
+        if not self.check_work_order_done:
+            product_ids = []
+            for wo in self.workorder_ids.mapped('product_service_ids').filtered(
+                    lambda x: not x.has_po).mapped('product_id'):
+                product_ids.append(wo)
+            if product_ids:
+                message = ''.join('%s\t\t' % line.display_name for line in product_ids)
+                raise UserError(_("Beberapa Produk Berikut Belum Dibuat PO nya Pada Work Order:\n"
+                                  "%s\n"
+                                  "-------------------------------------------------------------\n"
+                                  "1. Pilih Work Order Yang Belum Di Buat PO Untuk Produk Tsb\n"
+                                  "2. Klik Tombol Unlock\n"
+                                  "3. Klik Tombol ReCreatea Purchase Order\n"
+                                  "4. Klik Lock") % message)
 
         if not self.backdate_finished:
             raise UserError(_("Date End Wajib Diisi"))

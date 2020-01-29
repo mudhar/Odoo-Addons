@@ -21,7 +21,7 @@ class AssemblyProdVariantLine(models.Model):
         'product.uom', 'UoM', readonly=True, related="product_id.uom_id")
     attribute_value_ids = fields.Many2many('product.attribute.value', string="Attributes",
                                            related="product_id.attribute_value_ids")
-    ratio = fields.Float(string="Of Ratio",  digits=dp.get_precision('Product Unit of Measure'), required=True)
+    ratio = fields.Float(string="Of Ratio",  digits=dp.get_precision('Product Unit of Measure'))
     state = fields.Selection(related="assembly_id.state", string="State Production")
     product_template_id = fields.Many2one(comodel_name="product.template", related="assembly_id.product_tmpl_id",
                                           string="Template Product")

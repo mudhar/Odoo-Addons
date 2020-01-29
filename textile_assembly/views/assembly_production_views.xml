@@ -88,7 +88,7 @@
                         <field name="active" invisible="1"/>
                         <field name="version" invisible="1"/>
                         <group string="Product Variants Ratio">
-                            <field name="variant_line_ids" nolabel="1" attrs="{'readonly': [('state', 'in', ('approve', 'cancel'))]}">
+                            <field name="variant_line_ids" nolabel="1" attrs="{'readonly': [('state', 'in', ('draft', 'approve', 'cancel'))]}">
                                 <tree string="Product Variants Ratio" editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_id" options="{'no_create': True}"/>

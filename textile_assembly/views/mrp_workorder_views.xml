@@ -33,8 +33,8 @@
                         <notebook>
                             <page string="Progress Records">
                                 <group string="Progress Records">
-                                    <field name="progress_record_ids" nolabel="1" attrs="{'readonly': [('is_locked','=',True)]}">
-                                        <tree string="Progress Records" create="false" delete="false" edit="false">
+                                    <field name="progress_record_ids" nolabel="1" readonly="1">
+                                        <tree string="Progress Records">
                                             <field name="qc_id" invisible="1"/>
                                             <field name="date_start"/>
                                             <field name="user_id"/>
@@ -70,8 +70,8 @@
                             </page>
                             <page string="Products Finished Move" attrs="{'invisible': [('is_work_order_finishing','=',False)]}">
                                 <group string="Products Finished Move">
-                                    <field name="qc_finished_ids" nolabel="1" attrs="{'readonly': [('is_locked','=',True)]}">
-                                        <tree string="Products Finished Move" create="false" delete="false" edit="false">
+                                    <field name="qc_finished_ids" nolabel="1" readonly="1">
+                                        <tree string="Products Finished Move">
                                             <field name="name"/>
                                             <field name="picking_id" invisible="1"/>
                                             <field name="move_id" invisible="1"/>
@@ -115,8 +115,8 @@
                             </page>
                             <page string="Products Reject Move" attrs="{'invisible': [('is_work_order_finishing','=',False)]}">
                                 <group string="Products Reject Move">
-                                    <field name="qc_reject_ids" nolabel="1" attrs="{'readonly': [('is_locked','=',True)]}">
-                                        <tree string="Products Reject Move" create="false" delete="false" edit="false">
+                                    <field name="qc_reject_ids" nolabel="1" readonly="1">
+                                        <tree string="Products Reject Move">
                                             <field name="name"/>
                                             <field name="picking_id" invisible="1"/>
                                             <field name="move_id" invisible="1"/>
@@ -193,6 +193,7 @@
                                     <span class="oe_inline">.</span>
                                     <field name="product_uom_id" class="oe_inline"/>
                                 </div>
+                                <field name="has_po"/>
                             </group>
                         </group>
                     </sheet>
@@ -226,8 +227,12 @@
                     <!-- Add your fields or attributes here -->
                     <button name="%(action_change_vendor_wizard)d" type="action" string="Change Vendor CMT" class="btn-info"
                             attrs="{'invisible': ['|','|','|',('state', 'not in', ('progress')), ('is_change_vendor' ,'!=', False), ('is_cutting','=',False),('next_work_order_id','=',False)]}"/>
-                    <button name="button_procurement" type="object" string="Create Purchase Order" class="btn-info"
-                            attrs="{'invisible': ['|','|',('check_qc_to_done','=',False),('purchase_created','=',True), ('state','=','done')]}"/>
+                    <button name="button_procurement" type="object" string="Create Purchase Order" class="btn-danger"
+                            attrs="{'invisible': ['|',('purchase_visible','=',False),('purchase_created','=',True)]}"
+                    />
+                     <button name="button_procurement" type="object" string="ReCreate Purchase Order" class="btn-warning"
+                            attrs="{'invisible': ['|','|',('state','!=','done'),('is_locked','=',True), ('purchase_created','=',True)]}"
+                    />
                     <button name="button_skip" type="object" string="Request Skip Process" attrs="{'invisible': ['|','|','|','|',('prev_wo_done','=',False),('is_cutting','=',True),('next_work_order_id','=',False),('state','not in',('pending','ready'))]}" class="btn-warning"/>
                     <button name="button_reject_skip_process" type="object" string="Reject Skip Process" states="waiting skip" class="btn-success" groups="mrp.group_mrp_manager"/>
                     <button name="button_approve_skip_process" type="object" string="Approve Skip Process" states="waiting skip" class="btn-success" groups="mrp.group_mrp_manager"/>
@@ -239,6 +244,8 @@
                     <button name="button_new_workorder" type="object" string="Add New Work Order" class="btn-success" groups="mrp.group_mrp_manager,mrp.group_mrp_user" attrs="{'invisible':['|',('state','!=','approve'),('workorder_created','=',True)]}"/>
                     <button name="button_add_product_service" type="object" string="Add New Product Service" class="btn-info" attrs="{'invisible': ['|',('is_work_order_finish','=',True),('state','not in',('pending','ready'))]}"/>
                     <button name="button_remove_product_service" type="object" string="Remove Product Service" class="btn-danger" attrs="{'invisible': ['|',('is_work_order_finish','=',True), ('state','not in',('pending','ready'))]}"/>
+                    <button name="action_toggle_is_locked" type="object" string="Unlock" attrs="{'invisible': ['|',('is_locked','=',False),('state','=','cancel')]}" groups="mrp.group_mrp_manager"/>
+                    <button name="action_toggle_is_locked" type="object" string="Lock" attrs="{'invisible': [('is_locked','=',True)]}" class="oe_highlight" groups="mrp.group_mrp_manager"/>
                 </xpath>
                 <field name="product_id" position="after">
                     <field name="product_template_id" attrs="{'invisible': [('check_assembly_plan_id','=',False)]}"/>
@@ -286,6 +293,7 @@
                         <field name="backdate_start"/>
                         <field name="backdate_finished"/>
                         <field name="purchase_created" readonly="1"/>
+                        <field name="purchase_visible" invisible="1"/>
                         <field name="company_id" invisible="1"/>
                         <field name="currency_id" invisible="1"/>
                         <field name="is_locked" invisible="1"/>
