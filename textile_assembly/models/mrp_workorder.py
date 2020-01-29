@@ -392,7 +392,9 @@ class MrpWorkOrder(models.Model):
                               "\n Bila Sudah Dilakukan Input"))
         workorders = self.env['mrp.workorder'].search(
             [('production_id', '=', self.production_id.id)]).filtered(lambda x: x.workcenter_id).mapped('workcenter_id')
-        products = self.env['product.product'].search([('categ_id.parent_id', '=', self.service_categ_id.id)])
+        products = self.env['product.product'].search(
+            [('categ_id.parent_id', '=', self.service_categ_id.id),
+             ('type', '=', 'service')])
         # product_ids = self.product_service_ids.filtered(
         #     lambda x: x.product_id.id not in products.ids).mapped('product_id')
         product_ids = []
@@ -623,7 +625,7 @@ class MrpWorkOrder(models.Model):
 
             # Jika Input Quantity Good Tidak Bersamaan Dengan Quantity Reject Baru Bikin Picking
             finished_move_exist = order.qc_ids.mapped('qc_finished_ids').filtered(lambda x: x.picking_id and x.stock_move_created)
-            if finished_move_exist and qc_reject_moves:
+            if (finished_move_exist and qc_reject_moves) or (not finished_move_exist and qc_reject_moves):
                 moves_reject = order.create_finished_moves(qc_reject_moves)
                 for qc_reject in qc_reject_moves:
                     for move_reject in moves_reject.filtered(lambda x: x.product_id.id == qc_reject.product_id.id):
