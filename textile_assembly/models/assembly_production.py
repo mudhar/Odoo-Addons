@@ -92,8 +92,7 @@ class AssemblyProd(models.Model):
     def _compute_mo_done(self):
         for assembly in self:
             mo_done = assembly.assembly_plan_ids.mapped('mo_ids')
-            if mo_done:
-                assembly.mo_done = all(mo.state == 'done' for mo in mo_done)
+            assembly.mo_done = all(mo.state == 'done' for mo in mo_done) if mo_done else False
 
     @api.multi
     @api.depends('name', 'product_tmpl_id.name')

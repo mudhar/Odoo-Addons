@@ -20,8 +20,8 @@
                                 </div>
                             </group>
                             <group>
-                                <field name="backdate_start"/>
-                                <field name="backdate_finished"/>
+                                <field name="backdate_start" readonly="1"/>
+                                <field name="backdate_finished" readonly="1"/>
                                 <field name="work_order_state" invisible="1"/>
                                 <field name="is_cutting" invisible="1"/>
                                 <field name="next_work_order_id" invisible="1"/>

@@ -147,8 +147,8 @@ class MrpWorkOrder(models.Model):
                 prev_wo_done = self.env['mrp.workorder'].search(
                     [('production_id', '=', work_order.production_id.id)
                      ]).filtered(lambda x: x.sequence < work_order.sequence)
-                if prev_wo_done:
-                    work_order.prev_wo_done = all(prev_wo.state == 'done' for prev_wo in prev_wo_done)
+                work_order.prev_wo_done = all(prev_wo.state == 'done'
+                                              for prev_wo in prev_wo_done) if prev_wo_done else False
             elif not work_order.next_work_order_id and not work_order.is_cutting:
                 return False
         return True
@@ -161,8 +161,10 @@ class MrpWorkOrder(models.Model):
     def _compute_move_created(self):
         for work_order in self:
             if not work_order.next_work_order_id and not work_order.is_cutting:
-                qc_done = all(qc.state == 'done' for qc in work_order.qc_ids)
-                stock_move_created = all(line.stock_move_created for line in work_order.qc_ids.mapped('qc_finished_ids'))
+                qc_done = all(qc.state == 'done' for qc in work_order.qc_ids) if work_order.qc_ids else False
+                stock_move_created = all(line.stock_move_created
+                                         for line in work_order.qc_ids.mapped('qc_finished_ids')
+                                         ) if work_order.qc_ids.mapped('qc_finished_ids') else False
                 work_order.check_move_created = qc_done and stock_move_created
 
     def _compute_po_count(self):
@@ -186,7 +188,8 @@ class MrpWorkOrder(models.Model):
     @api.depends('qc_ids.state')
     def compute_check_qc_to_done(self):
         for work_order in self:
-            work_order.check_qc_to_done = all(line.state == 'done' for line in work_order.qc_ids)
+            work_order.check_qc_to_done = all(line.state == 'done'
+                                              for line in work_order.qc_ids) if work_order.qc_ids else False
 
     @api.multi
     def name_get(self):

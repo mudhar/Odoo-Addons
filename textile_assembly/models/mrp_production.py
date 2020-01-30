@@ -52,7 +52,8 @@ class MrpProduction(models.Model):
     def _check_work_order_done(self):
         for production in self:
             production.check_work_order_done = all(wo.has_po
-                                                   for wo in production.workorder_ids.mapped('product_service_ids'))
+                                                   for wo in production.workorder_ids.mapped('product_service_ids')
+                                                   )if production.workorder_ids else False
 
     def _compute_picking_count(self):
         read_group_res = self.env['stock.picking'].read_group([('production_id', 'in', self.ids)],
@@ -75,13 +76,12 @@ class MrpProduction(models.Model):
     def _get_produced_qty(self):
         for production in self:
             if production.assembly_plan_id:
-                done_moves = all(move.state == 'done' for move in production.move_finished_ids)
+                done_moves = all(move.state == 'done'
+                                 for move in production.move_finished_ids) if production.move_finished_ids else False
                 qty_produced = sum(production.move_finished_ids.mapped('quantity_done'))
 
-                if any([x.state not in ('done', 'cancel') for x in production.workorder_ids]):
-                    wo_done = False
-                else:
-                    wo_done = True
+                wo_done = all(wo.state == 'done'
+                              for wo in production.workorder_ids) if production.workorder_ids else False
                 production.check_to_done = production.is_locked and done_moves and (
                         production.state not in ('done', 'cancel')) and wo_done
                 production.qty_produced = qty_produced

@@ -135,7 +135,7 @@ class AssemblyPlan(models.Model):
     def _compute_mo_done(self):
         for plan in self:
             if plan.mo_ids:
-                plan.mo_done = all(mo.state == 'done' for mo in plan.mo_ids)
+                plan.mo_done = all(mo.state == 'done' for mo in plan.mo_ids) if plan.mo_ids else False
 
     @api.multi
     @api.depends('produce_ids',
@@ -569,13 +569,43 @@ class AssemblyPlan(models.Model):
                                   "\n"
                                   "\n %s")
                                 % (raw_final, order.show_cmt_consumed))
+            order._update_assembly_price_unit()
             order.write({'state': 'done'})
             order.update_bom_line()
             order.action_create_manufacturing_order()
-            # production_id = order.mo_ids.mapped('picking_raw_ids')
-            # if production_id:
-            #     production_id.action_assign()
-            # order.mo_ids.action_assign()
+
+        return True
+
+    @api.multi
+    def _update_assembly_price_unit(self):
+        """
+        Update Assembly Design Unit Price Untuk Raw Material, Accessories, Services.
+        :return: True
+        """
+        for plan in self:
+            assembly_id = plan.assembly_id
+            assembly_material_ids = self.env['assembly.raw.material.line'].search(
+                [('assembly_id', '=', assembly_id.id)])
+            if assembly_material_ids:
+                for raw in plan.raw_actual_line_ids:
+                    for assembly_raw in assembly_material_ids.filtered(
+                            lambda x: x.product_id.id == raw.product_id.id):
+                        assembly_raw.write({'price_unit': raw.price_unit})
+            assembly_service_ids = self.env['assembly.cmt.product.service'].search(
+                [('assembly_id', '=', assembly_id.id)])
+            if assembly_service_ids:
+                for service in plan.cmt_service_ids:
+                    for assembly_service in assembly_service_ids.filtered(
+                            lambda x: x.product_id.id == service.product_id.id):
+                        assembly_service.write({'price_unit': service.price_unit})
+            assembly_accessories_ids = self.env['assembly.cmt.material.line'].search(
+                [('assembly_id', '=', assembly_id.id)])
+            if assembly_accessories_ids:
+                for accessories in plan.cmt_material_actual_line_ids:
+                    for assembly_accessories in assembly_accessories_ids.filtered(
+                            lambda x: x.product_id.id == accessories.product_id.id):
+                        assembly_accessories.write({'price_unit': accessories.price_unit,
+                                                    })
 
         return True
 
