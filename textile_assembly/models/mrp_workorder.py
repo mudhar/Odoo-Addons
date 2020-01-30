@@ -436,7 +436,9 @@ class MrpWorkOrder(models.Model):
         if not self.service_categ_id:
             self.set_product_service_category()
 
-        products = self.env['product.product'].search([('categ_id.parent_id', '=', self.service_categ_id.id)])
+        products = self.env['product.product'].search(
+            [('categ_id.parent_id', '=', self.service_categ_id.id),
+             ('type', '=', 'service')])
 
         product_ids = []
         service_ids = self.product_service_ids.mapped('product_id').ids
