@@ -18,6 +18,29 @@
                         <div class="options">
                             <label for="choice"/>
                             <field name="choice" widget="radio"/>
+                            <p colspan="2" class="oe_edit_only" attrs="{'invisible': [('choice','=','yes')]}">
+                                <ul>
+                                    <li>
+                                        Jika Anda Memilih No, Anda Akan Diarahkan Ke Form Penyesuain WIP Material
+                                    </li>
+                                </ul>
+                            </p>
+                            <p colspan="2" class="oe_edit_only" attrs="{'invisible': [('choice','=','no')]}">
+                                <ul>
+                                    <li>
+                                        Jika Anda Memilih Yes. Tahap Yang Harus Anda Lakukan
+                                    </li>
+                                    <li>
+                                        Minta Bagian Gudang Untuk Mengembalikan Produk Bahan Baku Ke Gudang Bahan Baku
+                                    </li>
+                                    <li>
+                                        Anda Dapat Akses Dari Halaman Manufacturing Order Ini
+                                    </li>
+                                    <li>
+                                        Klik Ikon Truck Yang Berlabel Kan Consume Lalu Pilih Produk Yang Akan Dikembalikan Ke Gudang
+                                    </li>
+                                </ul>
+                            </p>
                         </div>
                     </group>
 

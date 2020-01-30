@@ -7,7 +7,7 @@ class JournalMessageWizard(models.TransientModel):
     _description = 'Message Only'
 
     production_id = fields.Many2one(comodel_name="mrp.production", string="Manufacturing Order", required=True)
-    choice = fields.Selection(selection=[('yes', 'Yes'), ('no', 'No'), ],)
+    choice = fields.Selection(selection=[('yes', 'Yes'), ('no', 'No'), ],default='no')
 
     @api.model
     def default_get(self, fields_list):
