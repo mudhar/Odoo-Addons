@@ -16,9 +16,9 @@ class MrpProduction(models.Model):
         return self.env.ref('textile_assembly.picking_cmt_consume').id
 
     partner_id = fields.Many2one(comodel_name="res.partner", string="CMT Vendor")
-    assembly_plan_id = fields.Many2one(comodel_name="assembly.plan", string="Assembly Plan", readonly=True, copy=True)
+    assembly_plan_id = fields.Many2one(comodel_name="assembly.plan", string="Assembly Plan", readonly=True, copy=False)
     variant_ids = fields.One2many(comodel_name="mrp.production.variant", inverse_name="production_id",
-                                  string="Variant On Hand", copy=True)
+                                  string="Variant On Hand", copy=False)
 
     # picking
     picking_type_production = fields.Many2one(
@@ -43,7 +43,7 @@ class MrpProduction(models.Model):
     # End override field
     product_template_id = fields.Many2one(comodel_name="product.template", string="Product",
                                           domain=[('type', 'in', ['product', 'consu'])],
-                                          readonly=True, states={'confirmed': [('readonly', False)]})
+                                          readonly=True, states={'confirmed': [('readonly', False)]}, copy=False)
     backdate_finished = fields.Datetime('End Date', copy=False, index=True)
 
     @api.multi
@@ -100,6 +100,14 @@ class MrpProduction(models.Model):
     @api.multi
     def action_cancel(self):
         for production in self:
+            if production.assembly_plan_id:
+                return production.action_cancel_assembly()
+            else:
+                return super(MrpProduction, self).action_cancel()
+
+    @api.multi
+    def action_cancel_assembly(self):
+        for production in self:
             move_consumed = production.move_raw_ids.filtered(
                 lambda x: (not x.scrapped and not x.returned_picking) and x.raw_material_production_id)
             move_returned = production.move_raw_ids.filtered(
@@ -117,8 +125,7 @@ class MrpProduction(models.Model):
                 ):
                     raise UserError(_("Status Bahan Baku Yang Direturn Belum Selesai Ditransfer"))
                 production.assembly_plan_id._action_cancel()
-
-        return super(MrpProduction, self).action_cancel()
+        return True
 
     @api.multi
     def button_mark_done(self):

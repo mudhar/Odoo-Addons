@@ -17,7 +17,7 @@ Textile Assembly Production
     'category': 'Manufacturing',
     'website': 'https://www.odoo-consultants.com',
     'depends': [
-        'base',
+        'res_partner_code',
         'po_picking_multi_sequence',
         'mrp',
         'purchase',
@@ -47,7 +47,6 @@ Textile Assembly Production
         'data/stock_picking_type_data.xml',
 
         'views/res_company_views.xml',
-        'views/res_partner_views.xml',
         'views/stock_picking_views.xml',
         'views/stock_move_views.xml',
         'views/product_template_views.xml',
@@ -59,12 +58,6 @@ Textile Assembly Production
         'views/mrp_production_views.xml',
         'views/mrp_workcenter_views.xml',
         'views/mrp_workorder_views.xml',
-    ],
-    'demo': [
-
-    ],
-    'qweb': [
-
     ],
     'installable': True,
     'application': True,

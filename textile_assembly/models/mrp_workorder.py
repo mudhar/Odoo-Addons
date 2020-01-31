@@ -175,14 +175,14 @@ class MrpWorkOrder(models.Model):
             record.po_count = mapped_data.get(record.id, 0)
 
     @api.multi
-    @api.depends('production_id.assembly_plan_id')
+    @api.depends('production_id',
+                 'production_id.assembly_plan_id')
     def _get_assembly_plan(self):
         for order in self:
-            if order.production_id and order.production_id.assembly_plan_id:
-                order.check_assembly_plan_id = True
-            else:
-                order.check_assembly_plan_id = False
-        return True
+            assembly_exist = False
+            if any(order.production_id and order.production_id.assembly_plan_id):
+                assembly_exist = True
+            order.check_assembly_plan_id = assembly_exist
 
     @api.multi
     @api.depends('qc_ids.state')
@@ -236,6 +236,7 @@ class MrpWorkOrder(models.Model):
     def button_finish(self):
         self.ensure_one()
         result = super(MrpWorkOrder, self).button_finish()
+
         if not self.backdate_finished:
             raise UserError(_("Input Tanggal Selesai Process %s") % self.name)
         if self.backdate_finished and result:

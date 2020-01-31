@@ -20,7 +20,6 @@
 ##############################################################################
 from . import res_company
 from . import purchase_order
-from . import res_partner
 from . import mrp_routing_workcenter
 from . import mrp_bom
 from . import mrp_production
