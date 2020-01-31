@@ -37,6 +37,6 @@ Terbentuk Dua Jurnal Pada Produksi
 
 
     ],
-    # only loaded in demonstration mode
-
+    'installable': True,
+    'application': True,
 }

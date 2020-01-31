@@ -40,17 +40,32 @@ class ProductTemplate(models.Model):
                 assembly_code_unique = ''.join(code.lower() for code in res_name_split)
         return assembly_code_unique
 
-    @api.constrains('assembly_code_ref')
+    @api.multi
+    @api.constrains('assembly_code_ref', 'company_id')
     def _check_assembly_code(self):
-        for res in self:
-            if res.assembly_code_ref and res.template_code:
-                product_id = self.env['product.template'].search_count(
-                    [('assembly_code_ref', '=', res.assembly_code_ref),
-                     ('company_id', '=', res.company_id.id)])
-                if product_id and product_id > 1:
-                    raise ValidationError(_("Hello Buddy, An Assembly Code Must Be Unique"))
-                else:
-                    return False
+        for template in self:
+            if template.assembly_code_ref and template.template_code:
+                domain = [
+                    ('id', '!=', template.id),
+                    ('assembly_code_ref', '=', template.assembly_code_ref),
+                    ('company_id', '=', template.company_id.id)
+                ]
+                found = self.search(domain)
+                if found and self.env.context.get('active_test', True):
+                    raise ValidationError(_("Product %s Memiliki Code Assembly Yang Sama\n"
+                                            "Dengan Product %s") % (template.display_name, found[0].display_name))
+
+    # @api.constrains('assembly_code_ref')
+    # def _check_assembly_code(self):
+    #     for res in self:
+    #         if res.assembly_code_ref and res.template_code:
+    #             product_id = self.env['product.template'].search_count(
+    #                 [('assembly_code_ref', '=', res.assembly_code_ref),
+    #                  ('company_id', '=', res.company_id.id)])
+    #             if product_id and product_id > 1:
+    #                 raise ValidationError(_("Hello Buddy, An Assembly Code Must Be Unique"))
+    #             else:
+    #                 return False
 
 
 class ProductProduct(models.Model):

@@ -31,4 +31,6 @@ PICKING REPORT TYPE STBJ STBN
         'views/picking_report_type_templates.xml',
         'views/purchase_order_views.xml',
     ],
+    'installable': True,
+    'application': True,
 }

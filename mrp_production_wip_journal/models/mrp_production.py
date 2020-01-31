@@ -26,8 +26,18 @@ class MrpProduction(models.Model):
     wip_balance = fields.Boolean(string="WIP Materials Balance", compute="_compute_wip_balance",
                                  index=True)
     has_balanced = fields.Boolean(string="Has Balanced?")
-
     has_returned_move = fields.Boolean(compute="_has_returned_moves")
+    account_move_count = fields.Integer(
+        string='Of Account Move',
+        compute="_compute_account_move_count")
+
+    def _compute_account_move_count(self):
+        read_group_res = self.env['account.move'].read_group(
+            [('material_production_id', 'in', self.ids)], ['material_production_id'], ['material_production_id'])
+        mapped_data = dict([(data['material_production_id'][0],
+                             data['material_production_id_count']) for data in read_group_res])
+        for record in self:
+            record.account_move_count = mapped_data.get(record.id, 0)
 
     @api.multi
     def _compute_wip_balance(self):

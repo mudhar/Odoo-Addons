@@ -20,6 +20,7 @@ Generate Multi Sequence Number Based On Selected Field
         'mrp',
         'purchase',
         'sale',
+        'res_partner_code',
 
     ],
     'data': [
@@ -30,12 +31,6 @@ Generate Multi Sequence Number Based On Selected Field
         'views/product_views.xml',
         'views/stock_views.xml',
         'views/sale_order_views.xml',
-    ],
-    'demo': [
-
-    ],
-    'qweb': [
-
     ],
     'installable': True,
     'application': True,

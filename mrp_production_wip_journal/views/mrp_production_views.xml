@@ -14,21 +14,23 @@
                 </xpath>
                 <xpath expr="//field[@name='partner_id']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <field name="amount_wip_differ_context"/>
-                    <field name="amount_wip_assembly"/>
+                    <field name="amount_wip_differ_context" attrs="{'invisible':[('assembly_plan_id','=',False)]}"/>
+                    <field name="amount_wip_assembly" attrs="{'invisible':[('assembly_plan_id','=',False)]}"/>
                      <field name="has_returned_move" invisible="1"/>
                     <field name="has_balanced" invisible="1"/>
                     <field name="wip_balance" invisible="1"/>
+                    <field name="account_move_count" invisible="1"/>
                 </xpath>
 
                 <xpath expr="//button[@name='button_mark_done']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <button name="%(mrp_production_wip_journal.action_production_journal_wip)d" type="action" class="btn-danger" groups="mrp.group_mrp_manager"
+                    <button name="%(mrp_production_wip_journal.action_production_journal_wip)d"
+                            type="action" class="btn-danger" groups="mrp.group_mrp_manager"
                             string="Adjust WIP Material"
-                            attrs="{'invisible': ['|',('has_returned_move','=',False),('wip_balance','=',True)]}"/>
+                            attrs="{'invisible': ['|','|',('has_returned_move','=',False),('wip_balance','=',True),('assembly_plan_id','=',False)]}"/>
                     <button name="%(mrp_production_wip_journal.action_journal_wip_message_wizard)d"
-                            type="action" string="Adjust WIP Material" class="btn-warning"
-                            attrs="{'invisible': ['|', ('has_returned_move','=',True),('wip_balance','=',True)]}"/>
+                            type="action" string="Adjust WIP Material" class="btn-warning" groups="mrp.group_mrp_manager"
+                            attrs="{'invisible': ['|','|',('has_returned_move','=',True),('wip_balance','=',True),('assembly_plan_id','=',False)]}"/>
 
                 </xpath>
 
@@ -39,7 +41,7 @@
                             type="object"
                             class="oe_stat_button"
                             string="Accounting Entries"
-                            icon="fa-usd"/>
+                            icon="fa-usd" attrs="{'invisible': [('account_move_count','=',0)]}"/>
                 </xpath>
 
             </field>
