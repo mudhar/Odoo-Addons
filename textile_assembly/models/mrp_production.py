@@ -107,7 +107,15 @@ class MrpProduction(models.Model):
 
     @api.multi
     def action_cancel_assembly(self):
+        if any(workorder.state == 'progress' for workorder in self.mapped('workorder_ids')):
+            raise UserError(_('You can not cancel production order, a work order is still in progress.'))
         for production in self:
+            production.workorder_ids.filtered(lambda x: x.state != 'cancel').action_cancel()
+
+            finish_moves = production.move_finished_ids.filtered(lambda x: x.state not in ('done', 'cancel'))
+            raw_moves = production.move_raw_ids.filtered(lambda x: x.state not in ('done', 'cancel'))
+            (finish_moves | raw_moves)._action_cancel()
+
             move_consumed = production.move_raw_ids.filtered(
                 lambda x: (not x.scrapped and not x.returned_picking) and x.raw_material_production_id)
             move_returned = production.move_raw_ids.filtered(
@@ -125,6 +133,8 @@ class MrpProduction(models.Model):
                 ):
                     raise UserError(_("Status Bahan Baku Yang Direturn Belum Selesai Ditransfer"))
                 production.assembly_plan_id._action_cancel()
+
+        self.write({'state': 'cancel', 'is_locked': True})
         return True
 
     @api.multi

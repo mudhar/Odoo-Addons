@@ -568,96 +568,72 @@ class MrpWorkOrder(models.Model):
     @api.multi
     def button_receive_good(self):
         self.check_backdate()
-        for order in self:
-            picking_dict = dict()
-            if not order.location_reject_id:
-                order.set_location_reject_id()
-            move_ids = self.env['stock.move']
-            qc_finished_moves = order.qc_ids.mapped('qc_finished_ids').filtered(lambda x: not x.stock_move_created)
-            consume_move_lines = order.production_id.move_raw_ids.filtered(
-                lambda x: x.state == 'done' and not x.returned_picking).mapped('active_move_line_ids')
-            if qc_finished_moves:
-                moves = order.create_finished_moves(qc_finished_moves)
+        for line in self:
+            if not line.location_reject_id:
+                line.set_location_reject_id()
 
-                for qc_finished in qc_finished_moves:
-                    for move in moves.filtered(lambda x: x.product_id.id == qc_finished.product_id.id):
-                        qc_finished.write({'stock_move_created': True,
-                                           'move_id': move.id})
-                        move.write({'consume_line_ids': [(6, 0, [x for x in consume_move_lines.ids])]})
+            finished_ids = line.qc_ids.mapped('qc_finished_ids')
+            rejected_ids = line.qc_ids.mapped('qc_reject_ids')
 
-                move_ids |= moves
+            move_finished_todo = finished_ids.filtered(lambda qc_finish: not qc_finish.stock_move_created)
+            move_rejected_todo = rejected_ids.filtered(lambda qc_reject: not qc_reject.stock_move_created)
 
-            if move_ids:
-                picking_finished_id = order.create_finished_picking(goods=True, rejects=False)
-                move_ids.write({'picking_id': picking_finished_id.id})
-                for picking_finished in picking_finished_id.move_lines:
-                    for receive_line in self.env['mrp_workorder.qc_finished_move'].search(
-                            [('move_id', 'in', move_ids.ids)]).filtered(
-                        lambda x: not x.picking_id
-                                  and x.stock_move_created
-                                  and x.product_id.id == picking_finished.product_id.id):
-                        receive_line.write({'name': picking_finished_id.name,
-                                            'picking_id': picking_finished_id.id})
+            consume_move_lines = line.production_id.move_raw_ids.filtered(
+                lambda move_raw: move_raw.state == 'done' and
+                not move_raw.returned_picking).mapped('active_move_line_ids')
 
-                picking_dict['picking_finished_id'] = picking_finished_id.id
-                picking_finished_id.action_assign()
+            stock_finished_ids = self.env['stock.move']
+            stock_rejected_ids = self.env['stock.move']
+            if move_finished_todo:
+                move_finished_ids = line.create_finished_moves(move_finished_todo)
+                for move_finished in move_finished_todo:
+                    for move_line in move_finished_ids.filtered(
+                            lambda ml: ml.product_id.id == move_finished.product_id.id):
+                        move_finished.write({'stock_move_created': True, 'move_id': move_line.id})
+                        move_line.write({'consume_line_ids': [(6, 0, [x for x in consume_move_lines.ids])]})
+                stock_finished_ids |= move_finished_ids
 
-            move_reject_ids = self.env['stock.move']
+                picking_finished_id = line.create_finished_picking(goods=True, rejects=False)
+                assert len(picking_finished_id) == 1
+                if stock_finished_ids and picking_finished_id:
+                    stock_finished_ids.write({'picking_id': picking_finished_id.id})
+                    for picking_finished in picking_finished_id.move_lines:
+                        for finished_line in self.env['mrp_workorder.qc_finished_move'].search(
+                                [('move_id', 'in', stock_finished_ids.ids)
+                                 ]).filtered(lambda x: (not x.picking_id and x.stock_move_created)
+                                             and (x.product_id.id == picking_finished.product_id.id)):
+                            finished_line.write({'name': picking_finished_id.name,
+                                                 'picking_id': picking_finished_id.id})
+                    picking_finished_id.action_assign()
 
-            qc_reject_moves = order.qc_ids.mapped('qc_reject_ids').filtered(lambda x: not x.stock_move_created)
-            # Jika Input Quantity Good Bersaman Quantity Reject Baru Bikin Picking
-            if qc_finished_moves and qc_reject_moves:
-                moves_reject = order.create_finished_moves(qc_reject_moves)
-                for qc_reject in qc_reject_moves:
-                    for move_reject in moves_reject.filtered(lambda x: x.product_id.id == qc_reject.product_id.id):
-                        qc_reject.write({'stock_move_created': True,
-                                         'move_id': move_reject.id})
-                        move_reject.write({'consume_line_ids': [(6, 0, [x for x in consume_move_lines.ids])]})
-                move_reject_ids |= moves_reject
-            if move_reject_ids:
-                picking_reject_id = order.create_finished_picking(goods=False, rejects=True)
-                picking_dict['picking_reject_id'] = picking_reject_id.id
-                move_reject_ids.write({'picking_id': picking_reject_id.id})
-                for picking in picking_reject_id.move_lines:
-                    for reject_line in self.env['mrp_workorder.qc_reject_move'].search(
-                            [('move_id', 'in', move_reject_ids.ids),
-                             ]).filtered(lambda x: not x.picking_id and x.product_id.id == picking.product_id.id):
-                        reject_line.write({'name': picking_reject_id.name,
-                                           'picking_id': picking_reject_id.id})
-                if picking_dict.get('picking_finished_id', False):
-                    picking_reject_id.write({'backorder_id': picking_dict['picking_finished_id']})
-                picking_reject_id.write({'is_rejected': True})
-                picking_reject_id.action_assign()
+            if move_rejected_todo:
+                move_rejected_ids = line.create_finished_moves(move_rejected_todo)
+                for move_rejected in move_rejected_todo:
+                    for move_line in move_rejected_ids.filtered(
+                            lambda ml: ml.product_id.id == move_rejected.product_id.id):
+                        move_rejected.write({'stock_move_created': True, 'move_id': move_line.id})
+                        move_line.write({'consume_line_ids': [(6, 0, [x for x in consume_move_lines.ids])]})
+                stock_rejected_ids |= move_rejected_ids
 
-            # Jika Input Quantity Good Tidak Bersamaan Dengan Quantity Reject Baru Bikin Picking
-            finished_move_exist = order.qc_ids.mapped('qc_finished_ids').filtered(lambda x: x.picking_id and x.stock_move_created)
-            if (finished_move_exist and qc_reject_moves) or (not finished_move_exist and qc_reject_moves):
-                moves_reject = order.create_finished_moves(qc_reject_moves)
-                for qc_reject in qc_reject_moves:
-                    for move_reject in moves_reject.filtered(lambda x: x.product_id.id == qc_reject.product_id.id):
-                        qc_reject.write({'stock_move_created': True,
-                                         'move_id': move_reject.id})
-                        move_reject.write({'consume_line_ids': [(6, 0, [x for x in consume_move_lines.ids])]})
-                move_reject_ids |= moves_reject
-            if move_reject_ids:
-                picking_reject_id = order.create_finished_picking(goods=False, rejects=True)
-                picking_dict['picking_reject_id'] = picking_reject_id.id
-                move_reject_ids.write({'picking_id': picking_reject_id.id})
-                for picking in picking_reject_id.move_lines:
-                    for reject_line in self.env['mrp_workorder.qc_reject_move'].search(
-                            [('move_id', 'in', move_reject_ids.ids),
-                             ]).filtered(lambda x: not x.picking_id and x.product_id.id == picking.product_id.id):
-                        reject_line.write({'name': picking_reject_id.name,
-                                           'picking_id': picking_reject_id.id})
-                if len(finished_move_exist.mapped('picking_id')) == 1:
-                    picking_reject_id.write({'backorder_id': finished_move_exist.mapped('picking_id').id})
-                    picking_reject_id.write({'is_rejected': True})
-                    picking_reject_id.action_assign()
+                picking_rejected_id = line.create_finished_picking(goods=False, rejects=True)
+                assert len(picking_rejected_id) == 1
+                if stock_rejected_ids and picking_rejected_id:
+                    stock_rejected_ids.write({'picking_id': picking_rejected_id.id})
+                    for picking_reject in picking_rejected_id.move_lines:
+                        for reject_line in self.env['mrp_workorder.qc_reject_move'].search(
+                                [('move_id', 'in', stock_rejected_ids.ids),
+                                 ]).filtered(lambda x: not x.picking_id and x.product_id.id == picking_reject.product_id.id):
+                            reject_line.write({'name': picking_rejected_id.name,
+                                               'picking_id': picking_rejected_id.id})
+
+                if len(finished_ids.mapped('picking_id')) >= 1:
+                    from_finished_picking = finished_ids.mapped('picking_id')
+                    picking_rejected_id.write({'backorder_id': from_finished_picking[0].id,
+                                               'is_rejected': True})
+                    picking_rejected_id.action_assign()
                 else:
-                    picking_reject_id.write({'is_rejected': True})
-                    picking_reject_id.action_assign()
-
-        return True
+                    picking_rejected_id.write({'is_rejected': True})
+                    picking_rejected_id.action_assign()
 
     @api.multi
     def create_finished_moves(self, values):
@@ -912,9 +888,42 @@ class MrpWorkOrderQcLine(models.Model):
     @api.multi
     def button_reject(self):
         # self.workorder_id.qc_done -= self.qc_good
-        self.update({'qc_good': 0.0,
-                     'qc_reject': 0.0,
-                     'qc_sample': 0.0})
+        if not self.next_work_order_id and not self.is_cutting:
+            self.update({'qc_good': 0.0,
+                         'qc_reject': 0.0,
+                         'qc_sample': 0.0})
+            picking_finished_ids = self.qc_finished_ids.mapped('picking_id')
+            if self.qc_finished_ids and picking_finished_ids:
+                if any(picking.state == 'done' for picking in picking_finished_ids):
+                    raise UserError(_("Anda Tidak Dapat Melakukan Reject Pada Proses Ini\n"
+                                      "Ada Stock Move Finish Yang Sudah Selesai Prosesnya"))
+                if all(picking.state not in ('done', 'cancel')
+                       for picking in picking_finished_ids):
+                    picking_finished_ids.action_cancel()
+            if picking_finished_ids.mapped('state') == 'cancel':
+                self.qc_finished_ids.unlink()
+
+            picking_reject_ids = self.qc_reject_ids.mapped('picking_id')
+            if self.qc_reject_ids and picking_reject_ids:
+                if any(picking.state == 'done' for picking in picking_reject_ids):
+                    raise UserError(_("Anda Tidak Dapat Melakukan Reject Pada Proses ini\n"
+                                      "Ada Stock Move Reject Yang Sudah Selesai Prosesnya"))
+                if all(picking.state not in ('done', 'cancel') for picking in picking_reject_ids):
+                    picking_reject_ids.action_cancel()
+            if picking_reject_ids.mapped('state') == 'cancel':
+                self.qc_reject_ids.unlink()
+
+            self.qc_reject_ids.unlink()
+            self.qc_finished_ids.unlink()
+
+        if self.next_work_order_id and self.is_cutting:
+            self.update({'qc_good': 0.0,
+                         'qc_reject': 0.0,
+                         'qc_sample': 0.0})
+        if self.next_work_order_id and not self.is_cutting:
+            self.update({'qc_good': 0.0,
+                         'qc_reject': 0.0,
+                         'qc_sample': 0.0})
         self.write({'state': 'reject'})
 
         return True

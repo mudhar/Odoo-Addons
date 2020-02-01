@@ -296,6 +296,29 @@ class AssemblyProd(models.Model):
         return variant_model
 
     @api.multi
+    def set_product_variant_line(self):
+        """
+        Jika User Menambahkan Attribute Baru Pada Produk Yang Sama.
+        Tabel Product Component Terisi Sesuai Variant Product Tsb
+        """
+        variant_model = self.env['assembly.prod.variant.line']
+        for assembly in self:
+            product_variant_ids = assembly.product_tmpl_id.product_variant_ids
+
+            set_product_variant = assembly.variant_line_ids.mapped('product_id')
+
+            for product_variant in product_variant_ids.filtered(
+                    lambda x: x.id not in set_product_variant.ids):
+                product_values = {
+                    'product_id': product_variant.id,
+                    # 'attribute_value_ids': [(6, 0, product_variant.attribute_value_ids.ids)],
+                    'assembly_id': assembly.id,
+                }
+                variant_model |= self.env['assembly.prod.variant.line'].create(product_values)
+
+        return variant_model
+
+    @api.multi
     def _unset_product_variant_line(self):
         for assembly in self:
             if assembly.variant_line_ids:
@@ -304,7 +327,7 @@ class AssemblyProd(models.Model):
                     assembly.variant_line_ids.unlink()
                     assembly._set_product_variant_line()
                 else:
-                    return False
+                    assembly.set_product_variant_line()
         return True
 
     @api.multi
@@ -505,18 +528,29 @@ class AssemblyProd(models.Model):
             lambda attribute_value: attribute_value.attribute_id in raw_material_attributes.mapped('attribute_id')
         )
         unreserve_attribute = []
-        for variant in variant_attributes:
-            if variant not in raw_material_attributes:
-                unreserve_attribute.append(variant)
-            # for material in raw_material_attributes:
-            #     if variant.id != material.id:
-            #         unreserve_attribute.append(variant)
-            #     if variant.id == material.id:
-            #         continue
-        if unreserve_attribute:
-            message = ''.join('\t%s\n' % attribute.display_name for attribute in unreserve_attribute)
-            raise UserError(_("Beberapa Attribute Belum Diset Pada Raw Material Products\n"
-                              "%s") % message)
+        variant_mismatch = False
+        if len(raw_material_attributes) == len(variant_attributes):
+            for variant in variant_attributes:
+                if variant.id in raw_material_attributes.ids:
+                    continue
+                if variant.id not in raw_material_attributes.ids:
+                    variant_mismatch = True
+
+        if len(raw_material_attributes) != len(variant_attributes):
+            for variant in variant_attributes:
+                if variant not in raw_material_attributes:
+                    unreserve_attribute.append(variant)
+            if unreserve_attribute:
+                message = ''.join('\t%s\n' % attribute.display_name for attribute in unreserve_attribute)
+                raise UserError(_("Beberapa Attribute Belum Diset Pada Raw Material Products\n"
+                                  "%s") % message)
+            if not unreserve_attribute:
+                variant_mismatch = True
+
+        if variant_mismatch:
+            raise UserError(_("Attribute Pada Product Variants Ratio\n"
+                              "Tidak Sesuai Dengan Attribute Pada Raw Material"))
+
 
     @api.multi
     def button_need_approval(self):

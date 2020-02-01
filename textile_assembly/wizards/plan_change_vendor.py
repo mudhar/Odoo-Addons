@@ -26,7 +26,7 @@ class PlanChangeVendor(models.TransientModel):
     def action_confirm(self):
         for order in self:
             if order.partner_id:
-                new_partner_code = order.partner_id.partner_code_cmt
+                new_partner_code = order.partner_id.partner_cmt_code
                 plan_reference = order.plan_id.name
                 copy_reference = plan_reference[plan_reference.index('/'):]
 

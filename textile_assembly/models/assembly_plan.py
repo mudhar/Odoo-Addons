@@ -345,7 +345,7 @@ class AssemblyPlan(models.Model):
     def create(self, values):
         if values.get('name', _('New')) == _('New') and values.get('partner_id'):
             partner_id = self.env['res.partner'].browse(values.get('partner_id'))
-            values['name'] = ''.join('%s/%s' % (partner_id.partner_code_cmt,
+            values['name'] = ''.join('%s/%s' % (partner_id.partner_cmt_code,
                                                 self.env['ir.sequence'].next_by_code('assembly.plan'))) or '/'
 
         plan = super(AssemblyPlan, self).create(values)
