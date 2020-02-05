@@ -31,7 +31,7 @@ class ProductionJournal(models.TransientModel):
             res['currency_id'] = self.env['mrp.production'].browse(res['production_id']).company_id.currency_id.id
 
         if 'amount_wip_differ' in fields_list and not res.get('amount_wip_differ') and res.get('production_id'):
-            res['amount_wip_differ'] = self.env['mrp.production'].browse(res['production_id']).amount_wip_differ_context
+            res['amount_wip_differ'] = self.env['mrp.production'].browse(res['production_id']).amount_wip_differ
 
         if 'account_expense_material_id' in fields_list and not res.get('account_expense_material_id') and res.get('production_id'):
             res['account_expense_material_id'] = self.env['mrp.production'].browse(
@@ -45,8 +45,8 @@ class ProductionJournal(models.TransientModel):
         for wizard in self:
             amount_balanced = 0.0
             production_id = self.env['mrp.production'].browse(wizard.production_id.id)
-            if production_id and production_id.amount_wip_differ_context:
-                amount_balanced += production_id.amount_wip_differ_context - wizard.amount_total
+            if production_id and production_id.amount_wip_differ:
+                amount_balanced += production_id.amount_wip_differ - wizard.amount_total
             if float_is_zero(amount_balanced, precision_digits=wizard.currency_id.decimal_places):
                 wizard.production_id.write({'has_balanced': True})
         return True
@@ -82,7 +82,5 @@ class ProductionJournal(models.TransientModel):
                     'material_production_id': wizard.production_id.id
                 })
                 new_account_move.post()
-
-
 
         return {'type': 'ir.actions.act_window_close'}

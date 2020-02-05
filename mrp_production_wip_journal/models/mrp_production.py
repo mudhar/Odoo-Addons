@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
+from odoo.addons import decimal_precision as dp
 from odoo.tools import float_is_zero, float_compare
 from odoo.exceptions import UserError
 
@@ -18,18 +19,18 @@ class MrpProduction(models.Model):
 
     account_move_ids = fields.One2many(comodel_name="account.move", inverse_name="material_production_id",
                                        string="Reference WIP Material")
-    amount_wip_differ = fields.Float(string="Total WIP Materials Differ",index=True, compute="_compute_wip_material_differ",
-                                     help="Total Amount Consumed Minus Amount Returned Minus Amount Assembly")
-    amount_wip_differ_context = fields.Float(string="Total WIP Materials Differ", index=True,
-                                             compute="_compute_wip_material_final")
-    amount_wip_assembly = fields.Float(string="Total WIP Assembly", compute="_compute_wip_material_assembly")
-    wip_balance = fields.Boolean(string="WIP Materials Balance", compute="_compute_wip_balance",
-                                 index=True)
     has_balanced = fields.Boolean(string="Has Balanced?")
     has_returned_move = fields.Boolean(compute="_has_returned_moves")
-    account_move_count = fields.Integer(
-        string='Of Account Move',
-        compute="_compute_account_move_count")
+    amount_wip_consumed = fields.Float(string='Total WIP Consumed', digits=dp.get_precision('Account'),
+                                       compute="_compute_wip_consumed")
+    amount_wip_assembly = fields.Float(string="Total WIP Assembly", digits=dp.get_precision('Account'),
+                                       compute="_compute_wip_material_assembly")
+    amount_wip_differ = fields.Float(string="Total WIP Materials Differ", digits=dp.get_precision('Account'),
+                                     compute="_compute_wip_material_differ",
+                                     help="Total Amount Consumed Minus Amount Returned Minus Amount Assembly")
+    wip_balance = fields.Boolean(string="WIP Materials Balance", compute="_compute_wip_balance",
+                                 index=True)
+    account_move_count = fields.Integer(string='Of Account Move', compute="_compute_account_move_count")
 
     def _compute_account_move_count(self):
         read_group_res = self.env['account.move'].read_group(
@@ -42,24 +43,8 @@ class MrpProduction(models.Model):
     @api.multi
     def _compute_wip_balance(self):
         for production in self:
-            production.wip_balance = float_is_zero(production.amount_wip_differ_context,
+            production.wip_balance = float_is_zero(production.amount_wip_differ,
                                                    precision_digits=production.company_id.currency_id.decimal_places)
-
-    @api.multi
-    @api.depends('amount_wip_differ')
-    def _compute_wip_material_final(self):
-        for production in self:
-            currency_id = production.company_id.currency_id
-            amount_move = sum(production.account_move_ids.mapped('amount')) if production.account_move_ids else 0.0
-            if float_is_zero(production.amount_wip_differ, precision_digits=currency_id.decimal_places) and \
-                    not float_is_zero(amount_move, precision_digits=currency_id.decimal_places):
-                production.amount_wip_differ_context += 0.0
-            elif float_is_zero(amount_move, precision_digits=currency_id.decimal_places) and \
-                    not float_is_zero(production.amount_wip_differ, precision_digits=currency_id.decimal_places):
-                production.amount_wip_differ_context = production.amount_wip_differ
-            elif not float_is_zero(production.amount_wip_differ, precision_digits=currency_id.decimal_places) and \
-                    not float_is_zero(amount_move, precision_digits=currency_id.decimal_places):
-                production.amount_wip_differ_context = production.amount_wip_differ - amount_move
 
     @api.multi
     @api.depends('assembly_plan_id',
@@ -76,26 +61,46 @@ class MrpProduction(models.Model):
     @api.multi
     @api.depends('move_raw_ids',
                  'move_raw_ids.state',
+                 'move_raw_ids.account_move_ids',
+                 'move_raw_ids.account_move_ids.amount')
+    def _compute_wip_consumed(self):
+        for production in self:
+            move_consumed = production.move_raw_ids.filtered(lambda x: not x.returned_picking and x.state == 'done')
+            if move_consumed:
+                amount_move_consumed = move_consumed.mapped('account_move_ids').filtered(
+                    lambda x: x.state == 'posted').mapped('amount')
+                production.amount_wip_consumed = sum(amount_move_consumed)
+
+    @api.multi
+    @api.depends('amount_wip_consumed',
+                 'amount_wip_assembly',)
+    def _compute_wip_material_differ(self):
+        for production in self:
+            move_returned = production.move_raw_ids.filtered(lambda x: x.returned_picking and x.state == 'done')
+            amount_move_returned = 0.0
+            if move_returned:
+                amount_move_returned += sum(move_returned.mapped('account_move_ids').mapped('amount'))
+            amount_differ = production.amount_wip_consumed - amount_move_returned
+            if amount_differ and amount_differ > production.amount_wip_assembly:
+                amount_wip_differ = amount_differ - production.amount_wip_assembly
+                if production.account_move_ids:
+                    amount_wip_differ -= sum(production.account_move_ids.mapped('amount'))
+                production.amount_wip_differ = amount_wip_differ
+
+            if amount_differ and amount_differ < production.amount_wip_assembly:
+                amount_wip_differ = production.amount_wip_assembly - amount_differ
+                if production.account_move_ids:
+                    amount_wip_differ -= sum(production.account_move_ids.mapped('amount'))
+                production.amount_wip_differ = amount_wip_differ
+
+    @api.multi
+    @api.depends('move_raw_ids',
+                 'move_raw_ids.state',
                  'move_raw_ids.returned_picking')
     def _has_returned_moves(self):
         for mo in self:
             move_returned = mo.move_raw_ids.filtered(lambda x: x.returned_picking and x.state == 'done')
             mo.has_returned_move = any(move_returned)
-
-    @api.depends('workorder_ids',
-                 'move_raw_ids',
-                 'move_raw_ids.state',
-                 'move_raw_ids.account_move_ids',
-                 'move_raw_ids.account_move_ids.amount')
-    def _compute_wip_material_differ(self):
-        for production in self.filtered(
-                lambda order_id: order_id.state not in ['done', 'cancel'] and order_id.workorder_ids):
-            move_consumed = production.move_raw_ids.filtered(lambda x: x.state == 'done' and not x.returned_picking)
-            move_returned = production.move_raw_ids.filtered(lambda x: x.state == 'done' and x.returned_picking)
-            amount_total = 0.0
-            if move_consumed:
-                amount_total += production.get_wip_material_amount(move_consumed, move_returned)
-            production.amount_wip_differ = amount_total
 
     @api.multi
     def set_account_valuation_wip(self):
@@ -110,28 +115,6 @@ class MrpProduction(models.Model):
             'account_expense_material_id': account_expense_material_id.id})
 
     @api.multi
-    def get_wip_material_amount(self, move_consumed, move_returned):
-        for production in self:
-            amount_balance = 0.0
-            product_moves = move_consumed.mapped('product_id')
-            plan_id = production.mapped('assembly_plan_id')
-            raw_amount = plan_id.raw_actual_line_ids.filtered(
-                lambda x: x.product_id.id in product_moves.ids).mapped('price_subtotal_actual')
-            cmt_amount = plan_id.cmt_material_actual_line_ids.filtered(
-                lambda x: x.product_id.id in product_moves.ids).mapped('price_subtotal_actual')
-            total_plan = sum(raw_amount) + sum(cmt_amount)
-
-            total_amount = 0.0
-            amount_consumed = production.get_amount_consume(move_consumed.mapped('account_move_ids'))
-            amount_returned = production.get_amount_consume(move_returned.mapped('account_move_ids'))
-            if amount_consumed and amount_returned or not amount_returned:
-                total_amount += sum(amount_consumed) - sum(amount_returned)
-            if total_amount > total_plan:
-                amount_balance += (total_amount - total_plan)
-
-            return amount_balance
-
-    @api.multi
     def get_amount_assembly(self, plan_ids, product_moves):
         amount_material = []
         amount_accessories = []
@@ -142,12 +125,6 @@ class MrpProduction(models.Model):
         return sum(amount_material) + sum(amount_accessories)
 
     @api.multi
-    def get_amount_consume(self, account_move_ids):
-        amount = []
-        for move in account_move_ids.filtered(lambda x: x.state == 'posted'):
-            amount.append(move.amount)
-        return amount
-
     def prepare_account_move_line(self, product_id=None, debit_account_id=None, credit_account_id=None,
                                   partner_id=None, ref=False, order_ids=None, wip=None):
         wip_res = []
@@ -242,7 +219,7 @@ class MrpProduction(models.Model):
     @api.multi
     def action_mark_done(self):
         self.ensure_one()
-        if self.amount_wip_differ_context == 0.0:
+        if self.amount_wip_differ == 0.0:
             return super(MrpProduction, self).action_mark_done()
         else:
             raise UserError(_("Masih Ada Selisih WIP Material Yang Perlu Di Adjust"))

@@ -14,9 +14,10 @@
                 </xpath>
                 <xpath expr="//field[@name='partner_id']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <field name="amount_wip_differ_context" attrs="{'invisible':[('assembly_plan_id','=',False)]}"/>
                     <field name="amount_wip_assembly" attrs="{'invisible':[('assembly_plan_id','=',False)]}"/>
-                     <field name="has_returned_move" invisible="1"/>
+                    <field name="amount_wip_differ" attrs="{'invisible':[('assembly_plan_id','=',False)]}"/>
+                    <field name="amount_wip_consumed" attrs="{'invisible':[('assembly_plan_id','=',False)]}"/>
+                    <field name="has_returned_move" invisible="1"/>
                     <field name="has_balanced" invisible="1"/>
                     <field name="wip_balance" invisible="1"/>
                     <field name="account_move_count" invisible="1"/>
@@ -70,7 +71,7 @@
 
                 <xpath expr="//field[@name='origin']" position="after">
                     <!-- Add new fields here -->
-                    <field name="amount_wip_differ_context"/>
+                    <field name="amount_wip_differ"/>
                 </xpath>
 
             </field>
