@@ -4,9 +4,10 @@ from odoo import api, fields, models
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    product_select_type = fields.Selection(string="Jenis Produk",
+    product_select_type = fields.Selection(string="Report Type",
                                            selection=[('materials', 'Materials'),
                                                       ('goods', 'Goods'), ], default='goods',
+                                           help="Reference Picking Name",
                                            index=True, copy=True, track_visibility='onchange', required=True)
 
 

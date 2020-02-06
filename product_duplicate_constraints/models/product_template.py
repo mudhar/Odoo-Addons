@@ -55,18 +55,6 @@ class ProductTemplate(models.Model):
                     raise ValidationError(_("Product %s Memiliki Code Assembly Yang Sama\n"
                                             "Dengan Product %s") % (template.display_name, found[0].display_name))
 
-    # @api.constrains('assembly_code_ref')
-    # def _check_assembly_code(self):
-    #     for res in self:
-    #         if res.assembly_code_ref and res.template_code:
-    #             product_id = self.env['product.template'].search_count(
-    #                 [('assembly_code_ref', '=', res.assembly_code_ref),
-    #                  ('company_id', '=', res.company_id.id)])
-    #             if product_id and product_id > 1:
-    #                 raise ValidationError(_("Hello Buddy, An Assembly Code Must Be Unique"))
-    #             else:
-    #                 return False
-
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'

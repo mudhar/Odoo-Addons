@@ -52,9 +52,9 @@
 
                 <xpath expr="//filter[@name='supplier']" position="after">
                     <!-- Add new fields here -->
+                    <field name="partner_cmt_code" string="CMT Code" filter_domain="[('reference_cmt_code','ilike',self)]"/>
+                    <field name="partner_customer_code" string="Customer Code" filter_domain="[('reference_customer_code','ilike',self)]"/>
                     <filter string="CMT" name="is_cmt" domain="[('is_cmt','=',1), ('parent_id', '=', False)]"/>
-                    <filter string="CMT Code" name="partner_cmt_code" domain="[('partner_cmt_code','ilike',self), ('partner_cmt_code','=',1)]"/>
-                    <filter string="Customer Code" name="partner_customer_code" domain="[('partner_customer_code','ilike',self), ('partner_customer_code','=',1)]"/>
                 </xpath>
             </field>
         </record>

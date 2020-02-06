@@ -8,8 +8,9 @@
         """,
 
     'description': """
-        Generate Picking Internal Transfer To Backorder Picking Internal Transefer\n
-        Trigger Ceklilst Final Destination Pada Picking Yang Divalidate\n
+MULTI PICKING INTERNAL TRANSFER
+===============================
+1. TRANSFER ANTAR TOKO KE GUDANG MELALUI LOKASI TRANSIT
     """,
 
     'author': "odoo-consultants",

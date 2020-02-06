@@ -23,7 +23,9 @@
                         <field name="final_location_dest_id" groups="stock.group_stock_multi_locations" attrs="{'invisible': [('check_final_location','=',False)], 'required': [('check_final_location','=',True)]}"/>
                     </div>
                 </xpath>
-
+                <xpath expr="//group//field[@name='partner_id']" position="attributes">
+                    <attribute name="attrs">{'invisible': [('final_location_dest_id','!=',False)]}</attribute>
+                </xpath>
             </field>
         </record>
     </data>

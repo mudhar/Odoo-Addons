@@ -23,9 +23,9 @@
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
 
-                <xpath expr="//field[@name='partner_id']" position="after">
+                <xpath expr="//field[@name='group_id']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <field name="product_select_type" readonly="1"/>
+                    <field name="product_select_type" readonly="1" groups="base.group_no_one"/>
                 </xpath>
 
             </field>

@@ -5,8 +5,8 @@ from odoo.exceptions import UserError
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
-    is_goods = fields.Boolean(string="Is Goods")
-    is_materials = fields.Boolean(string="Is Materials", default=True)
+    is_goods = fields.Boolean(string="Is Goods", help="Tick Jika Produk Finish Goods")
+    is_materials = fields.Boolean(string="Is Materials", default=True, help="Tick Jika Produk Material")
 
     @api.multi
     def write(self, vals):

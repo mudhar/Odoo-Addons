@@ -11,6 +11,7 @@ class PurchaseOrder(models.Model):
                                            selection=[('materials', 'Materials'),
                                                       ('goods', 'Goods'),
                                                       ('subpo', 'Sub PO')], default='materials',
+                                           help="Reference Picking Name",
                                            index=True, copy=True,  track_visibility='onchange', required=True)
 
     @api.multi
@@ -37,7 +38,8 @@ class PurchaseOrder(models.Model):
     @api.model
     def _prepare_picking(self):
         result = super(PurchaseOrder, self)._prepare_picking()
-        result.update({'product_select_type': self.product_select_type})
+        result.update({'product_select_type': self.product_select_type,
+                       'purchase_created': True})
         return result
 
 
