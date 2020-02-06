@@ -80,20 +80,35 @@ class StockPicking(models.Model):
              ('location_id', '=', self.env.ref('stock.stock_location_locations').id)
              ])
         operation = self.env['stock.picking.type'].browse(vals.get('picking_type_id'))
+        partner_id = self.env['res.partner'].browse(vals.get('partner_id'))
         if operation.code == 'incoming':
-            if vals.get('product_select_type', 'materials') == 'materials':
-                vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_incoming')
-            elif vals.get('product_select_type', 'goods') == 'goods':
-                vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.goods_incoming')
+            # purchase order, product materials, vendor non cmt
+            if vals.get('purchase_id') and partner_id and not partner_id.is_cmt:
+                if vals.get('product_select_type', 'materials') == 'materials':
+                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_incoming')
+            # purchase order, product goods, vendor cmt
+            elif vals.get('purchase_id') and partner_id and partner_id.is_cmt:
+                if vals.get('product_select_type', 'goods') == 'goods':
+                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.goods_incoming')
+
         if operation.code == 'outgoing':
-            if vals.get('product_select_type', 'materials') == 'materials':
-                vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_outgoing')
-            # SJBJ Diganti Dengan Format Code Customer/Y/M/Seq
-            elif vals.get('product_select_type', 'goods') == 'goods':
-                customer_id = self.env['res.partner'].browse(vals.get('partner_id'))
-                customer_code_seq = self.env['ir.sequence'].next_by_code('stock.picking.goods_outgoing')
-                picking_customer_reference = ''.join('%s/%s' % (customer_id.partner_code_customer, customer_code_seq))
-                vals['name'] = picking_customer_reference
+            # purchase retur, product materials, vendor non cmt
+            if vals.get('purchase_id') and partner_id and not partner_id.is_cmt:
+                if vals.get('product_select_type', 'materials') == 'materials':
+                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.return_non_cmt')
+            # sales order, product goods, non customer cmt
+            elif vals.get('sale_id') and partner_id and not partner_id.is_cmt:
+                if vals.get('product_select_type', 'goods') == 'goods':
+                    customer_id = self.env['res.partner'].browse(vals.get('partner_id'))
+                    customer_code_seq = self.env['ir.sequence'].next_by_code('stock.picking.goods_outgoing')
+                    picking_customer_reference = ''.join(
+                        '%s/%s' % (customer_id.partner_customer_code, customer_code_seq))
+                    vals['name'] = picking_customer_reference
+            # sale retur, product materials, customer cmt
+            elif vals.get('sale_id') and partner_id and partner_id.is_cmt:
+                if vals.get('product_select_type', 'materials') == 'materials':
+                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_outgoing')
+
         if operation.code == 'internal' and operation.id == picking_cmt_consume.id:
             if vals.get('product_select_type', 'materials') == 'materials':
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_outgoing')

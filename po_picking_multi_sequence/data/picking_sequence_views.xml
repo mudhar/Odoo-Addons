@@ -10,7 +10,16 @@
             <field name="company_id" eval="False"/>
         </record>
 
-         <!-- Sequences for purchase.order  Bahan Jadi-->
+        <!--Purchase Retur Non CMT -->
+        <record id="seq_stock_picking_return_non_cmt" model="ir.sequence">
+            <field name="name">Stock Picking Return Non CMT</field>
+            <field name="code">stock.picking.return_non_cmt</field>
+            <field name="prefix">SJRB/%(y)s/%(month)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Sequences for purchase.order  Bahan Jadi-->
         <record id="seq_stock_picking_materials_ougoing" model="ir.sequence">
             <field name="name">Stock Picking Materials Outgoing</field>
             <field name="code">stock.picking.materials_outgoing</field>
@@ -19,7 +28,7 @@
             <field name="company_id" eval="False"/>
         </record>
 
-         <!-- Sequences for purchase.order  Bahan Baku-->
+        <!-- Sequences for purchase.order  Bahan Baku-->
         <record id="seq_stock_picking_goods_incoming" model="ir.sequence">
             <field name="name">Stock Picking Goods Incoming</field>
             <field name="code">stock.picking.goods_incoming</field>
@@ -28,7 +37,7 @@
             <field name="company_id" eval="False"/>
         </record>
 
-         <!-- Finish Goods Outgoing Dari SO-->
+        <!-- Finish Goods Outgoing Dari SO-->
         <record id="seq_stock_picking_goods_ougoing" model="ir.sequence">
             <field name="name">Stock Picking Goods Outgoing</field>
             <field name="code">stock.picking.goods_outgoing</field>
@@ -61,19 +70,19 @@
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
-<!--         <record id="seq_picking_internal_transit_in" model="ir.sequence">-->
-<!--            <field name="name">Picking Internal Transfer Transit IN</field>-->
-<!--            <field name="code">picking.internal.transit.in</field>-->
-<!--            <field name="prefix">Transit IN/%(y)s/%(month)s/</field>-->
-<!--            <field name="padding">5</field>-->
-<!--            <field name="company_id" eval="False"/>-->
-<!--        </record>-->
-<!--        <record id="seq_picking_internal_transit_out" model="ir.sequence">-->
-<!--            <field name="name">Picking Internal Transfer Transit OUT</field>-->
-<!--            <field name="code">picking.internal.transit.out</field>-->
-<!--            <field name="prefix">Transit OUT/%(y)s/%(month)s/</field>-->
-<!--            <field name="padding">5</field>-->
-<!--            <field name="company_id" eval="False"/>-->
-<!--        </record>-->
+        <!--         <record id="seq_picking_internal_transit_in" model="ir.sequence">-->
+        <!--            <field name="name">Picking Internal Transfer Transit IN</field>-->
+        <!--            <field name="code">picking.internal.transit.in</field>-->
+        <!--            <field name="prefix">Transit IN/%(y)s/%(month)s/</field>-->
+        <!--            <field name="padding">5</field>-->
+        <!--            <field name="company_id" eval="False"/>-->
+        <!--        </record>-->
+        <!--        <record id="seq_picking_internal_transit_out" model="ir.sequence">-->
+        <!--            <field name="name">Picking Internal Transfer Transit OUT</field>-->
+        <!--            <field name="code">picking.internal.transit.out</field>-->
+        <!--            <field name="prefix">Transit OUT/%(y)s/%(month)s/</field>-->
+        <!--            <field name="padding">5</field>-->
+        <!--            <field name="company_id" eval="False"/>-->
+        <!--        </record>-->
     </data>
 </odoo>
