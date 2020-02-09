@@ -13,15 +13,15 @@ class ProductTemplate(models.Model):
                          "The Assembly Code must be unique per Company.")]
 
     # Perlu Revisi Untuk Override Fungsi Write
-    @api.model
-    def create(self, values):
-        template = super(ProductTemplate, self).create(values)
-        related_values = {}
-        if values.get('assembly_code_ref'):
-            related_values['assembly_code_ref'] = values['assembly_code_ref']
-        if related_values:
-            template.write(related_values)
-        return template
+    # @api.model
+    # def create(self, values):
+    #     template = super(ProductTemplate, self).create(values)
+    #     related_values = {}
+    #     if values.get('assembly_code_ref'):
+    #         related_values['assembly_code_ref'] = values['assembly_code_ref']
+    #     if related_values:
+    #         template.write(related_values)
+    #     return template
 
     @api.onchange('template_code')
     def _onchange_assembly_code(self):
@@ -55,38 +55,27 @@ class ProductTemplate(models.Model):
                     raise ValidationError(_("Product %s Memiliki Code Assembly Yang Sama\n"
                                             "Dengan Product %s") % (template.display_name, found[0].display_name))
 
+    @api.multi
+    def action_generate_internal_reference(self):
+        self.ensure_one()
+        if self.assembly_code_ref and not self.attribute_line_ids:
+            raise ValidationError(_("Untuk Mengenerate Internal Reference\n"
+                                    "Dan Attribute Untu Produk Juga Harus Diisi"))
+        if self.assembly_code_ref and self.is_product_variant and self.product_variant_ids:
+            for variant in self.product_variant_ids.filtered(lambda x: not x.internal_reference_generated \
+                                                             and x.product_tmpl_id.id == self.id):
+                internal_reference = ''.join(ref.name + " " for ref in variant.mapped('attribute_value_ids'))
+                variant.write({'default_code': variant.assembly_code_ref + internal_reference,
+                               'internal_reference_generated': True})
+        if self.assembly_code_ref and not self.is_product_variant:
+            for variant in self.product_variant_ids.filtered(lambda x: not x.internal_reference_generated \
+                                                             and x.product_tmpl_id.id == self.id):
+                internal_reference = ''.join(ref.name + " " for ref in variant.mapped('attribute_value_ids'))
+                variant.write({'default_code': variant.assembly_code_ref + " " + internal_reference})
+        return True
+
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
-    @api.model
-    def create(self, values):
-        product_template = self.env['product.template']
-        assembly_reference = False
-        if values.get('product_tmpl_id', False) and values.get('attribute_value_ids', False) and not assembly_reference:
-            if product_template.browse(values.get('product_tmpl_id')) and \
-                    product_template.browse(values.get('product_tmpl_id')).mapped('is_goods') and \
-                    product_template.browse(values.get('product_tmpl_id')).mapped('template_code'):
-                template_attributes = product_template.browse(
-                    values.get('product_tmpl_id')).mapped('attribute_line_ids').mapped('value_ids')
-                attributes_explode = self.product_attribute_explode(values['attribute_value_ids'])
-                if attributes_explode and template_attributes:
-                    attributes_name = template_attributes.filtered(lambda x: x in attributes_explode).mapped('name')
-                    template_code = product_template.browse(values.get('product_tmpl_id')).template_code
-                    attribute_join = ''.join(ref + " " for ref in attributes_name)
-                    assembly_reference = template_code + " " + attribute_join
-
-        if assembly_reference:
-            values.update({'default_code': assembly_reference})
-        return super(ProductProduct, self).create(values)
-
-    @api.multi
-    def product_attribute_explode(self, attribute_value_ids):
-        attribute_value_object = self.env['product.attribute.value']
-        variant_matrix = [
-            attribute_value_object.browse(value_ids)
-            for value_ids in itertools.product(*(attrib_value[2]
-                                                 for attrib_value in attribute_value_ids))]
-        return variant_matrix
-
-
+    internal_reference_generated = fields.Boolean(string='Internal_reference_generated')

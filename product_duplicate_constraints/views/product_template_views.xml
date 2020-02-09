@@ -9,9 +9,16 @@
             <field name="inherit_id" ref="textile_assembly.product_template_inherited_view_form"/>
             <field name="arch" type="xml">
 
-                <xpath expr="//page[@name='textile_assembly_information']/group/group/field[@name='template_code']" position="after">
+                <xpath expr="//page[@name='textile_assembly_information']/group/group/field[@name='template_code']" position="replace">
                     <!-- Jika Tidak Ditambah Pada XML api constrains tidak ke trigger -->
-                    <field name="assembly_code_ref" invisible="1"/>
+                    <label for="template_code"/>
+                    <div class="o_row">
+                        <field name="template_code" placeholder="Referensi Code Produk Assembly"
+                               attrs="{'required': [('has_goods','=',True)]}"/>
+                        <button name="action_generate_internal_reference" type="object" string="Generate Internal Reference"
+                                class="oe_link"/>
+                        <field name="assembly_code_ref" invisible="1"/>
+                    </div>
                 </xpath>
 
             </field>
