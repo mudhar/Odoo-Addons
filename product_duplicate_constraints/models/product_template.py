@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import itertools
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
@@ -9,28 +8,17 @@ class ProductTemplate(models.Model):
 
     assembly_code_ref = fields.Char(string="Reference Assembly Code", copy=False)
 
-    _sql_constraints = [('assembly_code_ref_unique', 'unique (assembly_code_ref, company_id)',
-                         "The Assembly Code must be unique per Company.")]
-
-    # Perlu Revisi Untuk Override Fungsi Write
-    # @api.model
-    # def create(self, values):
-    #     template = super(ProductTemplate, self).create(values)
-    #     related_values = {}
-    #     if values.get('assembly_code_ref'):
-    #         related_values['assembly_code_ref'] = values['assembly_code_ref']
-    #     if related_values:
-    #         template.write(related_values)
-    #     return template
-
+    @api.multi
     @api.onchange('template_code')
-    def _onchange_assembly_code(self):
-        for product in self:
-            if product.template_code and product.is_goods:
-                code_ref = product.assembly_code_name_get()
-                product.update({'assembly_code_ref': code_ref})
+    def _onchange_template_code(self):
+        for template in self:
+            if not template.template_code:
+                template.assembly_code_ref = False
+            template_reference = template.assembly_code_name_get()
+            if template_reference:
+                template.update({'assembly_code_ref': template_reference})
 
-    @api.model
+    @api.multi
     def assembly_code_name_get(self):
         assembly_code_unique = False
         for res in self:
@@ -56,8 +44,19 @@ class ProductTemplate(models.Model):
                                             "Dengan Product %s") % (template.display_name, found[0].display_name))
 
     @api.multi
+    def _set_assembly_code_ref(self):
+        for template in self:
+            if template.template_code:
+                template_reference = template.assembly_code_name_get()
+                template.update({'assembly_code_ref': template_reference})
+        return True
+
+    @api.multi
     def action_generate_internal_reference(self):
         self.ensure_one()
+        if not self.assembly_code_ref and self.template_code:
+            self._set_assembly_code_ref()
+
         if self.assembly_code_ref and not self.attribute_line_ids:
             raise ValidationError(_("Untuk Mengenerate Internal Reference\n"
                                     "Dan Attribute Untu Produk Juga Harus Diisi"))
@@ -65,13 +64,21 @@ class ProductTemplate(models.Model):
             for variant in self.product_variant_ids.filtered(lambda x: not x.internal_reference_generated \
                                                              and x.product_tmpl_id.id == self.id):
                 internal_reference = ''.join(ref.name + " " for ref in variant.mapped('attribute_value_ids'))
-                variant.write({'default_code': variant.assembly_code_ref + internal_reference,
+                variant.write({'default_code': variant.template_code + " " + internal_reference,
                                'internal_reference_generated': True})
         if self.assembly_code_ref and not self.is_product_variant:
-            for variant in self.product_variant_ids.filtered(lambda x: not x.internal_reference_generated \
-                                                             and x.product_tmpl_id.id == self.id):
-                internal_reference = ''.join(ref.name + " " for ref in variant.mapped('attribute_value_ids'))
-                variant.write({'default_code': variant.assembly_code_ref + " " + internal_reference})
+            if len(self.product_variant_ids) == 1:
+                for variant in self.product_variant_ids.filtered(lambda x: not x.internal_reference_generated
+                                                                 and x.product_tmpl_id.id == self.id):
+                    internal_reference = ''.join(ref.name + " " for ref in variant.mapped('attribute_value_ids'))
+                    variant.write({'default_code': variant.template_code + " " + internal_reference})
+            if len(self.product_variant_ids) > 1:
+                for variant in self.product_variant_ids.filtered(lambda x: not x.internal_reference_generated \
+                                                                 and x.product_tmpl_id.id == self.id):
+                    internal_reference = ''.join(ref.name + " " for ref in variant.mapped('attribute_value_ids'))
+                    variant.write({'default_code': variant.template_code + " " + internal_reference,
+                                   'internal_reference_generated': True})
+
         return True
 
 
