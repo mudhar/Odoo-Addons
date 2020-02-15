@@ -327,6 +327,7 @@
                                 <label for="amount_total" />
                             </div>
                             <field name="amount_total" nolabel="1" class="oe_subtotal_footer_separator" widget='monetary' options="{'currency_field': 'currency_id'}"/>
+                            <field name="amount_total_non_service"/>
                         </group>
                         <notebook>
                             <page string="Variants Plan">
@@ -387,6 +388,7 @@
                                                         <span class="oe_inline">.</span>
                                                         <field name="product_uom_id" readonly="1" class="oe_inline"/>
                                                     </div>
+                                                    <field name="unit_cost"/>
                                                 </group>
                                             </group>
                                         </sheet>

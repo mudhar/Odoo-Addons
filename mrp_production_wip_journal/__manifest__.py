@@ -22,7 +22,7 @@ Terbentuk Dua Jurnal Pada Produksi
     'version': '0.1',
 
     # any module necessary for this one to work correctly
-    'depends': ['base', 'account', 'stock_account', 'mrp', 'textile_assembly'],
+    'depends': ['base', 'stock_account', 'textile_assembly'],
 
     # always loaded
     'data': [
@@ -33,6 +33,7 @@ Terbentuk Dua Jurnal Pada Produksi
         'views/res_company_views.xml',
         'views/mrp_production_views.xml',
         'views/mrp_workorder_service_line_views.xml',
+        'views/menu_mrp_production_accounting.xml',
         # 'views/account_move_views.xml',
 
 
