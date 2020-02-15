@@ -118,6 +118,7 @@ class AssemblyPlan(models.Model):
     # Total Raw Material + Aksesoris + Biaya Produksi
     amount_total = fields.Float('Total', digits=dp.get_precision('Product Unit of Measure'),
                                 compute="_compute_amount_total")
+    amount_total_non_service = fields.Float(string='Amount_total_non_service', compute="_compute_amount_total")
 
     is_locked = fields.Boolean('Is Locked', default=True, copy=False)
 
@@ -170,6 +171,7 @@ class AssemblyPlan(models.Model):
             total_cmt = sum(order.cmt_material_line_ids.mapped('price_subtotal_actual'))
             total_service = sum(order.cmt_service_ids.mapped('price_subtotal'))
             order.amount_total = total_raw + total_cmt + total_service
+            order.amount_total_non_service = total_raw + total_cmt
 
     @api.multi
     def button_update_quantity(self):

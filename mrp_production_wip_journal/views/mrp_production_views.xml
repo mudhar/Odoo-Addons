@@ -63,20 +63,6 @@
             </field>
         </record>
 
-        <record id="mrp_production_tree_view_inherit_production_journal_wip" model="ir.ui.view">
-            <field name="name">production.journal.wip.tree</field>
-            <field name="model">mrp.production</field>
-            <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
-            <field name="arch" type="xml">
-
-                <xpath expr="//field[@name='origin']" position="after">
-                    <!-- Add new fields here -->
-                    <field name="amount_wip_differ"/>
-                </xpath>
-
-            </field>
-        </record>
-
         <record id="view_mrp_production_filter_inherit_production_journal_wip" model="ir.ui.view">
             <field name="name">production.journal.wip.filter</field>
             <field name="model">mrp.production</field>

@@ -82,8 +82,6 @@ class AssemblyPlanCostReport(models.Model):
                             total_cmt_non_attributes += data_cmt_material['price_subtotal']
                             product_line['cmt_lines'] += [data_cmt_material]
 
-
-
                     # Tabel Biaya Produksi
                     total_service = 0.0
                     for service in plan.cmt_service_ids:

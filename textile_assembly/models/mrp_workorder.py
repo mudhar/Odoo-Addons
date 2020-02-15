@@ -116,6 +116,26 @@ class MrpWorkOrder(models.Model):
                                                 compute="_compute_produced_less_than_panned")
     is_work_order_finish = fields.Boolean(compute="_compute_is_work_order_finish")
 
+    # @api.multi
+    # Solusi 1
+    # def write(self, vals):
+    #     result = models.Model.write(self, vals=vals)
+    #     return result
+
+    # Solusi 2
+    # @api.multi
+    # def write(self, values):
+    #     if list(values.keys()) != ['time_ids'] and any(workorder.state == 'done' for workorder in self):
+    #         return False
+    #     return super(MrpWorkOrder, self).write(values)
+
+    @api.multi
+    def _write(self, values):
+        result = super(MrpWorkOrder, self)._write(values)
+        if result:
+            return False
+        return result
+
     @api.multi
     @api.depends('check_qc_to_done',
                  'state')

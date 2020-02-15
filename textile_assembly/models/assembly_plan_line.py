@@ -30,13 +30,27 @@ class AssemblyPlanLine(models.Model):
 
     state = fields.Selection(related='plan_id.state', store=True)
 
-    # Tambahan Untuk Report
-    # qty_produced = fields.Float(string="Qty Produced",
-    #                             digits=dp.get_precision(
-    #                                 'Product Unit of Measure'),
-    #                             readonly=True)
-    # qty_sample = fields.Float(string="Qty Sample", digits=dp.get_precision('Product Unit of Measure'),
-    #                           readonly=True)
+    unit_cost = fields.Float(string='Unit Cost', digits=dp.get_precision('Product Price'), compute="_compute_unit_cost")
+
+    @api.multi
+    def _compute_unit_cost(self):
+        for plan in self:
+            if plan.plan_id and plan.plan_id.amount_total_non_service:
+                amount_non_service = plan.plan_id.amount_total_non_service
+                quantity_to_produce = plan.amount_quantity_to_produce()
+                plan.unit_cost = amount_non_service / quantity_to_produce
+
+    @api.multi
+    def amount_quantity_to_produce(self):
+        quantity = []
+        for plan in self:
+            for produce in self.env['assembly.plan.produce'].search(
+                    [
+                        ('plan_id', '=', plan.plan_id.id)
+                    ]).filtered(lambda x: x.attribute_id.id == plan.attribute_value_ids[0].id \
+                                          or x.attribute_id.id == plan.attribute_value_ids[1].id):
+                quantity.append(produce.quantity_actual)
+        return quantity
 
     def generate_production_variant(self, production_id):
         mo_variants = self.env['mrp.production.variant']
