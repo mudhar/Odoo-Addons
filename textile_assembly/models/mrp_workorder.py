@@ -1054,13 +1054,22 @@ class MrpQcReject(models.Model):
         res = []
         if self.product_id.type not in ['product', 'consu']:
             return res
-        result_plan = self._compute_price_unit()
+        # result_plan = self._compute_price_unit()
+        # total_unit_cost = []
+        # if self.product_id:
+        #     for line in result_plan['lines']:
+        #         if (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[0].name) or (
+        #                 line.get('attribs') == self.product_id.mapped('attribute_value_ids')[1].name):
+        #             total_unit_cost.append(line['unit_cost'])
+
+        plan_id = self.qc_id.production_id.mapped('assembly_plan_id')
         total_unit_cost = []
-        if self.product_id:
-            for line in result_plan['lines']:
-                if (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[0].name) or (
-                        line.get('attribs') == self.product_id.mapped('attribute_value_ids')[1].name):
-                    total_unit_cost.append(line['unit_cost'])
+        if self.product_id and self.product_id.mapped('attribute_value_ids'):
+            product_attribute = self.product_id.mapped('attribute_value_ids')
+            for line in plan_id.plan_line_actual_ids.filtered(
+                    lambda x: x.attribute_value_ids[0].id == product_attribute[0].id \
+                              or x.attribute_value_ids[1].id == product_attribute[1].id):
+                total_unit_cost.append(line.unit_cost)
 
         location_id = self.product_id.property_stock_production.id
         location_dest_id = self.qc_id.workorder_id.location_reject_id.id
@@ -1126,12 +1135,20 @@ class MrpQcFinished(models.Model):
         res = []
         if self.product_id.type not in ['product', 'consu']:
             return res
-        result_plan = self._compute_price_unit()
+        # result_plan = self._compute_price_unit()
+        # total_unit_cost = []
+        # if self.product_id:
+        #     for line in result_plan['lines']:
+        #         if (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[0].name) or (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[1].name):
+        #             total_unit_cost.append(line['unit_cost'])
+        plan_id = self.qc_id.production_id.mapped('assembly_plan_id')
         total_unit_cost = []
-        if self.product_id:
-            for line in result_plan['lines']:
-                if (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[0].name) or (line.get('attribs') == self.product_id.mapped('attribute_value_ids')[1].name):
-                    total_unit_cost.append(line['unit_cost'])
+        if self.product_id and self.product_id.mapped('attribute_value_ids'):
+            product_attribute = self.product_id.mapped('attribute_value_ids')
+            for line in plan_id.plan_line_actual_ids.filtered(
+                    lambda x: x.attribute_value_ids[0].id == product_attribute[0].id \
+                              or x.attribute_value_ids[1].id == product_attribute[1].id):
+                total_unit_cost.append(line.unit_cost)
 
         location_id = self.product_id.property_stock_production.id
         location_dest_id = self.qc_id.production_id.location_dest_id.id
