@@ -9,7 +9,8 @@ class MrpRoutingWorkcenter(models.Model):
         if self.workcenter_id and self.workcenter_id.is_cutting:
             self.sequence = 1
         self.update({'name': self.workcenter_id.name,
-                     'time_mode': 'manual'})
+                     'time_mode': 'manual',
+                     'time_cycle_manual': 00})
 
 
 class MrpRouting(models.Model):

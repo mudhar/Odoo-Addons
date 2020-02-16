@@ -38,6 +38,7 @@
                     <attribute name="create">false</attribute>
                     <attribute name="delete">false</attribute>
                 </xpath>
+
                 <xpath expr="//field[@name='date_planned_finished']" position="after">
                     <!-- Add your fields or attributes here -->
                     <field name="backdate_finished" attrs="{'invisible': [('check_to_done','=',False)]}"/>

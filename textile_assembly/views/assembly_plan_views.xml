@@ -327,7 +327,7 @@
                                 <label for="amount_total" />
                             </div>
                             <field name="amount_total" nolabel="1" class="oe_subtotal_footer_separator" widget='monetary' options="{'currency_field': 'currency_id'}"/>
-                            <field name="amount_total_non_service"/>
+                            <field name="amount_total_non_service" invisible="1"/>
                         </group>
                         <notebook>
                             <page string="Variants Plan">

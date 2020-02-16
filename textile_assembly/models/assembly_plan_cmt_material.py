@@ -24,8 +24,7 @@ class AssemblyPlanCmtMaterial(models.Model):
     quantity_to_actual = fields.Float(string="Expected Consume Revised",
                                       digits=dp.get_precision('Product Unit of Measure'),
                                       compute="_compute_quantity_actual", store=True)
-    price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'),
-                              default=1.0)
+    price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'))
     price_subtotal_plan = fields.Float(string="Sub Total", digits=dp.get_precision('Account'),
                                        compute="_compute_price_subtotal")
     price_subtotal_actual = fields.Float(string="Sub Total", digits=dp.get_precision('Account'),

@@ -1,5 +1,5 @@
 import logging
-from odoo import api, fields, models, _
+from odoo import api, fields, models
 from odoo.addons import decimal_precision as dp
 
 _logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class AssemblyPlanLine(models.Model):
             if plan.plan_id and plan.plan_id.amount_total_non_service:
                 amount_non_service = plan.plan_id.amount_total_non_service
                 quantity_to_produce = plan.amount_quantity_to_produce()
-                plan.unit_cost = amount_non_service / quantity_to_produce
+                plan.unit_cost = amount_non_service / sum(quantity_to_produce)
 
     @api.multi
     def amount_quantity_to_produce(self):

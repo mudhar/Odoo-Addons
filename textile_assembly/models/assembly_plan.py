@@ -116,11 +116,21 @@ class AssemblyPlan(models.Model):
     check_quantity_produce = fields.Boolean(string="Is Quantity Produce Actual Changed?",
                                             compute="_compute_check_quantity_produce")
     # Total Raw Material + Aksesoris + Biaya Produksi
-    amount_total = fields.Float('Total', digits=dp.get_precision('Product Unit of Measure'),
-                                compute="_compute_amount_total")
-    amount_total_non_service = fields.Float(string='Amount_total_non_service', compute="_compute_amount_total")
+    amount_total = fields.Float(string='Total', compute="_compute_amount_total")
+    amount_total_non_service = fields.Float(string='Total Without Service', compute="_compute_amount_total")
 
     is_locked = fields.Boolean('Is Locked', default=True, copy=False)
+
+    @api.constrains('purchase_date')
+    def _check_purchase_date(self):
+        self.ensure_one()
+        purchase_date = fields.Datetime.from_string(self.purchase_date)
+        date_end = fields.Datetime.from_string(self.date_planned_finished)
+        date_start = fields.Datetime.from_string(self.date_planned_start)
+        if purchase_date and purchase_date > date_end:
+            raise UserError(_("Tanggal Purchase Date Tidak Boleh Melebihi Dari Tanggal Selesai Produksi"))
+        if purchase_date and purchase_date < date_start:
+            raise UserError(_("Tanggal Purchase Date Tidak Boleh Kurang Dari Tanggal Mulai Produksi"))
 
     @api.onchange('warehouse_id')
     def _onchange_warehouse(self):
@@ -170,8 +180,10 @@ class AssemblyPlan(models.Model):
             total_raw = sum(order.raw_line_ids.mapped('price_subtotal_actual'))
             total_cmt = sum(order.cmt_material_line_ids.mapped('price_subtotal_actual'))
             total_service = sum(order.cmt_service_ids.mapped('price_subtotal'))
-            order.amount_total = total_raw + total_cmt + total_service
-            order.amount_total_non_service = total_raw + total_cmt
+            order.update({
+                'amount_total': total_raw + total_cmt + total_service,
+                'amount_total_non_service': total_raw + total_cmt
+            })
 
     @api.multi
     def button_update_quantity(self):

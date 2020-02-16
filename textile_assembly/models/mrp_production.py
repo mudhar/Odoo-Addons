@@ -98,6 +98,17 @@ class MrpProduction(models.Model):
                 return super(MrpProduction, self).action_assign()
 
     @api.multi
+    def action_cancel_work_order(self):
+        for production in self:
+            for work_order in production.workorder_ids.filtered(lambda x: not x.next_work_order_id and not x.is_cutting):
+                if work_order.state in ['done', 'progress']:
+                    raise UserError(_("Work Order %s Sedang Dalam Proses atau Sudah Done\n"
+                                      "Anda Tidak Dapat Membatalkan Manufacturing Order") % work_order.name)
+            for work_order in production.workorder_ids.sorted(lambda x: x.sequence):
+                work_order.write({'state': 'cancel'})
+        return True
+
+    @api.multi
     def action_cancel(self):
         for production in self:
             if production.assembly_plan_id:
@@ -110,7 +121,8 @@ class MrpProduction(models.Model):
         if any(workorder.state == 'progress' for workorder in self.mapped('workorder_ids')):
             raise UserError(_('You can not cancel production order, a work order is still in progress.'))
         for production in self:
-            production.workorder_ids.filtered(lambda x: x.state != 'cancel').action_cancel()
+            production.action_cancel_work_order()
+            # production.workorder_ids.filtered(lambda x: x.state != 'cancel').action_cancel()
 
             finish_moves = production.move_finished_ids.filtered(lambda x: x.state not in ('done', 'cancel'))
             raw_moves = production.move_raw_ids.filtered(lambda x: x.state not in ('done', 'cancel'))

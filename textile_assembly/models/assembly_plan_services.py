@@ -17,8 +17,7 @@ class AssemblyPlanServices(models.Model):
                                    digits=dp.get_precision('Product Unit of Measure'),
                                    compute="_compute_quantity_consume")
     product_uom_id = fields.Many2one(comodel_name="product.uom", string="UoM")
-    price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'),
-                              default=1.0)
+    price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'))
     price_subtotal = fields.Float(string="Sub Total", digits=dp.get_precision('Account'),
                                   compute="_compute_price_subtotal")
 

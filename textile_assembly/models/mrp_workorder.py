@@ -123,18 +123,27 @@ class MrpWorkOrder(models.Model):
     #     return result
 
     # Solusi 2
-    # @api.multi
-    # def write(self, values):
-    #     if list(values.keys()) != ['time_ids'] and any(workorder.state == 'done' for workorder in self):
-    #         return False
-    #     return super(MrpWorkOrder, self).write(values)
-
     @api.multi
-    def _write(self, values):
-        result = super(MrpWorkOrder, self)._write(values)
-        if result:
-            return False
-        return result
+    def write(self, values):
+        if list(values.keys()) != ['time_ids'] and any(workorder.state == 'done' for workorder in self):
+            return True
+        return super(MrpWorkOrder, self).write(values)
+
+    @api.constrains('backdate_start')
+    def _backdate_start_constrains(self):
+        self.ensure_one()
+        backdate_start = fields.Datetime.from_string(self.backdate_start)
+        date_end = fields.Datetime.from_string(self.production_id.date_planned_finished)
+        if backdate_start and backdate_start > date_end:
+            raise UserError(_("Tanggal Mulai Proses Ini Melebihi Tanggal Selesai Produksi"))
+
+    @api.constrains('backdate_finished')
+    def _backdate_finished_constrains(self):
+        self.ensure_one()
+        backdate_finished = fields.Datetime.from_string(self.backdate_finished)
+        date_end = fields.Datetime.from_string(self.production_id.date_planned_finished)
+        if backdate_finished and backdate_finished > date_end:
+            raise UserError(_("Tanggal Selesai Proses Ini Melebihi Tanggal Selesai Produksi"))
 
     @api.multi
     @api.depends('check_qc_to_done',
@@ -253,17 +262,6 @@ class MrpWorkOrder(models.Model):
         return res
 
     @api.multi
-    def button_finish(self):
-        self.ensure_one()
-        result = super(MrpWorkOrder, self).button_finish()
-
-        if not self.backdate_finished:
-            raise UserError(_("Input Tanggal Selesai Process %s") % self.name)
-        if self.backdate_finished and result:
-            self.write({'date_finished': self.backdate_finished})
-        return result
-
-    @api.multi
     @api.depends('qty_production', 'qty_produced')
     def _compute_qty_remaining(self):
         for wo in self:
@@ -354,8 +352,33 @@ class MrpWorkOrder(models.Model):
                                       "\n Klik Tombol Receive Good Terlebih Dahulu"))
 
             work_order.button_finish()
+            # if not self.backdate_finished:
+            #     raise UserError(_("Isi Tanggal Selesai Proses Ini"))
+            # self.write({'date_planned_finished': self.backdate_finished,
+            #            'date_finished': self.backdate_finished})
 
             return True
+        
+    @api.multi
+    def button_finish(self):
+        if self.check_assembly_plan_id:
+            return self.action_finish_assembly()
+        else:
+            return super(MrpWorkOrder, self).button_finish()
+        
+    @api.multi
+    def action_finish_assembly(self):
+        self.ensure_one()
+        self.end_all()
+        if not self.backdate_finished:
+            raise UserError(_("Isi Tanggal Selesai Proses ini"))
+        self.mapped('time_ids').write({'date_end': self.backdate_finished})
+        return self.write(
+            {'state': 'done',
+             'date_planned_finished': self.backdate_finished,
+             'date_finished': self.backdate_finished}
+        )
+        
 
     # Update Product Quantity Pada Work Order Berikutnya
     @api.multi

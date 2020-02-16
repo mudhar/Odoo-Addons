@@ -19,7 +19,7 @@ class WorkOrderExtensionWizard(models.TransientModel):
     price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'))
 
     bom_id = fields.Many2one(comodel_name="mrp.bom", string="Bom")
-    time_cycle = fields.Float(string="Duration", default=60)
+    time_cycle = fields.Float(string="Duration", default=00)
 
     is_new_product = fields.Boolean(string="Tambah Biaya Produksi")
 
