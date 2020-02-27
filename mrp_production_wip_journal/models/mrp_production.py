@@ -11,7 +11,7 @@ class MrpProduction(models.Model):
     account_expense_material_id = fields.Many2one(comodel_name="account.account",
                                                   default=lambda self:
                                                   self.env.user.company_id.account_expense_material_id,
-                                                  string="Expense Account WIP Material Differ")
+                                                  string="Expense Account WIP Differ")
     # account_valuation_service_id = fields.Many2one(comodel_name="account.account",
     #                                                default=lambda self:
     #                                                self.env.user.company_id.account_valuation_service_id,
@@ -25,7 +25,7 @@ class MrpProduction(models.Model):
                                        compute="_compute_wip_consumed")
     amount_wip_assembly = fields.Float(string="Total WIP Assembly", digits=dp.get_precision('Account'),
                                        compute="_compute_wip_material_assembly")
-    amount_wip_differ = fields.Float(string="Total WIP Materials Differ", digits=dp.get_precision('Account'),
+    amount_wip_differ = fields.Float(string="Total WIP Differ", digits=dp.get_precision('Account'),
                                      compute="_compute_wip_material_differ",
                                      help="Total Amount Consumed Minus Amount Returned Minus Amount Assembly")
     wip_balance = fields.Boolean(string="WIP Materials Balance", compute="_compute_wip_balance",

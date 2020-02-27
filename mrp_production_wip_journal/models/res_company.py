@@ -9,4 +9,4 @@ class ResCompany(models.Model):
     # account_valuation_service_id = fields.Many2one(comodel_name="account.account",
     #                                                string="Stock Account Valuation WIP Service")
     account_expense_material_id = fields.Many2one(comodel_name="account.account",
-                                                  string="Expense Account WIP Material Differ")
+                                                  string="Expense Account WIP Differ")

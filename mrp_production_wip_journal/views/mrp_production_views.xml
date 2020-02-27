@@ -27,10 +27,10 @@
                     <!-- Add your fields or attributes here -->
                     <button name="%(mrp_production_wip_journal.action_production_journal_wip)d"
                             type="action" class="btn-danger" groups="mrp.group_mrp_manager"
-                            string="Adjust WIP Material"
+                            string="Adjust WIP"
                             attrs="{'invisible': ['|','|',('has_returned_move','=',False),('wip_balance','=',True),('assembly_plan_id','=',False)]}"/>
                     <button name="%(mrp_production_wip_journal.action_journal_wip_message_wizard)d"
-                            type="action" string="Adjust WIP Material" class="btn-warning" groups="mrp.group_mrp_manager"
+                            type="action" string="Adjust WIP" class="btn-warning" groups="mrp.group_mrp_manager"
                             attrs="{'invisible': ['|','|',('has_returned_move','=',True),('wip_balance','=',True),('assembly_plan_id','=',False)]}"/>
 
                 </xpath>
