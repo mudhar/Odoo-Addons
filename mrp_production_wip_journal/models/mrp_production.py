@@ -12,10 +12,10 @@ class MrpProduction(models.Model):
                                                   default=lambda self:
                                                   self.env.user.company_id.account_expense_material_id,
                                                   string="Expense Account WIP Material Differ")
-    account_valuation_service_id = fields.Many2one(comodel_name="account.account",
-                                                   default=lambda self:
-                                                   self.env.user.company_id.account_valuation_service_id,
-                                                   string="Stock Account Valuation WIP Service")
+    # account_valuation_service_id = fields.Many2one(comodel_name="account.account",
+    #                                                default=lambda self:
+    #                                                self.env.user.company_id.account_valuation_service_id,
+    #                                                string="Stock Account Valuation WIP Service")
 
     account_move_ids = fields.One2many(comodel_name="account.move", inverse_name="material_production_id",
                                        string="Reference WIP Material")
