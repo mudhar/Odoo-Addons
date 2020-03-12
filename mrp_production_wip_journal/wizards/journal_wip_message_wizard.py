@@ -7,7 +7,6 @@ class JournalMessageWizard(models.TransientModel):
     _description = 'Message Only'
 
     production_id = fields.Many2one(comodel_name="mrp.production", string="Manufacturing Order", required=True)
-    choice = fields.Selection(selection=[('yes', 'Yes'), ('no', 'No'), ],default='no')
 
     @api.model
     def default_get(self, fields_list):
@@ -18,21 +17,9 @@ class JournalMessageWizard(models.TransientModel):
         return res
 
     @api.multi
-    def action_confirm(self):
-        for wiz in self:
-            if not wiz.choice:
-                raise UserError(_("Silahkan Pilih Jawaban Anda"))
+    def action_confirm_yes(self):
+        return {'type': 'ir.actions.act_window_close'}
 
-            if wiz.choice == 'yes':
-                return {'type': 'ir.actions.act_window_close'}
-            else:
-                return {
-                    'name': _('Adjust WIP Differ'),
-                    'view_type': 'form',
-                    'view_mode': 'form',
-                    'res_model': 'production_journal.wip_wizard',
-                    'view_id': self.env.ref('mrp_production_wip_journal.production_journal_wip_wizard_view_form').id,
-                    'type': 'ir.actions.act_window',
-                    'context': self.env.context,
-                    'target': 'new',
-                }
+    @api.multi
+    def action_confirm_no(self):
+        self.production_id.action_adjust_wip()

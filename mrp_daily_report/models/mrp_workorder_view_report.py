@@ -36,6 +36,7 @@ class WorkOrderViewReport(models.Model):
             left join product_product pp on (pp.id = ql.product_id)
             where mp.state not in ('done','cancel')
             and wo.skipped = False
+            and wo.state == 'progress'
             group by wo.id, wo.production_id, ql.product_id, mp.state, wo.date_start
             order by wo.production_id
             )

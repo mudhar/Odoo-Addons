@@ -8,9 +8,9 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     final_location_dest_id = fields.Many2one(comodel_name="stock.location", string="Final Destination Location", copy=False)
-    check_final_location = fields.Boolean(string="Final Destination Location?", copy=False,
+    check_final_location = fields.Boolean(string="Transit Location", copy=False,
                                           help="Tick Jika Ingin Transfer Dengan Lokasi Transit")
-    has_transit_location = fields.Boolean(string="Transit Location?", copy=False,
+    has_transit_location = fields.Boolean(string="Reverse Transit Location", copy=False,
                                           help="Tick Jika Ingin Mengembalikan Lokasi Tujuan awal")
 
     @api.onchange('check_final_location')
