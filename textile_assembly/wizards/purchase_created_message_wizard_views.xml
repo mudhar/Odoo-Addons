@@ -1,0 +1,27 @@
+<odoo>
+    <data>
+        <record id="purchase_message_created_wizard_view_form" model="ir.ui.view">
+            <field name="name">purchase.message.created.wizard.view.form</field>
+            <field name="model">purchase_created_message.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Warning">
+                    <field name="work_order_id"/>
+                    <div class="oe_title">
+                        <h4>
+                            Anda Belum Membuat Tagihan Untuk Jasa Pada Process ini
+                            Apakah Anda Ingin Membuat Tagihan Terlebih Dahulu?
+                        </h4>
+                    </div>
+                    <footer>
+                        <button name="action_confirm_yes" type="object" string="YES"
+                                class="btn-success" colspan="1"/>
+                        <button name="action_confirm_no" type="object" string="NO"
+                                class="btn-danger" colspan="1"/>
+                        <button string="Cancel" class="btn-default" special="cancel" />
+                    </footer>
+
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

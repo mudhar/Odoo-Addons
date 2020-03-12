@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_picking_form_inherit_production" model="ir.ui.view">
+            <field name="name">view.picking.form.inherit.production</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="production_id" invisible="1"/>
+                    <field name="raw_material_production_id" invisible="1"/>
+                </xpath>
+                <xpath expr="//field[@name='move_lines']//field[@name='quantity_done']" position="attributes">
+                    <attribute name="sum">Total</attribute>
+
+                </xpath>
+
+                <xpath expr="//group//field[@name='partner_id']" position="replace">
+                    <field name="partner_id"/>
+                </xpath>
+                <xpath expr="//field[@name='origin']" position="after">
+                    <field name="created_return_picking" invisible="1"/>
+                </xpath>
+                <xpath expr="//field[@name='move_lines']//field[@name='quantity_done']" position="after">
+                    <field name="production_id" invisible="1"/>
+                </xpath>
+            </field>
+        </record>
+        <record id="view_picking_internal_search_inherited_production" model="ir.ui.view">
+            <field name="name">view.picking.internal.search.inherited.production</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//filter[@name='late']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="production_id" string="Production Order For Finished Product"/>
+                    <field name="raw_material_production_id" string="Production Order For Material Consume"/>
+                </xpath>
+                <xpath expr="//group" position="inside">
+                    <!-- Add your fields or attributes here -->
+                    <filter string="Production Order Finished Product" domain="[]" context="{'group_by': 'production_id'}"/>
+                    <filter string="Production Order Material Consume" domain="[]" context="{'group_by': 'raw_material_production_id'}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

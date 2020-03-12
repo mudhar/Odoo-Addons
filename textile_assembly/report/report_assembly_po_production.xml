@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <report
+                string="PO Produksi"
+                id="action_report_po_production"
+                model="assembly.plan"
+                report_type="qweb-pdf"
+                name="textile_assembly.report_po_production"
+                file="textile_assembly.report_po_production"
+                print_report_name="'PO Produksi - %s - %s' % (object.partner_id.name or '', object.name)"
+        />
+        <template id="report_po_production">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="web.internal_layout">
+                        <div class="page">
+                            <div class="oe_structure"/>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    <strong>Shipping address:</strong>
+                                    <div t-field="o.partner_id"
+                                         t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True, "phone_icons": True}'/>
+                                </div>
+                                <div class="col-xs-12">
+                                    <h2>PO Production Order # : <span t-field="o.name"/></h2>
+                                </div>
+                            </div>
+
+                            <div class="row mt32 mb32">
+                                <div t-if="o.product_template_id" class="col-xs-3">
+                                    <strong>Product:</strong>
+                                    <p t-field="o.product_template_id"/>
+                                </div>
+                                <div t-if="o.date_planned_start" class="col-xs-3">
+                                    <strong>Schedule Date:</strong>
+                                    <p t-field="o.date_planned_start"/>
+                                </div>
+                                <div t-if="o.warehouse_id" class="col-xs-3">
+                                    <strong>Warehouse:</strong>
+                                    <p t-field="o.warehouse_id"/>
+                                </div>
+                            </div>
+
+                            <!-- Product Attribute -->
+                            <strong>Quantity To Produce</strong>
+                            <table class="table table-condensed" t-if="o.produce_ids">
+                                <thead>
+                                    <tr>
+                                        <th width="25%">Variant</th>
+                                        <th width="25%">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="o.produce_ids.sorted(key=lambda p:p.attribute_id.id)" t-as="produce">
+                                        <td>
+                                            <span t-field="produce.attribute_id"/><br/>
+
+                                        </td>
+                                        <td>
+                                            <span t-field="produce.quantity_actual"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!--Bahan Baku -->
+                            <strong>Raw Materials To Consume</strong>
+                            <table class="table table-condensed" t-if="o.raw_actual_line_ids">
+                                <thead>
+                                    <tr>
+                                        <th width="25%">Product</th>
+                                        <th width="25%">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="o.raw_actual_line_ids.sorted(key=lambda r: r.product_id.id)" t-as="raw">
+                                        <td>
+                                            <span t-field="raw.product_id.display_name"/>
+                                        </td>
+                                        <td>
+                                            <span t-field="raw.qty_to_actual"/>
+                                            <span t-field="raw.product_uom_id"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- Aksesoris -->
+                            <strong>Material Accessories To Consume</strong>
+                            <table class="table table-condensed" t-if="o.cmt_material_actual_line_ids">
+                                <thead>
+                                    <tr>
+                                        <th width="25%">Product</th>
+                                        <th width="25%">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="o.cmt_material_actual_line_ids.sorted(key=lambda r: r.product_id)" t-as="cmt">
+                                        <td>
+                                            <span t-field="cmt.product_id.display_name"/>
+                                        </td>
+                                        <td>
+                                            <span t-field="cmt.quantity_to_actual"/>
+                                            <span t-field="cmt.product_uom_id"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- CMT Service -->
+                            <strong>Costing To Produce</strong>
+                            <table class="table table-condensed" t-if="o.cmt_service_ids">
+                                <thead>
+                                    <tr>
+                                        <th width="25%">Product</th>
+                                        <th width="25%">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="o.cmt_service_ids.sorted(key=lambda r: r.product_id)" t-as="service">
+                                        <td>
+                                            <span t-field="service.product_id.display_name"/>
+                                        </td>
+                                        <td>
+                                            <span t-field="service.quantity_actual"/>
+                                            <span t-field="service.product_uom_id"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- Variant Finish Goods -->
+                            <strong>Finished Products To Produce</strong>
+                            <table class="table table-condensed" t-if="o.plan_line_actual_ids">
+                                <thead>
+                                    <tr>
+                                        <th width="25%">Product</th>
+                                        <th width="25%">Ratio</th>
+                                        <th width="25%">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="o.plan_line_actual_ids.sorted(key=lambda r: r.product_id)" t-as="variant">
+                                        <td>
+                                            <span t-field="variant.product_id.display_name"/>
+                                        </td>
+                                        <td>
+                                            <span t-esc="'%.2f'% variant.ratio"/>
+                                        </td>
+                                        <td>
+                                            <span t-esc="'%.2f'% variant.actual_quantity"/>
+                                            <span t-field="variant.product_uom_id"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="oe_structure"/>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>

@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!--  View Tree -->
+        <record id="assembly_production_view_tree" model="ir.ui.view">
+            <field name="name">assembly.production.view.tree</field>
+            <field name="model">assembly.production</field>
+            <field name="arch" type="xml">
+                <tree string="Assembly Production" decoration-bf="message_needaction" default_order="date_planned_start desc" decoration-info="state=='process'"  decoration-muted="state in ('approve','cancel')">
+                    <field name="message_needaction" invisible="1"/>
+                    <field name="name" string="Reference"/>
+                    <field name="date_planned_start"/>
+                    <field name="pattern_code"/>
+                    <field name="product_tmpl_id" string="Finish Goods"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+        <!-- View Form       -->
+        <record id="assembly_production_view_form" model="ir.ui.view">
+            <field name="name">assembly.production.view.form</field>
+            <field name="model">assembly.production</field>
+            <field name="arch" type="xml">
+                <form string="Assembly Production">
+                    <field name="mo_done" invisible="1"/>
+                    <header>
+                        <button name="button_process" states="draft" type="object" class="oe_highlight" string="Confirm"/>
+                        <button name="button_need_approval" states="process,reject" type="object" class="btn-success" string="Done"/>
+                        <button name="button_approve" type="object" string="Approve" states="waiting" class="btn-success" groups="mrp.group_mrp_manager"/>
+                        <button name="button_reject" type="object" string="Reject" states="waiting" class="btn-warning" groups="mrp.group_mrp_manager"/>
+                        <button name="button_cancel" type="object" string="Cancel" class="btn-danger"
+                                attrs="{'invisible': ['|',('state','=','cancel'),('mo_done','=',True)]}"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,process,approve"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" name="%(template_open_assembly_plan)d" type="action"
+                                    icon="fa-list-alt" attrs="{'invisible': [('plan_count', '=', 0)]}">
+                                <field string="Assembly Plan" name="plan_count" widget="statinfo" />
+                            </button>
+                            <button class="oe_stat_button" name="%(template_open_assembly_bom)d" type="action"
+                                    icon="fa-flask" attrs="{'invisible': [('bom_count', '=', 0)]}">
+                                <field string="Bom" name="bom_count" widget="statinfo" />
+                            </button>
+                        </div>
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only"/>
+                            <h1>
+                                <field name="name" placeholder="Assembly Reference" nolabel="1"
+                                       attrs="{'readonly': [('state', 'not in' , ('process'))]}"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <label for="product_tmpl_id" string="Product"/>
+                                <div class="o_row">
+                                    <field name="product_tmpl_id"
+                                           options="{'no_create': True}"
+                                           attrs="{'required': [('state', '=', 'draft')],
+                                           'readonly': [('state', 'not in' , ('draft'))]}"
+                                    />
+                                    <field name="product_uom_id" readonly="1" invisible="1"/>
+                                </div>
+                                <field name="product_categ_id"/>
+                                <field name="routing_id" attrs="{'required': [('state', '=', 'draft')], 'readonly': [('state', 'not in' , ('draft'))]}"
+                                       groups="mrp.group_mrp_routings"/>
+                                <field name="partner_id" context="{'search_default_is_cmt':1, 'default_supplier':1, 'default_customer':0, 'default_is_cmt':1 }"
+                                       domain="['&amp;',('supplier', '=', True), ('is_cmt','=',True)]"/>
+                                <field name="pattern_code" readonly="1"/>
+                            </group>
+                            <group>
+                                <div>
+                                    <field name="product_image" widget="image" class="oe_avatar" nolabel="1" options="{'size': [300, 300]}"/>
+                                </div>
+                            </group>
+                        </group>
+                        <form string="Schedule Date">
+                            <group>
+                                <label for="date_planned_start" string="Schedule Date"/>
+                                <div class="o_row">
+                                    <field name="date_planned_start" attrs="{'required': [('state','not in',('approve','cancel'))]}"/>
+                                    <strong class="mr8">to</strong>
+                                    <field name="date_planned_finished" attrs="{'required': [('state','not in',('approve','cancel'))]}"/>
+                                </div>
+                            </group>
+                        </form>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="active" invisible="1"/>
+                        <field name="version" invisible="1"/>
+                        <group string="Product Variants Ratio">
+                            <field name="variant_line_ids" nolabel="1" attrs="{'readonly': [('state', 'in', ('draft', 'approve', 'cancel'))]}">
+                                <tree string="Product Variants Ratio" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id" options="{'no_create': True}"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="attribute_value_ids" widget="many2many_tags" groups="product.group_product_variant"/>
+                                    <field name="ratio"/>
+                                </tree>
+                                <form string="Assembly Variant Lines">
+                                    <sheet>
+                                        <field name="state" invisible="1"/>
+                                        <group>
+                                            <group>
+                                                <field name="product_id" class="oe_inline"/>
+                                                <span class="oe_inline">.</span>
+                                                <field name="product_uom_id" class="oe_inline"/>
+                                            </group>
+                                            <group>
+                                                <field name="attribute_value_ids" widget="many2many_tags" groups="product.group_product_variant"/>
+                                                <field name="ratio"/>
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </group>
+
+                        <group string="Raw Material Products">
+                            <field name="raw_material_line_ids" nolabel="1" attrs="{'readonly':[('state','not in',('process', 'reject'))]}">
+                                <tree string="Raw Material Products" editable="bottom" >
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id" context="{'default_type':'product', 'default_purchase_ok':1, 'default_sale_ok':0, 'default_is_materials': 1}" domain="[('is_materials','=',True),('type','in',('product','consu'))]"/>
+                                    <field name="attribute_id" options="{'no_create': True}" groups="product.group_product_variant"/>
+                                    <field name="product_qty"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="price_unit"/>
+                                    <field name="ratio" groups="base.group_no_one" readonly="1"/>
+                                    <field name="price_subtotal"/>
+                                    <field name="state" invisible="1"/>
+                                </tree>
+                                <form string="Raw Material Products">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="product_id"/>
+                                                <field name="attribute_id" groups="product.group_product_variant"/>
+                                                <label for="product_qty"/>
+                                                <div class="o_row">
+                                                    <field name="product_qty" class="oe_inline"/>
+                                                    <span class="oe_inline">.</span>
+                                                    <field name="product_uom_id" class="oe_inline"/>
+                                                </div>
+                                            </group>
+                                            <group>
+                                                <field name="price_unit"/>
+                                                <field name="ratio" groups="base.group_no_one" readonly="1"/>
+                                                <field name="price_subtotal"/>
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </group>
+
+                        <group string="Accessories Material Products">
+                            <field name="cmt_template_ids" nolabel="1" attrs="{'readonly':[('state','not in',('process','reject'))]}">
+                                <tree string="Accessories Material Products" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id" context="{'default_type':'product', 'default_purchase_ok':1, 'default_sale_ok':0, 'default_is_materials': 1}" domain="[('is_materials','=',True),('type','in',('product','consu'))]"/>
+                                    <field name="product_qty"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="price_unit"/>
+                                    <field name="po_price_unit" invisible="1"/>
+                                    <field name="price_subtotal"/>
+                                    <field name="state" invisible="1"/>
+                                    <field name="attribute_name" invisible="1"/>
+                                </tree>
+                                <form string="Accessories Material Products">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="product_id"/>
+                                                <label for="product_qty"/>
+                                                <div class="o_row">
+                                                    <field name="product_qty" class="oe_inline"/>
+                                                    <span class="oe_inline">.</span>
+                                                    <field name="product_uom_id" class="oe_inline"/>
+                                                </div>
+                                            </group>
+                                            <group>
+                                                <field name="price_unit"/>
+                                                <field name="price_subtotal"/>
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </group>
+                        <group string="Biaya Produksi">
+                            <field name="cmt_service_ids" nolabel="1" attrs="{'readonly':[('state','not in',('process','reject'))]}">
+                                <tree string="Biaya Produksi" editable="bottom">
+                                    <field name="bom_id" invisible="1"/>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id" context="{'default_type':'service', 'default_purchase_ok':1, 'default_sale_ok':0}" domain="[('type','=','service')]"/>
+                                    <field name="product_qty"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="price_unit"/>
+                                    <field name="price_subtotal"/>
+                                    <field name="state" invisible="1"/>
+                                </tree>
+                                <form string="Biaya Produksi">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="product_id"/>
+                                                <label for="product_qty"/>
+                                                <div>
+                                                    <field name="product_qty" class="oe_inline"/>
+                                                    <span class="oe_inline">.</span>
+                                                    <field name="product_uom_id" class="oe_inline"/>
+                                                </div>
+                                            </group>
+                                            <group>
+                                                <field name="price_unit"/>
+                                                <field name="price_subtotal"/>
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </group>
+                        <group>
+                            <field name="cmt_material_line_ids" nolabel="1" invisible="1">
+                                <tree string="Aksesoris" create="false" delete="false">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="product_qty"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="price_unit"/>
+                                    <field name="ratio"/>
+                                    <field name="total_ratio"/>
+                                    <field name="price_subtotal"/>
+                                    <field name="state" invisible="1"/>
+                                </tree>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right" colspan="5">
+                                <div class="oe_subtotal_footer_separator oe_inline o_td_label">
+                                    <label for="amount_total_text" />
+                                </div>
+                                <field name="amount_total_text" nolabel="1" class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" widget="mail_followers"/>
+                        <field name="activity_ids" widget="mail_activity"/>
+                        <field name="message_ids" widget="mail_thread"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+        <!-- View Filter -->
+        <record id="assembly_production_view_filter" model="ir.ui.view">
+            <field name="name">assembly.production.list.select</field>
+            <field name="model">assembly.production</field>
+            <field name="arch" type="xml">
+                <search string="Search Assemblies">
+                    <field name="name" string="Name" filter_domain="[('name','ilike',self)]"/>
+                    <field name="active" string="Active"/>
+                    <field name="product_tmpl_id" string="Finish Goods"/>
+                    <separator/>
+                    <filter string="My Assembly" domain="[('user_id','=',uid)]" name="my_assembly_filter"/>
+                    <filter string="Archived" name="inactive" domain="[('active','=',False)]"/>
+                    <filter name="draft" string="Draft" domain="[('state','=','draft')]"/>
+                    <filter name="process" string="On Process" domain="[('state','=','process')]"/>
+                    <filter name="approve" string="Approved" domain="[('state','=','approve')]"/>
+                    <group expand="0" string="Group By">
+                        <filter name="vendor" string="Vendor" domain="[]" context="{'group_by': 'partner_id'}"/>
+                        <filter name="product" string="Product" domain="[]" context="{'group_by': 'product_tmpl_id'}"/>
+                        <filter string="Scheduled Month" domain="[]" context="{'group_by':'date_planned_start'}" help="Scheduled Date by Month"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Inherit Form View to Modify it View Filter Inherit -->
+        <record id="assembly_production_view_search_inherit_production" model="ir.ui.view">
+            <field name="name">assembly.production.search.inherit.production</field>
+            <field name="model">assembly.production</field>
+            <field name="mode">primary</field>
+            <field name="inherit_id" ref="assembly_production_view_filter"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//filter[@name='my_assembly_filter']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <separator/>
+                    <filter string="Productions" name="productions" domain="[('active','=',True)]"/>
+                </xpath>
+
+            </field>
+        </record>
+        <!-- View Action-->
+        <record id="assembly_production_action" model="ir.actions.act_window">
+            <field name="name">Assembly Design</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">assembly.production</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="assembly_production_view_search_inherit_production"/>
+            <field name="context">{'search_default_my_assembly_filter': 1}</field>
+            <field name="domain">[]</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    Klik Tombol Create Untuk Membuat Dokumen Assembly
+                </p>
+                <p>
+                    Pada Halaman Ini Aktifitas Yang Dapat Dilakukan Yaitu
+                </p>
+                <ul>
+                    <li>User Dapat Melakukan Perakitan Produk Yang Akan Di Produksi</li>
+                    <li>User Dapat Memformulakan Bahan Baku Apa Saja Yang Dibutuhkan Untuk Mem-Produksi Suatu Produk</li>
+                    <li>User Dapat Mendifinisikan Proses Proses Produksi Apa Saja Yang Dibutuhkan Untuk Mem-Produksi Suatu Produk</li>
+                </ul>
+            </field>
+        </record>
+
+
+        <!--Top Menu Item-->
+        <menuitem id="assembly_production_menu"
+                  name="Assembly Design"
+                  parent="mrp.menu_mrp_manufacturing"
+                  action="assembly_production_action"
+                  sequence="0"/>
+        <menuitem id="assembly_plan_menu"
+                  name="Assembly Production Plan"
+                  parent="mrp.mrp_planning_menu_root"
+                  action="assembly_plan_action"
+                  sequence="1"/>
+        <menuitem id="assembly_plan2_menu"
+                  name="Assembly Production Plan"
+                  parent="sale.sale_menu_root"
+                  action="assembly_plan_action"
+                  sequence="4"/>
+
+
+
+    </data>
+</odoo>
