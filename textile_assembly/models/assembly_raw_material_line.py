@@ -9,22 +9,17 @@ class AssemblyRawMaterialLine(models.Model):
     _rec_name = 'product_id'
     _order = 'assembly_id, sequence, id'
 
-    assembly_id = fields.Many2one(comodel_name="assembly.production", string="Assembly Order",
-                                  ondelete='cascade', index=True)
-    product_qty = fields.Float(string="Quantity Per Pcs", digits=dp.get_precision('Product Unit of Measure'),
-                               default=1.0)
+    assembly_id = fields.Many2one(comodel_name="assembly.production", string="Assembly Order", ondelete='cascade', index=True)
+    product_qty = fields.Float(string="Quantity Per Pcs", digits=dp.get_precision('Product Unit of Measure'), default=1.0)
     price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'), required=True)
-    product_uom_id = fields.Many2one(comodel_name="product.uom", string="UoM", required=True)
-
+    product_uom_id = fields.Many2one(comodel_name="product.uom", string="UoM", required=True,)
     sequence = fields.Integer(string='Sequence', default=1)
-
     product_id = fields.Many2one(comodel_name="product.product", string="Products", track_visibility='onchange',
-                                 domain=[('type', 'in', ['product', 'consu'])], required=True)
-
-    attribute_id = fields.Many2one(comodel_name="product.attribute.value", string="Attributes",
-                                   index=True, required=True)
+                                 required=True,
+                                 domain=[('type', 'in', ['product', 'consu'])])
+    attribute_id = fields.Many2one(comodel_name="product.attribute.value", string="Attributes", index=True,
+                                   required=True)
     ratio = fields.Float(string="Total Ratio")
-
     price_subtotal = fields.Float(string="Sub Total", digits=dp.get_precision('Account'),
                                   compute="compute_price_subtotal")
     state = fields.Selection(string="Status", related="assembly_id.state")
@@ -66,7 +61,7 @@ class AssemblyRawMaterialLine(models.Model):
     def onchange_product_id_warning(self):
         if self.product_id and self.product_id.attribute_line_ids:
             attribute_id = self.product_id.attribute_line_ids.mapped('attribute_id')
-            raise UserError(_("Anda Tidak Dapat Menambahkan Produk %s\n "
+            raise UserError(_("Anda Tidak Dapat Menambahkan Attribute Pada Produk %s\n "
                               "Yang Memiliki Attribute %s Didalamnya")
                             % (self.product_id.display_name.upper(), attribute_id.name.upper()))
 

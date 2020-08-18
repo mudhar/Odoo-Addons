@@ -93,7 +93,7 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_id" options="{'no_create': True}"/>
                                     <field name="product_uom_id"/>
-                                    <field name="attribute_value_ids" widget="many2many_tags" groups="product.group_product_variant"/>
+                                    <field name="attribute_value_ids" widget="many2many_tags" groups="product.group_product_variant" readonly="1"/>
                                     <field name="ratio"/>
                                 </tree>
                                 <form string="Assembly Variant Lines">
@@ -116,7 +116,7 @@
                         </group>
 
                         <group string="Raw Material Products">
-                            <field name="raw_material_line_ids" nolabel="1" attrs="{'readonly':[('state','not in',('process', 'reject'))]}">
+                            <field name="raw_material_line_ids" nolabel="1" attrs="{'readonly':[('state','not in',('process','reject'))]}">
                                 <tree string="Raw Material Products" editable="bottom" >
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_id" context="{'default_type':'product', 'default_purchase_ok':1, 'default_sale_ok':0, 'default_is_materials': 1}" domain="[('is_materials','=',True),('type','in',('product','consu'))]"/>

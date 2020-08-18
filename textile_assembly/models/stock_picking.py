@@ -5,9 +5,9 @@ from odoo.exceptions import UserError
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
-    production_id = fields.Many2one(comodel_name="mrp.production", string="Production Order Finished Product", copy=True)
+    production_id = fields.Many2one(comodel_name="mrp.production", string="Production Order Finished Product")
     raw_material_production_id = fields.Many2one(comodel_name="mrp.production",
-                                                 string="Production Order Raw Material", copy=True)
+                                                 string="Production Order Raw Material")
 
     # Hanya Untuk Informasi Ketika User MRP Membatalkan MO Sedangkan Produk Sudah Terkonsumsi
     # Maka User Diharus Mengembalikan Produk Tsb Dari Lokasi Virtual Production ke Lokasi Stock

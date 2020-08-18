@@ -13,7 +13,6 @@ class AssemblyProdVariantLine(models.Model):
     assembly_id = fields.Many2one(comodel_name="assembly.production", string="Assembly Order",
                                   ondelete='cascade', index=True)
     sequence = fields.Integer(string='Seq', default=1)
-
     product_id = fields.Many2one(comodel_name="product.product",
                                  string="Products", required=True)
     product_uom_id = fields.Many2one(
@@ -34,8 +33,10 @@ class AssemblyProdVariantLine(models.Model):
         else:
             return False
 
+    @api.multi
     @api.onchange('product_id')
     def _onchange_product_id(self):
+        values = {}
         domain = {'product_id': [('product_tmpl_id', '=', self.product_template_id.id)]}
         result = {'domain': domain}
         return result

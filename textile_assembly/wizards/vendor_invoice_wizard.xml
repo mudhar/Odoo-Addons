@@ -47,7 +47,6 @@
                         <group>
                             <field name="price_unit"/>
                             <field name="purchase_date"/>
-                            <field name="wo_date_end" invisible="1"/>
                             <field name="work_order_id" invisible="1"/>
                         </group>
 

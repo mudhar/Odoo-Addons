@@ -21,16 +21,15 @@ class MrpProduction(models.Model):
                                        compute="_compute_wip_consumed")
     amount_wip_returned = fields.Float(string='Total WIP Returned', digits=dp.get_precision('Account'),
                                        compute="_compute_wip_returned")
-    amount_wip_assembly = fields.Float(string="Total WIP Assembly", digits=dp.get_precision('Account'),
-                                       compute="_compute_wip_material_assembly")
+    amount_wip_produced = fields.Float(string="Total WIP Produced", digits=dp.get_precision('Account'),
+                                       compute="_compute_wip_produced")
     amount_wip_differ = fields.Float(string="Total WIP Differ", digits=dp.get_precision('Account'),
-                                     compute="_compute_wip_material_differ",
+                                     compute="_compute_wip_differ",
                                      help="Total Amount Consumed Minus Amount Returned Minus Amount Assembly")
     wip_balance = fields.Boolean(string="WIP Materials Balance", compute="_compute_wip_balance",
                                  index=True)
     account_move_count = fields.Integer(string='Of Account Move', compute="_compute_account_move_count")
     journal_date = fields.Datetime(string='Journal Date')
-    produce_done = fields.Boolean(string='Produce done', compute="_check_produce_done")
 
     def _compute_account_move_count(self):
         read_group_res = self.env['account.move'].read_group(
@@ -41,38 +40,38 @@ class MrpProduction(models.Model):
             record.account_move_count = mapped_data.get(record.id, 0)
 
     @api.multi
-    @api.depends('move_finished_ids')
-    def _check_produce_done(self):
-        for production in self:
-            production.produce_done = all(move.state == 'done'
-                                          for move in production.move_finished_ids) \
-                if production.move_finished_ids else False
-
-    @api.multi
     def _compute_wip_balance(self):
         for production in self:
             production.wip_balance = float_is_zero(production.amount_wip_differ,
                                                    precision_digits=production.company_id.currency_id.decimal_places)
 
     @api.multi
-    @api.depends('assembly_plan_id')
-    def _compute_wip_material_assembly(self):
+    @api.depends('move_finished_ids',
+                 'move_finished_ids.account_move_ids',
+                 'move_finished_ids.account_move_ids.amount')
+    def _compute_wip_produced(self):
         for production in self:
-            if production.assembly_plan_id:
-                production.amount_wip_assembly = production.assembly_plan_id.amount_total
+            move_produced = production.mapped('move_finished_ids').filtered(lambda m: m.state == 'done')
+            if move_produced:
+                amount_produced = move_produced.mapped('account_move_ids').filtered(
+                    lambda x: x.state == 'posted').mapped('amount')
+                production.amount_wip_produced = sum(amount_produced)
 
     @api.multi
     @api.depends('move_raw_ids',
                  'move_raw_ids.state',
                  'move_raw_ids.account_move_ids',
-                 'move_raw_ids.account_move_ids.amount')
+                 'move_raw_ids.account_move_ids.amount',
+                 'workorder_ids',
+                 'workorder_ids.amount_wip_invoiced')
     def _compute_wip_consumed(self):
         for production in self:
-            move_consumed = production.move_raw_ids.filtered(lambda x: not x.returned_picking and x.state == 'done')
+            move_consumed = production.mapped('move_raw_ids').filtered(
+                lambda x: not x.returned_picking and x.state == 'done')
             if move_consumed:
                 amount_move_consumed = move_consumed.mapped('account_move_ids').filtered(
                     lambda x: x.state == 'posted').mapped('amount')
-                amount_service_invoiced = production.get_amount_service_invoiced()
+                amount_service_invoiced = production.mapped('workorder_ids.amount_wip_invoiced')
                 production.amount_wip_consumed = sum(amount_move_consumed) + sum(amount_service_invoiced)
 
     @api.multi
@@ -82,33 +81,26 @@ class MrpProduction(models.Model):
                  'move_raw_ids.account_move_ids.amount')
     def _compute_wip_returned(self):
         for production in self:
-            move_returned = production.move_raw_ids.filtered(lambda x: x.returned_picking and x.state == 'done')
+            move_returned = production.mapped('move_raw_ids').filtered(
+                lambda x: x.returned_picking and x.state == 'done')
             if move_returned:
                 amount_move_returned = move_returned.mapped('account_move_ids').filtered(
                     lambda x: x.state == 'posted').mapped('amount')
                 production.amount_wip_returned = sum(amount_move_returned)
 
     @api.multi
-    def get_amount_service_invoiced(self):
-        amount_service_invoiced = False
-        for production in self:
-            wo_po = production.workorder_ids.filtered(lambda x: x.po_ids)
-            amount_service_invoiced = wo_po.mapped('po_ids').filtered(
-                lambda x: x.state == 'done').mapped('amount_untaxed')
-        return amount_service_invoiced
-
-    @api.multi
-    def _compute_wip_material_differ(self):
+    def _compute_wip_differ(self):
         for production in self:
             amount_wip_differ = (
-                    (production.amount_wip_consumed - production.amount_wip_returned) - production.amount_wip_assembly)
+                    (production.amount_wip_consumed - production.amount_wip_returned) - production.amount_wip_produced)
             amount_account_move = production.account_move_ids.mapped('amount')
-            if float_compare(amount_wip_differ, 0.0,
-                             precision_rounding=production.company_id.currency_id.rounding) == -1:
-                production.amount_wip_differ = sum(amount_account_move) - amount_wip_differ
-            if float_compare(amount_wip_differ, 0.0,
-                             precision_rounding=production.company_id.currency_id.rounding) == 1:
-                production.amount_wip_differ = amount_wip_differ - sum(amount_account_move)
+            production.amount_wip_differ = amount_wip_differ - sum(amount_account_move)
+            # if float_compare(amount_wip_differ, 0.0,
+            #                  precision_rounding=production.company_id.currency_id.rounding) == -1:
+            #     production.amount_wip_differ = sum(amount_account_move) - amount_wip_differ
+            # if float_compare(amount_wip_differ, 0.0,
+            #                  precision_rounding=production.company_id.currency_id.rounding) == 1:
+            #     production.amount_wip_differ = amount_wip_differ - sum(amount_account_move)
 
     @api.multi
     @api.depends('move_raw_ids',
