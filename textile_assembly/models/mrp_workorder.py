@@ -139,21 +139,21 @@ class MrpWorkOrder(models.Model):
     def write_assembly(self, values):
         self._write(values)
 
-    @api.constrains('backdate_start')
-    def _backdate_start_constrains(self):
-        self.ensure_one()
-        backdate_start = fields.Datetime.from_string(self.backdate_start)
-        date_end = fields.Datetime.from_string(self.production_id.date_planned_finished)
-        if backdate_start and backdate_start > date_end:
-            raise UserError(_("Tanggal Mulai Proses Ini Melebihi Tanggal Selesai Produksi"))
+    # @api.constrains('backdate_start')
+    # def _backdate_start_constrains(self):
+    #     self.ensure_one()
+    #     backdate_start = fields.Datetime.from_string(self.backdate_start)
+    #     date_end = fields.Datetime.from_string(self.production_id.date_planned_finished)
+    #     if backdate_start and backdate_start > date_end:
+    #         raise UserError(_("Tanggal Mulai Proses Ini Melebihi Tanggal Selesai Produksi"))
 
-    @api.constrains('backdate_finished')
-    def _backdate_finished_constrains(self):
-        self.ensure_one()
-        backdate_finished = fields.Datetime.from_string(self.backdate_finished)
-        date_end = fields.Datetime.from_string(self.production_id.date_planned_finished)
-        if backdate_finished and backdate_finished > date_end:
-            raise UserError(_("Tanggal Selesai Proses Ini Melebihi Tanggal Selesai Produksi"))
+    # @api.constrains('backdate_finished')
+    # def _backdate_finished_constrains(self):
+    #     self.ensure_one()
+    #     backdate_finished = fields.Datetime.from_string(self.backdate_finished)
+    #     date_end = fields.Datetime.from_string(self.production_id.date_planned_finished)
+    #     if backdate_finished and backdate_finished > date_end:
+    #         raise UserError(_("Tanggal Selesai Proses Ini Melebihi Tanggal Selesai Produksi"))
 
     @api.multi
     @api.depends('check_qc_to_done',
@@ -832,7 +832,7 @@ class MrpWorkOrderQcLine(models.Model):
     @api.depends('next_work_order_id', 'is_cutting')
     def _compute_workorder_type(self):
         for line in self:
-            if not line.next_work_order_id and not line.is_cutting:
+            if not (line.next_work_order_id and line.is_cutting):
                 line.is_work_order_finishing = True
             else:
                 line.is_work_order_finishing = False

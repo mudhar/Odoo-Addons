@@ -15,26 +15,18 @@ class VendorInvoiceWizard(models.TransientModel):
 
     work_order_id = fields.Many2one(comodel_name="mrp.workorder", string="Work Order")
 
-    partner_id = fields.Many2one(comodel_name="res.partner", string="Vendor")
+    partner_id = fields.Many2one(comodel_name="res.partner", string="Vendor", required=True)
     product_id = fields.Many2one(comodel_name="product.product", string="Products", domain="[('type','=','service')]")
     product_qty = fields.Float(string="Quantity Good", digits=dp.get_precision('Product Unit of Measure'))
     product_uom_id = fields.Many2one(
         'product.uom', 'Product Unit of Measure', related="product_id.uom_id")
     price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'),
-                              default=0.0, help="Estimasi Biaya Produksi Produk Per Unit")
-    purchase_date = fields.Datetime(string="Order Date")
-    wo_date_end = fields.Datetime(string='Wo_date_end')
+                              default=0.0, help="Estimasi Biaya Produksi Produk Per Unit", required=True)
+    purchase_date = fields.Datetime(string="Order Date", required=True)
     company_id = fields.Many2one(comodel_name='res.company', string='Company',
                                  default=lambda self: self.env.user.company_id)
     currency_id = fields.Many2one(comodel_name='res.currency', string='Currency',
                                   default=lambda self: self.env.user.company_id.currency_id)
-
-    @api.onchange('purchase_date')
-    def _onchange_purchase_date(self):
-        purchase_date = fields.Datetime.from_string(self.purchase_date)
-        date_end = fields.Datetime.from_string(self.wo_date_end)
-        if purchase_date and purchase_date > date_end:
-            raise UserError(_("Tanggal Purchase Date Melebihi Dari Tanggal Selesainya Proses %s") % self.work_order_id.display_name)
 
     @api.model
     def default_get(self, fields_list):
@@ -49,9 +41,6 @@ class VendorInvoiceWizard(models.TransientModel):
         if 'product_qty' in fields_list and not res.get('product_qty') and res.get('work_order_id'):
             res['product_qty'] = self.env['mrp.workorder'].browse(res['work_order_id']).qc_done
 
-        if 'wo_date_end' in fields_list and not res.get('wo_date_end') and res.get('work_order_id'):
-            res['wo_date_end'] = self.env['mrp.workorder'].browse(res['work_order_id']).backdate_finished
-
         return res
 
     @api.onchange('product_id')
@@ -65,8 +54,6 @@ class VendorInvoiceWizard(models.TransientModel):
         self.ensure_one()
         if not self.purchase_date:
             raise UserError(_("Input Tanggal Order Date Untuk Purchase Proses Ini"))
-        if not self.product_id.categ_id.account_analytic_id:
-            raise UserError(_("Account Analytic Pada Kagori Produk %s Belum Di set") % self.product_id.display_name)
         self.action_create_purchase_order()
         self.work_order_id.write({'purchase_created': True})
         return {'type': 'ir.actions.act_window_close'}

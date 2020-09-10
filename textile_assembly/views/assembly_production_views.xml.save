@@ -233,8 +233,8 @@
                                     <field name="state" invisible="1"/>
                                 </tree>
                             </field>
-                            <group class="oe_subtotal_footer oe_right" colspan="5">
-                                <div class="oe_subtotal_footer_separator oe_inline o_td_label">
+                            #<group class="oe_subtotal_footer oe_right" colspan="5">
+                               <div class="oe_subtotal_footer_separator oe_inline o_td_label">
                                     <label for="amount_total_text" />
                                 </div>
                                 <field name="amount_total_text" nolabel="1" class="oe_subtotal_footer_separator"/>

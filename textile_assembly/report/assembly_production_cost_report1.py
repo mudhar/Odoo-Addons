@@ -27,13 +27,17 @@ class AssemblyProductionCostReport(models.Model):
                             'service_lines': [],
                             'total': 0.0,
                         }
-                        for variant in assembly.variant_line_ids.filtered(
-                                lambda x: x.attribute_value_ids[0] in attrib or x.attribute_value_ids[1] in attrib):
-                                variants = {
-                                    'product_id': variant.product_id,
-                                    'ratio': variant.ratio,
-                                }
-                                product_line['variant_lines'] += [variants]
+                        # for variant in assembly.variant_line_ids.filtered(
+                        #         lambda x: x.attribute_value_ids[0] in attrib):
+                        for variant in  assembly.variant_line_ids:
+                            #if not variant.attribute_value_ids[0] in attrib:
+                            if variant.attribute_value_ids:
+                                if variant.attribute_value_ids[0] in attrib:
+                                    variants = {
+                                        'product_id': variant.product_id,
+                                        'ratio': variant.ratio,
+                                    }
+                                    product_line['variant_lines'] += [variants]
 
                         # list raw material
                         total_raw = 0.0
