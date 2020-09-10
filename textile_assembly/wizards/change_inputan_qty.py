@@ -25,16 +25,12 @@ class ChangeInputanQty(models.TransientModel):
                               compute="_compute_log_ids")
     next_work_order_id = fields.Many2one(comodel_name="mrp.workorder",
                                          string="Next Work Order", related="qc_id.next_work_order_id")
-
-    is_work_order_finishing = fields.Boolean(string="Check Work Order Finishing", compute="_compute_workorder_type")
+    is_work_order_finishing = fields.Boolean(string="Check Work Order Finishing",
+                                             related="qc_id.is_work_order_finishing")
     qty_produced = fields.Float(string="Qty Produced", digits=dp.get_precision('Product Unit of Measure'),
 
                                 help="Jumlah Quantity Yand DiProduksi Dari QC GOOD dan QC REJECT"
                                      "\n Digunakan Untuk Mengecek Sisa Quantity Yang Bisa Diinput")
-
-    @api.depends('qc_id')
-    def _compute_workorder_type(self):
-        self.is_work_order_finishing = not self.next_work_order_id and not self.qc_id.is_cutting
 
     @api.depends('qc_id', 'product_id')
     def _compute_log_ids(self):
@@ -91,7 +87,7 @@ class ChangeInputanQty(models.TransientModel):
                 'qc_id': order.qc_id.id,
             }
             qc_log_id = qc_log_object.create(qc_log_data)
-            if order.is_work_order_finishing and qc_log_id:
+            if order.qc_id.is_work_order_finishing and qc_log_id:
                 if order.quantity_good:
                     qc_finished_object.create({
                         'product_id': order.product_id.id,
