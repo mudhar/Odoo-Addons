@@ -20,20 +20,20 @@ class MrpWorkOrder(models.Model):
                  'qc_ids.product_qty',
                  'qc_ids.is_updated_from_prev_workorder')
     def compute_total_qc_produced(self):
-        if self.next_work_order_id and self.is_cutting:
+        if self.is_cutting and self.next_work_order_id:
             qc_produced = sum(self.qc_ids.mapped('qty_produced'))
             self.tot_qc_qty_produced = qc_produced
 
             qc_producing = sum(self.qc_ids.mapped('product_qty'))
             self.qc_qty_remaining = qc_producing - self.tot_qc_qty_produced
-        if self.next_work_order_id and not self.is_cutting:
+        if not self.is_cutting and self.next_work_order_id:
             qc_produced = sum(self.qc_ids.mapped('qty_produced'))
             self.tot_qc_qty_produced = qc_produced
 
             qc_producing = sum(self.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder).mapped('product_qty'))
             self.qc_qty_remaining = qc_producing - self.tot_qc_qty_produced
 
-        if not self.next_work_order_id and not self.is_cutting:
+        if not (self.is_cutting and self.next_work_order_id):
             qc_produced = sum(self.qc_ids.mapped('qty_produced'))
             self.tot_qc_qty_produced = qc_produced
 
@@ -188,7 +188,7 @@ class MrpWorkOrder(models.Model):
                      ]).filtered(lambda x: x.sequence < work_order.sequence)
                 work_order.prev_wo_done = all(prev_wo.state == 'done'
                                               for prev_wo in prev_wo_done) if prev_wo_done else False
-            elif not work_order.next_work_order_id and not work_order.is_cutting:
+            elif not (work_order.next_work_order_id and work_order.is_cutting):
                 return False
         return True
 
@@ -199,7 +199,7 @@ class MrpWorkOrder(models.Model):
                  'qc_ids.qc_finished_ids.stock_move_created')
     def _compute_move_created(self):
         for work_order in self:
-            if not work_order.next_work_order_id and not work_order.is_cutting:
+            if not (work_order.next_work_order_id and work_order.is_cutting):
                 qc_done = all(qc.state == 'done' for qc in work_order.qc_ids) if work_order.qc_ids else False
                 stock_move_created = all(line.stock_move_created
                                          for line in work_order.qc_ids.mapped('qc_finished_ids')
@@ -365,7 +365,7 @@ class MrpWorkOrder(models.Model):
                      })
                 # self.action_update_plan_workorder()
 
-            if not work_order.next_work_order_id and not work_order.is_cutting:
+            if not (work_order.next_work_order_id and work_order.is_cutting):
                 qc_updated = work_order.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder)
                 # qc_not_updated = self.qc_ids.filtered(lambda x: not x.is_updated_from_prev_workorder)
                 if len(qc_updated) != len(work_order.qc_ids):
@@ -636,7 +636,7 @@ class MrpWorkOrder(models.Model):
     @api.multi
     def check_backdate(self):
         self.ensure_one()
-        if not self.backdate_start or not self.backdate_finished:
+        if not (self.backdate_start or self.backdate_finished):
             raise UserError(_("Harap Isi Tanggal Mulai Dan Selesai Process %s") % self.name)
 
     @api.multi
@@ -923,7 +923,7 @@ class MrpWorkOrderQcLine(models.Model):
             self.next_work_order_id.write({'qty_producing': self.qc_good})
             self.update_next_qty_variant()
 
-        if not self.next_work_order_id and not self.is_cutting:
+        if not (self.next_work_order_id and self.is_cutting):
             self.workorder_id.qc_done += self.qc_good
             self.workorder_id.qc_done += self.qc_sample
             # self.update_move_finished_uom_qty()
@@ -962,7 +962,7 @@ class MrpWorkOrderQcLine(models.Model):
     @api.multi
     def button_reject(self):
         # self.workorder_id.qc_done -= self.qc_good
-        if not self.next_work_order_id and not self.is_cutting:
+        if not (self.next_work_order_id and self.is_cutting):
             self.update({'qc_good': 0.0,
                          'qc_reject': 0.0,
                          'qc_sample': 0.0})
@@ -1029,25 +1029,6 @@ class QcLogLine(models.Model):
                                       selection=[('added', 'Added'),
                                                  ('adjustment', 'Adjustment'), ],
                                       readonly=True, index=True, copy=False, track_visibility='onchange')
-
-    # @api.depends('qc_id', 'qc_id.next_work_order_id', 'qc_id.is_cutting')
-    # def _compute_picking_reference(self):
-    #     for line in self:
-    #         next_work_order_id, is_cutting = line.qc_id.next_work_order_id, line.qc_id.is_cutting
-    #         production_id = line.qc_id.production_id
-    #         if not next_work_order_id and not is_cutting:
-    #             line.name = line.get_picking_reference(production_id, line.product_id)
-    #     return True
-    #
-    # @api.multi
-    # def get_picking_reference(self, production_id, product_id):
-    #     move_object = self.env['stock.move']
-    #     picking_reference = False
-    #     if not picking_reference:
-    #         picking_reference = move_object.search(
-    #             [('production_id', '=', production_id.id),
-    #              ('product_id', '=', product_id.id)], limit=1)
-    #     return picking_reference.picking_id.name or False
 
 
 class MrpQcReject(models.Model):
