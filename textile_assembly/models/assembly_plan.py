@@ -565,7 +565,7 @@ class AssemblyPlan(models.Model):
                                       "**Kolum Actual Quantity To Produce = Berapa Pcs Produk Yang Jadi Diproduksi"))
 
             for record in order.plan_line_ids:
-                if not (record.new_qty and record.actual_quantity):
+                if not record.new_qty and not record.actual_quantity:
                     raise UserError(_("Kolum Variants Plan dan Variants On Hand Belum Terisi, "
                                       "Klik Tombol Update QTY Agar qty Pada Kolum Tsb Terisi"))
             order.check_remaining_qty()

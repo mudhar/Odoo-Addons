@@ -63,6 +63,10 @@ class VendorInvoiceWizard(models.TransientModel):
         self.ensure_one()
         po_obj = self.env['purchase.order']
         for order in self:
+            # Warning if Quantity == 0.0
+            if order.product_qty == 0.0:
+                raise UserError(_("Quantity Yang Anda Input Sama Dengan Nol"))
+
             po_domain = po_obj.search([('work_order_id', '=', order.work_order_id.id),
                                        ('state', '=', 'draft')])
             if not po_domain:

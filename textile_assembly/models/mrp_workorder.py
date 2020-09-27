@@ -20,43 +20,25 @@ class MrpWorkOrder(models.Model):
                  'qc_ids.product_qty',
                  'qc_ids.is_updated_from_prev_workorder')
     def compute_total_qc_produced(self):
-        if self.next_work_order_id:
-            if self.is_cutting:
+        # Work Order Finish
+        if not self.next_work_order_id:
+            qc_produced = sum(self.qc_ids.mapped('qty_produced'))
+            self.tot_qc_qty_produced = qc_produced
+            qc_producing = sum(self.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder).mapped('product_qty'))
+            self.qc_qty_remaining = qc_producing - self.tot_qc_qty_produced
+        else:
+            # Except Work Order Finish
+            if not self.is_cutting:
                 qc_produced = sum(self.qc_ids.mapped('qty_produced'))
                 self.tot_qc_qty_produced = qc_produced
-                qc_producing = sum(self.qc_ids.mapped('product_qty'))
+                qc_producing = sum(
+                    self.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder).mapped('product_qty'))
                 self.qc_qty_remaining = qc_producing - self.tot_qc_qty_produced
             else:
                 qc_produced = sum(self.qc_ids.mapped('qty_produced'))
                 self.tot_qc_qty_produced = qc_produced
-                qc_producing = sum(self.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder).mapped('product_qty'))
+                qc_producing = sum(self.qc_ids.mapped('product_qty'))
                 self.qc_qty_remaining = qc_producing - self.tot_qc_qty_produced
-        else:
-            if not self.is_cutting:
-                qc_produced = sum(self.qc_ids.mapped('qty_produced'))
-                self.tot_qc_qty_produced = qc_produced
-                qc_producing = sum(self.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder).mapped('product_qty'))
-                self.qc_qty_remaining = qc_producing - self.tot_qc_qty_produced
-
-        # if self.is_cutting and self.next_work_order_id:
-        #     qc_produced = sum(self.qc_ids.mapped('qty_produced'))
-        #     self.tot_qc_qty_produced = qc_produced
-        #
-        #     qc_producing = sum(self.qc_ids.mapped('product_qty'))
-        #     self.qc_qty_remaining = qc_producing - self.tot_qc_qty_produced
-        # if not self.is_cutting and self.next_work_order_id:
-        #     qc_produced = sum(self.qc_ids.mapped('qty_produced'))
-        #     self.tot_qc_qty_produced = qc_produced
-        #
-        #     qc_producing = sum(self.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder).mapped('product_qty'))
-        #     self.qc_qty_remaining = qc_producing - self.tot_qc_qty_produced
-        #
-        # if not (self.is_cutting and self.next_work_order_id):
-        #     qc_produced = sum(self.qc_ids.mapped('qty_produced'))
-        #     self.tot_qc_qty_produced = qc_produced
-        #
-        #     qc_producing = sum(self.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder).mapped('product_qty'))
-        #     self.qc_qty_remaining = qc_producing - self.tot_qc_qty_produced
 
         return True
 
@@ -96,7 +78,7 @@ class MrpWorkOrder(models.Model):
                                     help="Teknikal View Untuk Mengecek Apakah Input Hasil Masih Bisa Ditambahkan",
                                     compute="compute_total_qc_produced")
     qc_done = fields.Float(string="Qc Done", digits=dp.get_precision('Product Unit of Measure'))
-    tot_qc_qty_produced = fields.Float(string="Total QC Qty Produced", digits=dp.get_precision('Product Unit of Measure'),
+    tot_qc_qty_produced = fields.Float(string="Total Input", digits=dp.get_precision('Product Unit of Measure'),
                                        compute="compute_total_qc_produced")
 
     po_count = fields.Integer(string="#PO", compute="_compute_po_count")
@@ -181,23 +163,29 @@ class MrpWorkOrder(models.Model):
                 work_order.qc_done, work_order.qty_producing,
                 precision_rounding=work_order.product_uom_id.rounding) == -1
 
+    def compute_prev_wo_done(self, work_order):
+        prev_wo_done = self.env['mrp.workorder'].search(
+            [('production_id', '=', work_order.production_id.id)
+             ]).filtered(lambda x: x.sequence < work_order.sequence)
+        flag_prev_wo_done = all(prev_wo.state == 'done'
+                                for prev_wo in prev_wo_done) if prev_wo_done else False
+        return flag_prev_wo_done
+
     @api.multi
     @api.depends('next_work_order_id', 'is_cutting')
     def _compute_prev_wo_done(self):
         for work_order in self:
-            if work_order.next_work_order_id:
-                if work_order.is_cutting:
-                    return False
-                else:
-                    prev_wo_done = self.env['mrp.workorder'].search(
-                        [('production_id', '=', work_order.production_id.id)
-                         ]).filtered(lambda x: x.sequence < work_order.sequence)
-                    work_order.prev_wo_done = all(prev_wo.state == 'done'
-                                                  for prev_wo in prev_wo_done) if prev_wo_done else False
+            flag_prev_wo_done = False
+            # Work Order Finish
+            if not work_order.next_work_order_id:
+                flag_prev_wo_done = work_order.compute_prev_wo_done(work_order)
             else:
                 if not work_order.is_cutting:
-                    return False
-        return True
+                    flag_prev_wo_done = work_order.compute_prev_wo_done(work_order)
+                else:
+                    return flag_prev_wo_done
+
+            work_order.prev_wo_done = flag_prev_wo_done
 
     @api.depends('next_work_order_id',
                  'is_cutting',
@@ -206,7 +194,7 @@ class MrpWorkOrder(models.Model):
                  'qc_ids.qc_finished_ids.stock_move_created')
     def _compute_move_created(self):
         for work_order in self:
-            if not (work_order.next_work_order_id and work_order.is_cutting):
+            if not work_order.next_work_order_id:
                 qc_done = all(qc.state == 'done' for qc in work_order.qc_ids) if work_order.qc_ids else False
                 stock_move_created = all(line.stock_move_created
                                          for line in work_order.qc_ids.mapped('qc_finished_ids')
@@ -255,10 +243,24 @@ class MrpWorkOrder(models.Model):
         else:
             return super(MrpWorkOrder, self).button_start()
 
+    # Testing Only Set State to Draft
+    @api.multi
+    def button_draft(self):
+        self.ensure_one()
+        self.write({'state': 'pending'})
+
     @api.multi
     def button_start_assembly(self):
         self.ensure_one()
         # As button_start is automatically called in the new view
+        # Work Order Finish Check
+        if not self.next_work_order_id:
+            if not self.is_cutting and not self.prev_wo_done:
+                raise UserError(_("Work Order Cutting belum selesai prosesnya"))
+        else:
+            # Work Order Except Finish and Cutting Check
+            if not self.is_cutting and not self.prev_wo_done:
+                raise UserError(_("Work Order Cutting belum selesai prosesnya"))
 
         if self.state in ('done', 'cancel'):
             return True
@@ -338,18 +340,21 @@ class MrpWorkOrder(models.Model):
             if work_order.next_work_order_id.state == 'pending':
                 work_order.next_work_order_id.state = 'ready'
 
-            if work_order.next_work_order_id:
-                if work_order.is_cutting:
-                    work_order.qty_produced += float_round(work_order.qc_done,
-                                                           precision_rounding=work_order.production_id.product_uom_id.rounding)
-                    work_order.update_product_variant_quantity()
-                    work_order.next_work_order_id.write(
-                            {'additional_quantity': float_round(work_order.qc_done,
-                                                                precision_rounding=work_order.production_id.product_uom_id.rounding),
-                             'qty_producing': float_round(work_order.qc_done,
-                                                          precision_rounding=work_order.production_id.product_uom_id.rounding)
-                             })
-                else:
+            # Work Order Finish
+            if not work_order.next_work_order_id:
+                qc_updated = work_order.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder)
+                if len(qc_updated) != len(work_order.qc_ids):
+                    raise UserError(_("Anda Tidak Bisa Menyelesaikan Pekerjaan"
+                                      "\n Karena Work Order Sebelumnya Masih Dalam Proses"))
+                work_order.qty_produced += float_round(work_order.qc_done,
+                                                       precision_rounding=work_order.production_id.product_uom_id.rounding)
+
+                if all(not qc_move.stock_move_created for qc_move in work_order.qc_ids.mapped('qc_finished_ids')):
+                    raise UserError(_("Semua Inputan Belum Dibuat STBJ"
+                                      "\n Klik Tombol Receive Good Terlebih Dahulu"))
+            else:
+                # Exception Finish and Cutting
+                if not work_order.is_cutting:
                     qc_updated = work_order.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder)
                     if len(qc_updated) != len(work_order.qc_ids):
                         raise UserError(_("Anda Tidak Bisa Menyelesaikan Pekerjaan"
@@ -362,18 +367,17 @@ class MrpWorkOrder(models.Model):
                          'qty_producing': float_round(work_order.qc_done,
                                                       precision_rounding=work_order.production_id.product_uom_id.rounding)
                          })
-            else:
-                if not work_order.is_cutting:
-                    qc_updated = work_order.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder)
-                    if len(qc_updated) != len(work_order.qc_ids):
-                        raise UserError(_("Anda Tidak Bisa Menyelesaikan Pekerjaan"
-                                          "\n Karena Work Order Sebelumnya Masih Dalam Proses"))
+                else:
+                    # Work Order Cutting
                     work_order.qty_produced += float_round(work_order.qc_done,
                                                            precision_rounding=work_order.production_id.product_uom_id.rounding)
-
-                    if all(not qc_move.stock_move_created for qc_move in work_order.qc_ids.mapped('qc_finished_ids')):
-                        raise UserError(_("Semua Inputan Belum Dibuat STBJ"
-                                          "\n Klik Tombol Receive Good Terlebih Dahulu"))
+                    work_order.update_product_variant_quantity()
+                    work_order.next_work_order_id.write(
+                        {'additional_quantity': float_round(work_order.qc_done,
+                                                            precision_rounding=work_order.production_id.product_uom_id.rounding),
+                         'qty_producing': float_round(work_order.qc_done,
+                                                      precision_rounding=work_order.production_id.product_uom_id.rounding)
+                         })
 
             work_order.button_finish()
 
@@ -582,7 +586,7 @@ class MrpWorkOrder(models.Model):
     def skip_work_order(self):
         if self.next_work_order_id.state == 'pending':
             self.next_work_order_id.state = 'ready'
-
+        # Exception Finish and Cutting
         if self.next_work_order_id:
             if not self.is_cutting:
                 qc_updated = self.qc_ids.filtered(lambda x: x.is_updated_from_prev_workorder)
@@ -624,7 +628,7 @@ class MrpWorkOrder(models.Model):
     @api.multi
     def check_backdate(self):
         self.ensure_one()
-        if not (self.backdate_start or self.backdate_finished):
+        if not self.backdate_start or not self.backdate_finished:
             raise UserError(_("Harap Isi Tanggal Mulai Dan Selesai Process %s") % self.name)
 
     @api.multi
@@ -856,17 +860,17 @@ class MrpWorkOrderQcLine(models.Model):
 
     @api.multi
     def update_current_qty(self):
-        if self.next_work_order_id:
-            if self.is_cutting:
-                self.workorder_id.qc_done += self.qc_good
-            else:
-                self.workorder_id.qc_done += self.qc_good
-                self.next_work_order_id.write({'qty_producing': self.qc_good})
-                self.update_next_qty_variant()
+        # Work Order Finish
+        if not self.next_work_order_id:
+            self.workorder_id.qc_done += self.qc_good
+            self.workorder_id.qc_done += self.qc_sample
         else:
             if not self.is_cutting:
                 self.workorder_id.qc_done += self.qc_good
-                self.workorder_id.qc_done += self.qc_sample
+                self.next_work_order_id.write({'qty_producing': self.qc_good})
+                self.update_next_qty_variant()
+            else:
+                self.workorder_id.qc_done += self.qc_good
 
         return True
 
@@ -900,43 +904,38 @@ class MrpWorkOrderQcLine(models.Model):
 
     @api.multi
     def button_reject(self):
-        if self.next_work_order_id:
-            if self.is_cutting:
-                self.update({'qc_good': 0.0,
-                             'qc_reject': 0.0,
-                             'qc_sample': 0.0})
-            else:
-                self.update({'qc_good': 0.0,
-                             'qc_reject': 0.0,
-                             'qc_sample': 0.0})
-        else:
-            if not self.is_cutting:
-                self.update({'qc_good': 0.0,
-                             'qc_reject': 0.0,
-                             'qc_sample': 0.0})
-                picking_finished_ids = self.qc_finished_ids.mapped('picking_id')
-                if self.qc_finished_ids and picking_finished_ids:
-                    if any(picking.state == 'done' for picking in picking_finished_ids):
-                        raise UserError(_("Anda Tidak Dapat Melakukan Reject Pada Proses Ini\n"
-                                          "Ada Stock Move Finish Yang Sudah Selesai Prosesnya"))
-                    if all(picking.state not in ('done', 'cancel')
-                           for picking in picking_finished_ids):
-                        picking_finished_ids.action_cancel()
-                if picking_finished_ids.mapped('state') == 'cancel':
-                    self.qc_finished_ids.unlink()
-
-                picking_reject_ids = self.qc_reject_ids.mapped('picking_id')
-                if self.qc_reject_ids and picking_reject_ids:
-                    if any(picking.state == 'done' for picking in picking_reject_ids):
-                        raise UserError(_("Anda Tidak Dapat Melakukan Reject Pada Proses ini\n"
-                                          "Ada Stock Move Reject Yang Sudah Selesai Prosesnya"))
-                    if all(picking.state not in ('done', 'cancel') for picking in picking_reject_ids):
-                        picking_reject_ids.action_cancel()
-                if picking_reject_ids.mapped('state') == 'cancel':
-                    self.qc_reject_ids.unlink()
-
-                self.qc_reject_ids.unlink()
+        # Work Order Finish
+        if not self.next_work_order_id:
+            self.update({'qc_good': 0.0,
+                         'qc_reject': 0.0,
+                         'qc_sample': 0.0})
+            picking_finished_ids = self.qc_finished_ids.mapped('picking_id')
+            if self.qc_finished_ids and picking_finished_ids:
+                if any(picking.state == 'done' for picking in picking_finished_ids):
+                    raise UserError(_("Anda Tidak Dapat Melakukan Reject Pada Proses Ini\n"
+                                      "Ada Stock Move Finish Yang Sudah Selesai Prosesnya"))
+                if all(picking.state not in ('done', 'cancel')
+                       for picking in picking_finished_ids):
+                    picking_finished_ids.action_cancel()
+            if picking_finished_ids.mapped('state') == 'cancel':
                 self.qc_finished_ids.unlink()
+
+            picking_reject_ids = self.qc_reject_ids.mapped('picking_id')
+            if self.qc_reject_ids and picking_reject_ids:
+                if any(picking.state == 'done' for picking in picking_reject_ids):
+                    raise UserError(_("Anda Tidak Dapat Melakukan Reject Pada Proses ini\n"
+                                      "Ada Stock Move Reject Yang Sudah Selesai Prosesnya"))
+                if all(picking.state not in ('done', 'cancel') for picking in picking_reject_ids):
+                    picking_reject_ids.action_cancel()
+            if picking_reject_ids.mapped('state') == 'cancel':
+                self.qc_reject_ids.unlink()
+
+            self.qc_reject_ids.unlink()
+            self.qc_finished_ids.unlink()
+        else:
+            self.update({'qc_good': 0.0,
+                         'qc_reject': 0.0,
+                         'qc_sample': 0.0})
 
         self.write({'state': 'reject'})
 

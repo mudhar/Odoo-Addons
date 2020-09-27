@@ -222,7 +222,8 @@
                 <xpath expr="//button[@name='record_production']" position="replace">
                     <!-- Add your fields or attributes here -->
                     <button name="record_production" type="object" string="Done" class="btn-success" attrs="{'invisible': ['|', '|', '|', '|',('is_produced', '=', True), ('working_state', '=', 'blocked'), ('state', '!=', 'progress'), ('is_user_working', '=', False), ('produced_less_than_planned','=',True)]}"/>
-                    <button name="record_production" type="object" string="Done" class="btn-danger" attrs="{'invisible': ['|', '|', '|', '|',('is_produced', '=', True), ('working_state', '=', 'blocked'), ('state', '!=', 'progress'), ('is_user_working', '=', False), ('produced_less_than_planned','=',False)]}" confirm="Anda Masih Ada Sisa Input Yang Belum Diselesaikan, Apakah Anda Yakin Untuk Melanjutkan"/>
+                    <button name="record_production" type="object" string="Done" class="btn-danger" attrs="{'invisible': ['|', '|', '|', '|',('is_produced', '=', True), ('working_state', '=', 'blocked'), ('state', '!=', 'progress'), ('is_user_working', '=', False), ('produced_less_than_planned','=',False)]}"
+                            confirm="QC Done Kurang Dari Current Quantity, Apakah Anda Yakin Untuk Melanjutkan"/>
                 </xpath>
 
                 <xpath expr="/form/header/button[last()]" position="after">
@@ -273,7 +274,7 @@
                     <!-- Add your fields or attributes here -->
                     <field name="qty_producing" string="Current Qty" attrs="{'readonly': ['|','|','|',('check_assembly_plan_id','=',True), ('product_tracking', '=', 'serial'), ('state', 'in', ('done', 'cancel'))]}"/>
                     <field name="qc_qty_remaining" readonly="1"/>
-                    <field name="tot_qc_qty_produced" invisible="1"/>
+                    <field name="tot_qc_qty_produced" readonly="1"/>
                     <field name="qc_done" readonly="1"/>
                 </xpath>
                 <xpath expr="//field[@name='final_lot_id']" position="attributes">

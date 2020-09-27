@@ -87,7 +87,8 @@ class ChangeInputanQty(models.TransientModel):
                 'qc_id': order.qc_id.id,
             }
             qc_log_id = qc_log_object.create(qc_log_data)
-            if order.qc_id.is_work_order_finishing and qc_log_id:
+            # Record Work Order Finish -> Goods and Rejects
+            if order.is_work_order_finishing and qc_log_id:
                 if order.quantity_good:
                     qc_finished_object.create({
                         'product_id': order.product_id.id,
@@ -96,14 +97,14 @@ class ChangeInputanQty(models.TransientModel):
                         'qc_log_id': qc_log_id.id,
                         'qc_id': order.qc_id.id,
                     })
-            if order.quantity_reject:
-                qc_reject_object.create({
-                    'product_id': order.product_id.id,
-                    'product_qty': order.quantity_reject,
-                    'product_uom_id': order.product_uom_id.id,
-                    'qc_log_id': qc_log_id.id,
-                    'qc_id': order.qc_id.id,
-                })
+                if order.quantity_reject:
+                    qc_reject_object.create({
+                        'product_id': order.product_id.id,
+                        'product_qty': order.quantity_reject,
+                        'product_uom_id': order.product_uom_id.id,
+                        'qc_log_id': qc_log_id.id,
+                        'qc_id': order.qc_id.id,
+                        })
 
             order.qc_id.qc_good += order.quantity_good
             order.qc_id.qc_reject += order.quantity_reject

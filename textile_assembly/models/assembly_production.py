@@ -557,8 +557,10 @@ class AssemblyProd(models.Model):
         ratio_done = self.variant_line_ids.filtered(lambda x: x.ratio)
         if len(ratio_done) != len(self.variant_line_ids.mapped('ratio')):
             raise UserError(_("Kolum Ratio Perlu Di input Semua"))
-        if not (self.cmt_template_ids and self.raw_material_line_ids):
-            raise UserError(_("Kolom Raw Material atau Kolom CMT Material Harus Diisi Terlebih Dahulu"))
+        if not self.raw_material_line_ids:
+            raise UserError(_("Kolom Raw Material Harus Diisi Terlebih Dahulu"))
+        if not self.cmt_template_ids:
+            raise UserError(_("Kolom CMT Material Harus Diisi Terlebih Dahulu"))
         if not self.cmt_service_ids:
             raise UserError(_("Kolom Biaya Produksi Wajib Diisi"))
         self._action_create_cmt_line()
