@@ -6,35 +6,26 @@ class ChangeInputanQty(models.TransientModel):
     _name = 'change.inputan.qty'
     _description = 'Hanya Inputan Quantity Good Dan Quantity Reject'
 
-    name = fields.Char(string="Description", related="product_id.display_name")
+    name = fields.Char(string="Description")
     qc_id = fields.Many2one(comodel_name="mrp.workorder.qc.line", string="Order Inputan")
     product_id = fields.Many2one(comodel_name="product.product", string="Products")
-    product_uom_id = fields.Many2one(
-        'product.uom', 'Product Unit of Measure')
-    date_start = fields.Datetime('Deadline Start', copy=False, default=fields.Datetime.now)
-    user_id = fields.Many2one('res.users', 'Responsible', default=lambda self: self._uid)
+    product_uom_id = fields.Many2one(comodel_name="product.uom", string="Product Unit of Measure")
+    date_start = fields.Datetime(string="Deadline Start", copy=False, default=fields.Datetime.now)
+    user_id = fields.Many2one(comodel_name="res.users", string="Responsible", default=lambda self: self._uid)
     quantity_good = fields.Float(string="Quantity Good", digits=dp.get_precision('Product Unit of Measure'),
                                  required=True)
-    quantity_reject = fields.Float(string="Quantity Reject", digits=dp.get_precision('Product Unit of Measure'),
-                                   )
-    quantity_sample = fields.Float(string="Quantity Sample", digits=dp.get_precision('Product Unit of Measure'),
-                                   )
+    quantity_reject = fields.Float(string="Quantity Reject", digits=dp.get_precision('Product Unit of Measure'))
+    quantity_sample = fields.Float(string="Quantity Sample", digits=dp.get_precision('Product Unit of Measure'))
 
     product_qty = fields.Float(string="Quantity To Produce", digits=dp.get_precision('Product Unit of Measure'))
     log_ids = fields.One2many(comodel_name="workorder_qc.log.line", inverse_name="qc_id", string="Progress Record",
                               compute="_compute_log_ids")
-    next_work_order_id = fields.Many2one(comodel_name="mrp.workorder",
-                                         string="Next Work Order", related="qc_id.next_work_order_id")
+    next_work_order_id = fields.Many2one(comodel_name="mrp.workorder", string="Next Work Order")
 
-    is_work_order_finishing = fields.Boolean(string="Check Work Order Finishing", compute="_compute_workorder_type")
+    is_work_order_finishing = fields.Boolean(string="Check Work Order Finishing")
     qty_produced = fields.Float(string="Qty Produced", digits=dp.get_precision('Product Unit of Measure'),
-
                                 help="Jumlah Quantity Yand DiProduksi Dari QC GOOD dan QC REJECT"
                                      "\n Digunakan Untuk Mengecek Sisa Quantity Yang Bisa Diinput")
-
-    @api.depends('qc_id')
-    def _compute_workorder_type(self):
-        self.is_work_order_finishing = not self.next_work_order_id and not self.qc_id.is_cutting
 
     @api.depends('qc_id', 'product_id')
     def _compute_log_ids(self):
@@ -57,14 +48,20 @@ class ChangeInputanQty(models.TransientModel):
                 'active_model') == 'mrp.workorder.qc.line' and self._context.get('active_id'):
             res['qc_id'] = self._context['active_id']
 
-        if 'product_id' in fields_list and not res.get('product_qty') and res.get('qc_id'):
+        if 'name' in fields_list and not res.get('name') and res.get('qc_id'):
+            res['name'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).product_id.display_name
+
+        if 'product_id' in fields_list and not res.get('product_id') and res.get('qc_id'):
             res['product_id'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).product_id.id
 
         if 'product_uom_id' in fields_list and not res.get('product_uom_id') and res.get('qc_id'):
             res['product_uom_id'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).product_uom_id.id
 
-        # if 'next_work_order_id' in fields_list and not res.get('product_qty') and res.get('qc_id'):
-        #     res['next_work_order_id'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).next_work_order_id.id
+        if 'next_work_order_id' in fields_list and not res.get('next_work_order_id') and res.get('qc_id'):
+            res['next_work_order_id'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).next_work_order_id.id
+
+        if 'is_work_order_finishing' in fields_list and not res.get('is_work_order_finishing') and res.get('qc_id'):
+            res['is_work_order_finishing'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).is_work_order_finishing
 
         if 'product_qty' in fields_list and not res.get('product_qty') and res.get('qc_id'):
             res['product_qty'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).product_qty
@@ -100,14 +97,14 @@ class ChangeInputanQty(models.TransientModel):
                         'qc_log_id': qc_log_id.id,
                         'qc_id': order.qc_id.id,
                     })
-            if order.quantity_reject:
-                qc_reject_object.create({
-                    'product_id': order.product_id.id,
-                    'product_qty': order.quantity_reject,
-                    'product_uom_id': order.product_uom_id.id,
-                    'qc_log_id': qc_log_id.id,
-                    'qc_id': order.qc_id.id,
-                })
+                if order.quantity_reject:
+                    qc_reject_object.create({
+                        'product_id': order.product_id.id,
+                        'product_qty': order.quantity_reject,
+                        'product_uom_id': order.product_uom_id.id,
+                        'qc_log_id': qc_log_id.id,
+                        'qc_id': order.qc_id.id,
+                    })
 
             order.qc_id.qc_good += order.quantity_good
             order.qc_id.qc_reject += order.quantity_reject

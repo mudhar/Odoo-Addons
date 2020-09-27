@@ -223,7 +223,7 @@
                     <!-- Add your fields or attributes here -->
                     <button name="record_production" type="object" string="Done" class="btn-success" attrs="{'invisible': ['|', '|', '|', '|',('is_produced', '=', True), ('working_state', '=', 'blocked'), ('state', '!=', 'progress'), ('is_user_working', '=', False), ('produced_less_than_planned','=',True)]}"/>
                     <button name="record_production" type="object" string="Done" class="btn-danger" attrs="{'invisible': ['|', '|', '|', '|',('is_produced', '=', True), ('working_state', '=', 'blocked'), ('state', '!=', 'progress'), ('is_user_working', '=', False), ('produced_less_than_planned','=',False)]}"
-                            confirm="QC Done Kurang Dari Current Quantity, Apakah Anda Yakin Untuk Melanjutkan"/>
+                            confirm="Jumlah Quantity Yang Diproduksi Kurang Dari Jumlah Quantity Yang Akan Diproduksi, Apakah Anda Yakin Melanjutkan"/>
                 </xpath>
 
                 <xpath expr="/form/header/button[last()]" position="after">
@@ -274,7 +274,7 @@
                     <!-- Add your fields or attributes here -->
                     <field name="qty_producing" string="Current Qty" attrs="{'readonly': ['|','|','|',('check_assembly_plan_id','=',True), ('product_tracking', '=', 'serial'), ('state', 'in', ('done', 'cancel'))]}"/>
                     <field name="qc_qty_remaining" readonly="1"/>
-                    <field name="tot_qc_qty_produced" readonly="1"/>
+                    <field name="tot_qc_qty_produced"/>
                     <field name="qc_done" readonly="1"/>
                 </xpath>
                 <xpath expr="//field[@name='final_lot_id']" position="attributes">
@@ -309,9 +309,10 @@
                         <button name="button_receive_good" type="object" string="Receive Goods" colspan="1"
                                 class="btn-info" attrs="{'invisible': ['|','|','|',('next_work_order_id','!=',False),('state','!=','progress'), ('check_move_created','=',True),('check_assembly_plan_id','=',False)]}"/>
                     </div>
-                    <field name="qc_ids" nolabel="1" context="{'form_view_ref': 'mrp_workorder_qc_line_view_form', 'default_workorder_id': id}" attrs="{'invisible': [('check_assembly_plan_id','=',False)]}">
+                    <field name="qc_ids" nolabel="1" context="{'form_view_ref': 'textile_assembly.mrp_workorder_qc_line_view_form', 'default_workorder_id': id}" attrs="{'invisible': [('check_assembly_plan_id','=',False)]}">
                         <tree string="Input Hasil" create="false" delete="false" decoration-info="qty_produced&gt;0.0" decoration-danger="qty_produced&gt;product_qty">
                             <field name="is_work_order_finishing" invisible="1"/>
+                            <field name="show_input_wizard"/>
                             <field name="product_id" readonly="1"/>
                             <field name="product_qty" readonly="1"/>
                             <field name="product_uom_id" readonly="1" string="UoM"/>
@@ -323,7 +324,8 @@
                             <field name="state"/>
                             <field name="qty_produced" invisible="1"/>
                             <field name="work_order_state" invisible="1"/>
-                            <button name="%(action_change_inputan_qty)d" type="action" string="Input Hasil" class="btn-danger" attrs="{'invisible': ['|',('work_order_state', 'not in', ('progress')), ('state','not in',('process', 'reject'))]}" colspan="1"/>
+                            <button name="%(action_change_inputan_qty)d" type="action" string="Input Hasil" class="btn-danger"
+                                    attrs="{'invisible': ['|','|', ('show_input_wizard','=',False),('work_order_state', 'not in', ('progress')), ('state','not in',('process', 'reject'))]}" colspan="1"/>
                             <button name="button_done" type="object" string="Input Done" class="btn-success" attrs="{'invisible': ['|',('state','not in', ('process','reject')), ('work_order_state', 'not in', ('progress'))]}" colspan="1"/>
                             <button name="button_approve" type="object" string="Approve" states="waiting" groups="mrp.group_mrp_manager" class="btn-success" colspan="1"/>
                             <button name="button_reject" type="object" string="Reject" states="waiting" groups="mrp.group_mrp_manager" class="btn-danger" colspan="1"/>
