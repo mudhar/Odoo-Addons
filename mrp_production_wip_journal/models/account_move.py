@@ -8,3 +8,5 @@ class AccountMove(models.Model):
     work_order_service_id = fields.Many2one(comodel_name="mrp.workorder.service.line",
                                             string="Reference Work Order Service", copy=False)
     material_production_id = fields.Many2one(comodel_name="mrp.production", string="MRP Order", copy=False)
+
+
