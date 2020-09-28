@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="account_manager_mrp_production_view_tree" model="ir.ui.view">
+            <field name="name">account_manager_mrp_production_view_tree</field>
+            <field name="model">mrp.production</field>
+            <field name="priority">100</field>
+            <field name="arch" type="xml">
+                <tree string="Manufacturing Order" create="false" groups="account.group_account_manager">
+                    <field name="name"/>
+                    <field name="product_template_id"/>
+                    <field name="product_qty"/>
+                    <field name="date_planned_start"/>
+                    <field name="amount_wip_consumed" sum="Total WIP Consumed"/>
+                    <field name="amount_wip_produced" sum="Total WIP Produced"/>
+                    <field name="amount_wip_differ" sum="Total WIP Differ"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+        <record id="account_manager_mrp_production_view_form" model="ir.ui.view">
+            <field name="name">account_manager_mrp_production_view_form</field>
+            <field name="model">mrp.production</field>
+            <field name="priority">100</field>
+            <field name="arch" type="xml">
+                <form string="Manufacturing Order" create="false" edit="false" groups="account.group_account_manager">
+                    <header>
+                        <field name="state" widget="statusbar" statusbar_visible="confirmed,progress,done"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" nolabel="1"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="product_template_id"/>
+                                <field name="product_qty"/>
+                                <field name="date_planned_start"/>
+                            </group>
+                            <group>
+                                <field name="amount_wip_consumed"/>
+                                <field name="amount_wip_produced"/>
+                                <field name="amount_wip_differ"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="account_manager_mrp_production_action" model="ir.actions.act_window">
+            <field name="name">Manufacturing Order Only For Accountant</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">mrp.production</field>
+            <field name="context">{'search_default_wip_material_balance':True, 'search_default_todo': True}</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_ids"
+                   eval="[(5, 0, 0),
+                          (0, 0, {'view_mode': 'tree', 'view_id': ref('account_manager_mrp_production_view_tree')}),
+                          (0, 0, {'view_mode': 'form', 'view_id': ref('account_manager_mrp_production_view_form')})]"/>
+
+        </record>
+        <!-- This Menu Item must have a parent and an action -->
+        <!-- This Menu Item will appear in the Upper bar, That's why It needs NO parent or action -->
+        <menuitem id="menu_mrp_production_accounting"
+                  name="Production" sequence="3" parent="account.menu_finance"/>
+        <menuitem id="menu_mrp_production_action_accounting"
+                  name="Manufacturing Order" parent="menu_mrp_production_accounting"
+                  action="account_manager_mrp_production_action" sequence="0"/>
+
+    </data>
+</odoo>

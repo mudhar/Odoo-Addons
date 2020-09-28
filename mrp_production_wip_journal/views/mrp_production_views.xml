@@ -1,0 +1,96 @@
+<odoo>
+    <data>
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_production_form_view_inherit_production_journal_wip" model="ir.ui.view">
+            <field name="name">mrp.production.form.view.inherit.production_journal_wip</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='picking_type_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="account_expense_material_id" invisible="1"/>
+                </xpath>
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="amount_wip_produced" attrs="{'invisible':[('assembly_plan_id','=',False)]}"/>
+                    <field name="amount_wip_differ" attrs="{'invisible':[('assembly_plan_id','=',False)]}"/>
+                    <field name="amount_wip_consumed" attrs="{'invisible':[('assembly_plan_id','=',False)]}"/>
+                    <field name="amount_wip_returned" attrs="{'invisible':['|',('assembly_plan_id','=',False),('has_returned_move','=',False)]}"/>
+                    <field name="journal_date"/>
+                    <field name="has_returned_move" invisible="1"/>
+                    <field name="has_balanced" invisible="1"/>
+                    <field name="wip_balance" invisible="1"/>
+                    <field name="account_move_count" invisible="1"/>
+                </xpath>
+
+                <xpath expr="//button[@name='button_mark_done']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <button name="button_adjust_wip" type="object"
+                            string="Adjust WIP"
+                            groups="mrp.group_mrp_manager"
+                            class="btn-danger"
+                            attrs="{'invisible': ['|','|',('check_to_done','=',False),('wip_balance','=',True),('assembly_plan_id','=',False)]}"/>
+
+                </xpath>
+
+
+                <xpath expr="//div[@name='button_box']/button[@name='%(mrp.action_mrp_workorder_production_specific)d']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <button name="action_get_account_moves"
+                            type="object"
+                            class="oe_stat_button"
+                            string="Accounting Entries"
+                            icon="fa-usd" attrs="{'invisible': [('account_move_count','=',0)]}"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_production_view_form_inherit_wip" model="ir.ui.view">
+            <field name="name">mrp.production.view.form.inherit.wip</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp_workorder.mrp_production_view_form_inherit_planning"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//button[@name='button_plan']" position="attributes">
+                    <!-- Add your fields or attributes here -->
+                    <attribute name="attrs">{'invisible': ['|', ('state', 'not in', ('confirmed', 'planned')), '|', ('routing_id', '=', False), '|',('has_returned_move','=',True)]}</attribute>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="view_mrp_production_filter_inherit_production_journal_wip" model="ir.ui.view">
+            <field name="name">production.journal.wip.filter</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.view_mrp_production_filter"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='name']" position="after">
+                    <!-- Add new fields here -->
+                    <filter string="WIP Differ" name="wip_material_balance" domain="[('has_balanced','=',False)]"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="mrp_production_tree_view_inherit_wip" model="ir.ui.view">
+            <field name="name">mrp.production.tree.view.inherit.wip</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='availability']" position="after">
+                    <!-- Add new fields here -->
+                    <field name="amount_wip_differ" sum="Total WIP Differ"/>
+                    <field name="amount_wip_produced" sum="Total WIP Produced"/>
+                    <field name="amount_wip_consumed" sum="Total WIP Consumed"/>
+                </xpath>
+
+            </field>
+        </record>
+
+    </data>
+</odoo>
