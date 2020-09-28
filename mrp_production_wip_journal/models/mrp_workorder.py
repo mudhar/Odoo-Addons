@@ -5,8 +5,9 @@ from odoo.addons import decimal_precision as dp
 class MrpWorkOrder(models.Model):
     _inherit = 'mrp.workorder'
 
-    amount_wip_invoiced = fields.Float(string="Amount WIP Invoiced", digits=dp.get_precision('Account'),
-                                       compute="_compute_wip_invoiced")
+    amount_wip_invoiced = fields.Float(string="Amount Invoiced", digits=dp.get_precision('Account'),
+                                       compute="_compute_wip_invoiced",
+                                       help="Total Biaya Product Jasa Dari Jumlah Quantity Yang Ditagih")
 
     @api.multi
     @api.depends('po_ids',

@@ -59,11 +59,7 @@ class MrpWorkOrder(models.Model):
     qc_ids = fields.One2many(comodel_name="mrp.workorder.qc.line", inverse_name="workorder_id", string="QC Lines")
     product_service_ids = fields.One2many(comodel_name="mrp.workorder.service.line", inverse_name="work_order_id",
                                           string="Service Lines")
-
     additional_quantity = fields.Float(string="Additional Quantity", digits=dp.get_precision('Product Unit of Measure'))
-    # qc_final = fields.Float(string="Quantity Final", digits=dp.get_precision('Product Unit of Measure'),
-    #                         compute="compute_qty_final")
-
     is_change_vendor = fields.Boolean(string="changed vendor", readonly=True)
     is_cutting = fields.Boolean(string="Cutting")
     check_qc_to_done = fields.Boolean(string="Check Qc To Done", compute="compute_check_qc_to_done")
@@ -75,11 +71,14 @@ class MrpWorkOrder(models.Model):
         help='Technical: used in views only.')
 
     qc_qty_remaining = fields.Float(string="Sisa Total Input", digits=dp.get_precision('Product Unit of Measure'),
-                                    help="Teknikal View Untuk Mengecek Apakah Input Hasil Masih Bisa Ditambahkan",
+                                    help="Total Sisa Input Dari Jumlah Quantity To Produce"
+                                         " Dikurangi Jumlah Total Input",
                                     compute="compute_total_qc_produced")
-    qc_done = fields.Float(string="Qc Done", digits=dp.get_precision('Product Unit of Measure'))
-    tot_qc_qty_produced = fields.Float(string="Total QC Qty Produced", digits=dp.get_precision('Product Unit of Measure'),
-                                       compute="compute_total_qc_produced")
+    qc_done = fields.Float(string="Input Done", digits=dp.get_precision('Product Unit of Measure'),
+                           help="Total Quantity Goods Pada Product Variant")
+    tot_qc_qty_produced = fields.Float(string="Total Input", digits=dp.get_precision('Product Unit of Measure'),
+                                       compute="compute_total_qc_produced",
+                                       help="Total Input Dari Goods Dan Rejects")
 
     po_count = fields.Integer(string="#PO", compute="_compute_po_count")
     currency_id = fields.Many2one(comodel_name="res.currency", string="Currency", required=True,
@@ -87,8 +86,6 @@ class MrpWorkOrder(models.Model):
     company_id = fields.Many2one('res.company', 'Company', required=True, index=True,
                                  default=lambda self: self.env.user.company_id.id)
     po_ids = fields.One2many(comodel_name="purchase.order", inverse_name="work_order_id", string="#Of PO")
-    # price_paid = fields.Float(string="Total Paid", digits=dp.get_precision('Product Price'),
-    #                               compute="_compute_price_paid", default=0.0)
     purchase_created = fields.Boolean(string="Purchase Created")
 
     # Tambah State Waiting Approval
@@ -138,22 +135,6 @@ class MrpWorkOrder(models.Model):
 
     def write_assembly(self, values):
         self._write(values)
-
-    # @api.constrains('backdate_start')
-    # def _backdate_start_constrains(self):
-    #     self.ensure_one()
-    #     backdate_start = fields.Datetime.from_string(self.backdate_start)
-    #     date_end = fields.Datetime.from_string(self.production_id.date_planned_finished)
-    #     if backdate_start and backdate_start > date_end:
-    #         raise UserError(_("Tanggal Mulai Proses Ini Melebihi Tanggal Selesai Produksi"))
-
-    # @api.constrains('backdate_finished')
-    # def _backdate_finished_constrains(self):
-    #     self.ensure_one()
-    #     backdate_finished = fields.Datetime.from_string(self.backdate_finished)
-    #     date_end = fields.Datetime.from_string(self.production_id.date_planned_finished)
-    #     if backdate_finished and backdate_finished > date_end:
-    #         raise UserError(_("Tanggal Selesai Proses Ini Melebihi Tanggal Selesai Produksi"))
 
     @api.multi
     @api.depends('check_qc_to_done',
