@@ -1,0 +1,47 @@
+<odoo>
+    <data>
+        <record id="workorder_extension_wizard_view_form" model="ir.ui.view">
+            <field name="name">workorder.extension.wizard.view.form</field>
+            <field name="model">workorder.extension.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Add New Workorder">
+                    <group>
+                        <field name="previous_workorder_id" readonly="1"/>
+                        <field name="workcenter_id" options="{'no_create': True}" domain="[('id', 'in', context.get('workcenter_ids', []))]" required="1"/>
+                        <label for="time_cycle"/>
+                        <div>
+                            <field name="time_cycle" widget="float_time" class="oe_inline"/>Minutes
+                        </div>
+                    </group>
+
+                    <div name="options" groups="base.group_user">
+                        <field name="is_new_product"/>
+                        <label for="is_new_product"/>
+                    </div>
+
+                    <group attrs="{'invisible': [('is_new_product', '=', False)]}">
+                        <field name="product_service_id" options="{'no_create': True}" domain="[('id', 'in', context.get('product_ids', []))]" attrs="{'required': [('is_new_product','=',True)]}"/>
+                        <label for="product_qty"/>
+                        <div class="o_row">
+                            <field name="product_qty"/>
+                            <field name="product_uom_id" readonly="1"/>
+                        </div>
+                        <field name="price_unit" attrs="{'required': [('is_new_product','=',True)]}"/>
+                    </group>
+
+
+                    <field name="product_id" readonly="1" invisible="1"/>
+                    <field name="partner_id" readonly="1" invisible="1"/>
+                    <field name="bom_id" readonly="1" invisible="1"/>
+
+
+                    <footer>
+                        <button name="button_confirm" type="object" string="Confirm"
+                                class="btn-primary" colspan="1"/>
+                        <button string="Cancel" class="btn-default" special="cancel" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

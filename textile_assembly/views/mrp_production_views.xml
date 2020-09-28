@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="work_order_assembly_action" model="ir.actions.act_window">
+            <field name="name">Open Work Order</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">mrp.workorder</field>
+            <field name="view_mode">tree,form,gantt,calendar,pivot,graph</field>
+            <field name="view_type">form</field>
+            <field name="domain">[('production_id', '=', active_id),('skipped','=',False)]</field>
+        </record>
+        <record id="template_open_picking" model="ir.actions.act_window">
+            <field name="context">{'default_production_id': active_id, 'search_default_production_id': active_id}</field>
+            <field name="name">Picking Finished Product</field>
+            <field name="res_model">stock.picking</field>
+            <field name="view_type">form</field>
+        </record>
+        <record id="template_open_picking_raw" model="ir.actions.act_window">
+            <field name="context">{'default_raw_material_production_id': active_id, 'search_default_raw_material_production_id': active_id}</field>
+            <field name="name">Picking Material Consume</field>
+            <field name="res_model">stock.picking</field>
+            <field name="view_type">form</field>
+        </record>
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_production_view_form_inherit_assembly" model="ir.ui.view">
+            <field name="name">mrp.production.view.form.inherit.assembly</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="attributes">
+                    <attribute name="create">false</attribute>
+                    <attribute name="delete">false</attribute>
+                </xpath>
+
+                <xpath expr="//field[@name='date_planned_finished']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="backdate_finished" attrs="{'invisible': [('check_to_done','=',False)]}"/>
+                </xpath>
+
+                <xpath expr="//group/group" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <group>
+                        <field name="partner_id" domain="[('supplier', '=', True)]" attrs="{'invisible': [('assembly_plan_id','=',False)]}" readonly="1"/>
+                        <field name="picking_type_production" invisible="1"/>
+                        <field name="picking_type_consume" invisible="1"/>
+                        <field name="assembly_plan_id" invisible="1"/>
+                    </group>
+                </xpath>
+
+                <field name="product_tmpl_id" position="after">
+                    <field name="product_template_id" attrs="{'invisible': [('assembly_plan_id', '=', False)]}"/>
+                </field>
+                <xpath expr="//button[@name='%(mrp.action_mrp_production_moves)d']" position="attributes">
+                    <!-- Disable Button Box stock.move.line -->
+                    <attribute name="invisible">[('assembly_plan_id','!=',False)]</attribute>
+                </xpath>
+                <xpath expr="//button[@name='%(mrp.action_change_production_qty)d']" position="attributes">
+                    <!-- Disable Button update quantity -->
+                    <attribute name="attrs">{'invisible':[('assembly_plan_id','!=',False)]}</attribute>
+                </xpath>
+                <xpath expr="//field[@name='product_id']" position="attributes">
+                    <!-- Hide Colum product_id -->
+                    <attribute name="attrs">{'invisible':[('assembly_plan_id','!=',False)]}</attribute>
+                </xpath>
+                <xpath expr="//button[@name='post_inventory']" position="attributes">
+                    <!-- Disable Button Post Inventory -->
+                    <attribute name="attrs">{'invisible':[('assembly_plan_id','!=',False)]}</attribute>
+                </xpath>
+                <xpath expr="//div[@name='button_box']/button[@name='%(mrp.action_mrp_workorder_production_specific)d']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+
+                <xpath expr="//div[@name='button_box']/button[@name='%(mrp.action_mrp_workorder_production_specific)d']" position="before">
+                    <!-- Button BOX Picking Production dan Picking Consume -->
+                    <button class="oe_stat_button" name="%(template_open_picking_raw)d" type="action"
+                            icon="fa-truck" attrs="{'invisible': ['|','|',('picking_raw_count', '=', 0),('bom_id','=',False),('state','=','cancel')]}">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_value"><field name="picking_raw_count" widget="statinfo" nolabel="1"/></span>
+                            <span class="o_stat_text">Consume</span>
+                        </div>
+                    </button>
+
+                    <button class="oe_stat_button" name="%(template_open_picking)d" type="action"
+                            icon="fa-truck" attrs="{'invisible': ['|','|','|',('state','=','cancel'),('bom_id','=',False), ('state','not in',('progress', 'done')), ('picking_count', '=', 0)]}">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_value"><field name="picking_count" widget="statinfo" nolabel="1"/></span>
+                            <span class="o_stat_text">Produce</span>
+                        </div>
+                    </button>
+
+                    <button name="%(work_order_assembly_action)d" type="action" attrs="{'invisible': [('workorder_count', '=', 0)]}" class="oe_stat_button" icon="fa-play-circle-o">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_value"><field name="workorder_done_count" widget="statinfo" nolabel="1"/> / <field name="workorder_count" widget="statinfo" nolabel="1"/></span>
+                            <span class="o_stat_text">Work Orders</span>
+                        </div>
+                    </button>
+                </xpath>
+
+                <xpath expr="//field[@name='finished_move_line_ids']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="variant_ids" nolabel="1" invisible="1">
+                        <tree string="Variant On Hand" editable="bottom" create="0" delete="0" >
+                            <field name="product_id"/>
+                            <field name="product_uom_id"/>
+                            <field name="product_qty" sum="Total On Hand Qty"/>
+                            <field name="ratio" sum="Total Ratio"/>
+                        </tree>
+                    </field>
+                    <field name="picking_finished_product_ids" invisible="1"/>
+                </xpath>
+
+                <xpath expr="//field[@name='move_raw_ids']" position="after">
+                    <!-- Add your fields or attributes here -->
+                    <field name="picking_raw_ids" invisible="1"/>
+                </xpath>
+
+                <xpath expr="//field[@name='product_template_id']" position="before">
+                    <field name="check_work_order_done" invisible="1"/>
+                </xpath>
+
+                <xpath expr="//button[@name='action_cancel']" position="attributes">
+                    <attribute name="groups">mrp.group_mrp_manager</attribute>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Inherit Form View to Modify it -->
+        <record id="mrp_production_kanban_view_inherit_assembly" model="ir.ui.view">
+            <field name="name">mrp.production.kanban.view.inherit.assembly</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.mrp_production_kanban_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//kanban" position="attributes">
+                    <attribute name="create">false</attribute>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="mrp_production_tree_view_inherit_assembly" model="ir.ui.view">
+            <field name="name">mrp.production.tree.view.inherit.assembly</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//tree" position="attributes">
+                    <attribute name="create">false</attribute>
+                    <attribute name="delete">false</attribute>
+                </xpath>
+                <xpath expr="//field[@name='product_id']" position="replace">
+                    <field name="product_template_id"/>
+                </xpath>
+            </field>
+        </record>
+
+
+    </data>
+</odoo>
