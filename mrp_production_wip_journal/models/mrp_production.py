@@ -91,16 +91,23 @@ class MrpProduction(models.Model):
     @api.multi
     def _compute_wip_differ(self):
         for production in self:
-            amount_wip_differ = (
-                    (production.amount_wip_consumed - production.amount_wip_returned) - production.amount_wip_produced)
+            amount_wip_differ = 0.0
+            if float_compare(
+                    (production.amount_wip_consumed - production.amount_wip_returned), production.amount_wip_produced,
+                    precision_rounding=production.company_id.currency_id.rounding) == -1:
+
+                amount_wip_differ += production.amount_wip_produced\
+                                     - (production.amount_wip_consumed - production.amount_wip_returned)
+
+            if float_compare(
+                    (production.amount_wip_consumed - production.amount_wip_returned), production.amount_wip_produced,
+                    precision_rounding=production.company_id.currency_id.rounding) == 1:
+
+                amount_wip_differ += (production.amount_wip_consumed - production.amount_wip_returned)\
+                                     - production.amount_wip_produced
+
             amount_account_move = production.account_move_ids.mapped('amount')
             production.amount_wip_differ = amount_wip_differ - sum(amount_account_move)
-            # if float_compare(amount_wip_differ, 0.0,
-            #                  precision_rounding=production.company_id.currency_id.rounding) == -1:
-            #     production.amount_wip_differ = sum(amount_account_move) - amount_wip_differ
-            # if float_compare(amount_wip_differ, 0.0,
-            #                  precision_rounding=production.company_id.currency_id.rounding) == 1:
-            #     production.amount_wip_differ = amount_wip_differ - sum(amount_account_move)
 
     @api.multi
     @api.depends('move_raw_ids',
@@ -195,7 +202,7 @@ class MrpProduction(models.Model):
                 'material_production_id': self.id,
             })
             new_account_move.post()
-            self.write({'has_balance': True})
+            self.write({'has_balanced': True})
         if float_compare(self.amount_wip_differ, 0.0, precision_rounding=self.company_id.currency_id.rounding) == -1:
             credit_account_id = self.account_expense_material_id.id
             debit_account_id = location_production.valuation_in_account_id.id
@@ -208,7 +215,7 @@ class MrpProduction(models.Model):
                 'material_production_id': self.id,
             })
             new_account_move.post()
-            self.write({'has_balance': True})
+            self.write({'has_balanced': True})
         return True
 
     @api.multi
