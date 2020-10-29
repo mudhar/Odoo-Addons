@@ -216,9 +216,11 @@ class MrpWorkOrder(models.Model):
         res = []
         for record in self:
             if record.check_assembly_plan_id and record.product_template_id:
-                res.append((record['id'], "%s - %s - %s" % (record.production_id.name, record.product_template_id.name, record.name)))
+                res.append((record['id'],
+                            "%s - %s - %s" % (record.production_id.name, record.product_template_id.name, record.name)))
             elif not record.check_assembly_plan_id and record.product_id:
-                res.append((record['id'], "%s - %s - %s" % (record.production_id.name, record.product_id.name, record.name)))
+                res.append(
+                    (record['id'], "%s - %s - %s" % (record.production_id.name, record.product_id.name, record.name)))
         return res
 
     @api.multi
@@ -361,6 +363,31 @@ class MrpWorkOrder(models.Model):
             return super(MrpWorkOrder, self).button_finish()
 
     @api.multi
+    def button_cancel(self):
+        for work in self:
+            work_ids = self.env['mrp.workorder'].search([('production_id', '=', work.production_id.id)])
+            for order in work_ids.mapped('po_ids'):
+                if all(purchase.state != 'cancel' for purchase in order):
+                    raise UserError(_("Batalkan Terlebih Dahulu Purchase Yang Terbentuk Dari Work Order"))
+
+            move_consume_state = work.production_id.mapped('picking_raw_ids')
+            if move_consume_state and not any(picking.created_return_picking for picking in move_consume_state):
+                raise UserError(_("Bahan Baku sudah Keluar Dari Gudang\n"
+                                  "Lakukan Pengembalian Bahan Baku Ke Gudang\n"
+                                  "Bila Ingin Melakukan Pembatalan Dokumen Ini"))
+            move_finish_state = work.production_id.mapped('picking_finished_product_ids')
+            if move_finish_state and not any(picking.created_return_picking for picking in move_finish_state):
+                raise UserError(_("Bahan Jadi sudah Masuk Ke Gudang\n"
+                                  "Lakukan Pengembalian Bahan Jadi Ke Produksi\n"
+                                  "Bila Ingin Melakukan Pembatalan Dokumen Ini"))
+            both_move = (move_consume_state | move_finish_state)
+            if any(move.created_return_picking for move in both_move):
+                for work_order in work_ids:
+                    work_order.action_cancel()
+                work.production_id.write({'state': 'cancel', 'is_locked': True})
+                work.production_id.assembly_plan_id._action_cancel()
+
+    @api.multi
     def action_finish_assembly(self):
         self.ensure_one()
         self.end_all()
@@ -373,6 +400,9 @@ class MrpWorkOrder(models.Model):
              'date_finished': self.backdate_finished}
         )
 
+    @api.multi
+    def action_cancel(self):
+        self.write({'state': 'cancel'})
 
     # Update Product Quantity Pada Work Order Berikutnya
     @api.multi
@@ -524,7 +554,6 @@ class MrpWorkOrder(models.Model):
             'target': 'new',
         }
 
-
     @api.multi
     def button_request_new_workorder(self):
         self.write({'state': 'waiting'})
@@ -662,7 +691,8 @@ class MrpWorkOrder(models.Model):
                     for picking_reject in picking_rejected_id.move_lines:
                         for reject_line in self.env['mrp_workorder.qc_reject_move'].search(
                                 [('move_id', 'in', stock_rejected_ids.ids),
-                                 ]).filtered(lambda x: not x.picking_id and x.product_id.id == picking_reject.product_id.id):
+                                 ]).filtered(
+                            lambda x: not x.picking_id and x.product_id.id == picking_reject.product_id.id):
                             reject_line.write({'name': picking_rejected_id.name,
                                                'picking_id': picking_rejected_id.id})
 
@@ -709,7 +739,7 @@ class MrpWorkOrder(models.Model):
                 'partner_id': order.partner_id.id or False,
                 'location_id': location_id,
                 'location_dest_id': location_dest_id,
-                'origin': origin_goods or origin_rejects ,
+                'origin': origin_goods or origin_rejects,
                 'production_id': order.production_id.id,
                 'group_id': order.production_id.procurement_group_id.id,
                 'company_id': order.production_id.company_id.id,
@@ -827,7 +857,7 @@ class MrpWorkOrderQcLine(models.Model):
         for line in self:
             quantity_done = []
             for move in line.production_id.move_finished_ids.filtered(
-                    lambda x:x.product_id.id == line.product_id.id and x.state == 'done'):
+                    lambda x: x.product_id.id == line.product_id.id and x.state == 'done'):
                 quantity_done.append(move.quantity_done)
             if quantity_done:
                 line.receive_good = sum(quantity_done)
@@ -1059,7 +1089,7 @@ class MrpQcFinished(models.Model):
     product_uom_id = fields.Many2one(
         'product.uom', 'Product Unit of Measure')
 
-    backdate_start = fields.Datetime( string="Effective Start Date", related="qc_id.backdate_start")
+    backdate_start = fields.Datetime(string="Effective Start Date", related="qc_id.backdate_start")
     backdate_finished = fields.Datetime(string="Effective End Date", related="qc_id.backdate_finished")
 
     stock_move_created = fields.Boolean(string="Product Moves Created")
@@ -1124,7 +1154,8 @@ class MrpWorkorderServiceLine(models.Model):
 
     work_order_id = fields.Many2one(comodel_name="mrp.workorder", string="Order WorkOrder",
                                     ondelete="cascade", index=True)
-    production_id = fields.Many2one(comodel_name='mrp.production', string='Production_id', related="work_order_id.production_id")
+    production_id = fields.Many2one(comodel_name='mrp.production', string='Production_id',
+                                    related="work_order_id.production_id")
     product_id = fields.Many2one(comodel_name="product.product", string="Products",
                                  track_visibility='onchange', domain=[('type', '=', 'service')])
     product_qty = fields.Float(string="Quantity Per Pcs", digits=dp.get_precision('Product Unit of Measure'))
@@ -1138,9 +1169,3 @@ class MrpWorkorderServiceLine(models.Model):
     def _has_po(self):
         for service in self:
             service.has_po = service.purchase_id if service.purchase_id else False
-
-
-
-
-
-

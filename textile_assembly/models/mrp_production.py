@@ -101,12 +101,16 @@ class MrpProduction(models.Model):
     @api.multi
     def action_cancel_work_order(self):
         for production in self:
-            for work_order in production.workorder_ids.filtered(lambda x: not x.next_work_order_id and not x.is_cutting):
+            for work_order in production.workorder_ids:
+                for purchase in work_order.mapped('po_ids'):
+                    if purchase.state != 'cancel':
+                        raise UserError(_("Batalkan Terlebih Dahulu Purchase Yang Terbentuk Dari Work Order "
+                                          "%s") % work_order.name)
+
                 if work_order.state in ['done', 'progress']:
                     raise UserError(_("Work Order %s Sedang Dalam Proses atau Sudah Done\n"
                                       "Anda Tidak Dapat Membatalkan Manufacturing Order") % work_order.name)
-            for work_order in production.workorder_ids.sorted(lambda x: x.sequence):
-                work_order.write({'state': 'cancel'})
+                work_order.action_cancel()
         return True
 
     @api.multi

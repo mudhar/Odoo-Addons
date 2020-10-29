@@ -236,6 +236,7 @@
                     <button name="button_procurement" type="object" string="ReCreate Purchase Order" class="btn-warning"
                             attrs="{'invisible': ['|','|','|',('state','!=','done'),('is_locked','=',True),('purchase_created','=',True)]}"
                     />
+                    <button name="button_cancel" type="object" string="Cancel" states="progress"/>
                     <button name="button_skip" type="object" string="Request Skip Process" attrs="{'invisible': ['|','|','|','|',('prev_wo_done','=',False),('is_cutting','=',True),('next_work_order_id','=',False),('state','not in',('pending','ready'))]}" class="btn-warning"/>
                     <button name="button_reject_skip_process" type="object" string="Reject Skip Process" states="waiting skip" class="btn-success" groups="mrp.group_mrp_manager"/>
                     <button name="button_approve_skip_process" type="object" string="Approve Skip Process" states="waiting skip" class="btn-success" groups="mrp.group_mrp_manager"/>
