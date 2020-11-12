@@ -15,13 +15,18 @@ class StockPickingImport(models.TransientModel):
     def _check_csv_file(self, data_file):
         return data_file.strip().endswith('.csv')
 
+    def _find_product(self, values):
+        product_object = self.env['product.product']
+        domain = [('barcode', '=', values)]
+        product_ids = product_object.search_read(domain=domain)
+        return product_ids
+
     @api.multi
     def _import_stock_move_csv(self):
         picking_id = self._context.get('active_id')
         stock_picking_object = self.env['stock.picking']
         stock_picking_ids = stock_picking_object.search_read(domain=[('id', '=', picking_id)])
         stock_move_object = self.env['stock.move']
-        product_object = self.env['product.product']
         if stock_picking_ids[0].get('state') == 'draft':
             location_id = stock_picking_ids[0].get('location_id')[0]
             location_dest_id = stock_picking_ids[0].get('location_dest_id')[0]
@@ -33,12 +38,14 @@ class StockPickingImport(models.TransientModel):
 
             for row in reader:
                 formatted_dict = dict(row)
-                product_ids = product_object.search_read(domain=[('name', '=', formatted_dict.get('Product'))])
+
+                product_ids = self._find_product(formatted_dict.get('Product'))
                 if not product_ids:
-                    raise ValidationError(_("Product Not Found"))
+                    raise ValidationError(_("Product With Barcode %s Not Found") % formatted_dict.get('Product'))
 
                 if product_ids:
                     line_items = dict()
+                    line_items['date_expected'] = stock_picking_ids[0].get('scheduled_date')
                     line_items['product_id'] = product_ids[0].get('id')
                     line_items['product_uom'] = product_ids[0].get('uom_id')[0]
                     line_items['product_uom_qty'] = formatted_dict.get('quantity')

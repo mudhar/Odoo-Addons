@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <record id="mrp_workorder_form_inherit_wip_invoiced" model="ir.ui.view">
-            <field name="name">mrp_workorder.form.inherit.wip_invoiced</field>
+        <record id="mrp_production_workcenter_form_view_inherit_invoiced" model="ir.ui.view">
+            <field name="name">mrp_workorder.form.view.inherit.invoiced</field>
             <field name="model">mrp.workorder</field>
-            <field name="inherit_id" ref="textile_assembly.mrp_production_workcenter_form_view_inherited_production"/>
+            <field name="inherit_id" ref="mrp.mrp_production_workcenter_form_view_inherit"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='qc_done']" position="after">
                     <field name="amount_wip_invoiced"/>
