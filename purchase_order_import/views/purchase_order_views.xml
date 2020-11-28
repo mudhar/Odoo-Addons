@@ -1,0 +1,28 @@
+<odoo>
+  <data>
+    <record id="purchase_order_import_view_form" model="ir.ui.view">
+      <field name="name">Purchase Order Import View</field>
+      <field name="model">purchase_order.import</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Import Product From CSV File To Purchase Order Lines">
+          <group>
+            <field name="data_file" nolabel="1" filename="file_name" />
+            <button name="import_file" string="Import" type="object" />
+            <field name="file_name" invisible="1" />
+          </group>
+          <footer>
+            <button string="Cancel" class="btn-default" special="cancel"/>
+          </footer>
+        </form>
+      </field>
+    </record>
+    <act_window name="Import Product"
+                res_model="purchase_order.import"
+                src_model="purchase.order"
+                target="new"
+                view_mode="form"
+                view_id="purchase_order_import_view_form"
+                id="purchase_order_import_action"/>
+  </data>
+</odoo>

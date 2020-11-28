@@ -5,9 +5,11 @@ from odoo.exceptions import ValidationError
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
-    template_code = fields.Char(string="Assembly Code", copy=False)
+    template_code = fields.Char(string="Assembly Code", copy=False,
+                                help="Code Produk Digunakan Pada Assembly Untuk Penamanaan Dokumen Assembly")
     pattern_code = fields.Char(string="Code Pola", copy=False)
-    is_roll = fields.Boolean(string="Is Roll?")
+    is_roll = fields.Boolean(string="Is Roll?",
+                             help="Digunakan Untuk Penamaan Lot Pada Produk Yang Membutuhkan")
     has_goods = fields.Boolean(compute="_has_goods")
 
     @api.depends('is_goods', 'sale_ok', 'purchase_ok')

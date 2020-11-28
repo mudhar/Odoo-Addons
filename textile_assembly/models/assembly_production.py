@@ -40,7 +40,7 @@ class AssemblyProd(models.Model):
 
     product_tmpl_id = fields.Many2one(comodel_name="product.template", string="Product To Produce",
                                       index=True, track_visibility='onchange', ondelete='cascade',
-                                      help="Acuan Produk Yang Akan Diproduksi")
+                                      help="Produk Barang Jadi Yang Akan Diproduksi")
     product_categ_id = fields.Many2one(comodel_name="product.category",
                                        related="product_tmpl_id.categ_id", string="Category Product",
                                        index=True, readonly=True)
@@ -473,6 +473,16 @@ class AssemblyProd(models.Model):
     @api.multi
     def button_process(self):
         self.ensure_one()
+        product_code = self.product_tmpl_id.template_code
+        product_variant_attribute = self.product_tmpl_id.product_variant_ids
+
+        if not product_code:
+            raise UserError(_("Update Code Produk Terlebih Dahulu"))
+
+        if not product_variant_attribute:
+            raise UserError(_("Tidak Ada Attribute Variant Pada Product\n"
+                              "Tambahkan Terlebih dahulu Attribute Variant Pada Product"))
+
         self.check_selected_routing_id()
 
         if not self.variant_line_ids:
@@ -480,9 +490,6 @@ class AssemblyProd(models.Model):
         else:
             self._unset_product_variant_line()
 
-        product_code = self.product_tmpl_id.template_code
-        if not product_code:
-            raise UserError(_("Update Code Produk Terlebih Dahulu"))
         # Count product_tmpl_id yang sama
         count_number = self.compute_count_product_tmpl_id()
 

@@ -7,7 +7,7 @@ from odoo.exceptions import ValidationError
 
 class StockPickingImport(models.TransientModel):
     _name = 'stock_picking.import'
-    _description = 'StockPickingImport'
+    _description = 'Import CSV To Picking Line'
 
     data_file = fields.Binary(string="CSV File")
     file_name = fields.Char(string='Name')

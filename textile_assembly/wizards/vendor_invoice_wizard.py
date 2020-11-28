@@ -173,8 +173,8 @@ class VendorInvoiceWizard(models.TransientModel):
                                                                                  wiz.product_id.supplier_taxes_id,
                                                                                  taxes_id,
                                                                                  wiz.work_order_id.company_id) if seller else 0.0
-            if price_unit and seller and po_id.currency_id and seller.currency_id != po_id.currency_id:
-                price_unit = seller.currency_id.compute(price_unit, po_id.currency_id)
+            # if price_unit and seller and po_id.currency_id and seller.currency_id != po_id.currency_id:
+            #     price_unit = seller.currency_id.compute(price_unit, po_id.currency_id)
 
             product_lang = wiz.product_id.with_context({
                 'lang': wiz.partner_id.lang,
@@ -189,7 +189,7 @@ class VendorInvoiceWizard(models.TransientModel):
                 'product_qty': po_uom_qty,
                 'product_id': wiz.product_id.id,
                 'product_uom': wiz.product_id.uom_po_id.id,
-                'price_unit': price_unit or wiz.price_unit,
+                'price_unit': wiz.price_unit,
                 'date_planned': wiz.purchase_date,
                 'taxes_id': [(6, 0, taxes_id.ids)],
                 'order_id': po_id.id

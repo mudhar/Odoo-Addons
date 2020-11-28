@@ -18,14 +18,16 @@ class MrpProduction(models.Model):
     has_balanced = fields.Boolean(string="Has Balanced?")
     has_returned_move = fields.Boolean(compute="_has_returned_moves")
     amount_wip_consumed = fields.Float(string='Total WIP Consumed', digits=dp.get_precision('Account'),
-                                       compute="_compute_wip_consumed")
+                                       compute="_compute_wip_consumed",
+                                       help="Total WIP Bahan Baku Di Tambah Total Biaya Produksi Pada Work Order")
     amount_wip_returned = fields.Float(string='Total WIP Returned', digits=dp.get_precision('Account'),
-                                       compute="_compute_wip_returned")
+                                       compute="_compute_wip_returned", help="Total WIP Bahan Baku Yang Di Retur")
     amount_wip_produced = fields.Float(string="Total WIP Produced", digits=dp.get_precision('Account'),
-                                       compute="_compute_wip_produced")
+                                       compute="_compute_wip_produced", help="Total WIP Bahan Jadi Setelah Produksi")
     amount_wip_differ = fields.Float(string="Total WIP Differ", digits=dp.get_precision('Account'),
                                      compute="_compute_wip_differ",
-                                     help="Total Amount Consumed Minus Amount Returned Minus Amount Assembly")
+                                     help="Total WIP Bahan Baku Dikurangi Total WIP Bahan Baku Retur\n"
+                                          "Hasilnya Dikurang Total WIP Bahan Jadi")
     wip_balance = fields.Boolean(string="WIP Materials Balance", compute="_compute_wip_balance",
                                  index=True)
     account_move_count = fields.Integer(string='Of Account Move', compute="_compute_account_move_count")
