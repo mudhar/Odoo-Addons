@@ -81,8 +81,8 @@ class SaleOrderImport(models.TransientModel):
                 'product_uom_qty': values.get('quantity'),
                 'price_unit': values.get('price') if values.get('price') else product_id.lst_price,
             })
-            # sale_lines.product_id_change()
-            # sale_lines._onchange_discount()
+            sale_lines.product_id_change()
+            sale_lines._onchange_discount()
 
         elif sale_id.state == 'sent' and product_id:
             sale_lines.create({
@@ -93,8 +93,8 @@ class SaleOrderImport(models.TransientModel):
                 'product_uom_qty': values.get('quantity'),
                 'price_unit': values.get('price') if values.get('price') else product_id.lst_price,
             })
-            # sale_lines.product_id_change()
-            # sale_lines._onchange_discount()
+            sale_lines.product_id_change()
+            sale_lines._onchange_discount()
         if tax_id_lst:
             sale_lines.write({'tax_id': ([(6, 0, tax_id_lst)])})
         return True
