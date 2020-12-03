@@ -6,9 +6,9 @@ from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
 
-class PurchaseOrderImport(models.TransientModel):
-    _name = 'purchase_order.import'
-    _description = 'Import CSV To Purchase Line'
+class SaleOrderImport(models.TransientModel):
+    _name = 'sale_order.import'
+    _description = 'Import CSV To Sale Line'
 
     data_file = fields.Binary(string="CSV File")
     file_name = fields.Char(string='Name')
@@ -45,15 +45,15 @@ class PurchaseOrderImport(models.TransientModel):
 
     @api.multi
     def create_order_line(self, values):
-        purchase_id = self.env['purchase.order'].browse(self._context.get('active_id'))
-        purchase_lines = self.env['purchase.order.line']
+        sale_id = self.env['sale.order'].browse(self._context.get('active_id'))
+        sale_lines = self.env['sale.order.line']
         product_id = self._find_product(values.get('product'))
         tax_id_lst = list()
         if values.get('tax'):
             if ';' in values.get('tax'):
                 tax_names = values.get('tax').split(';')
                 for name in tax_names:
-                    tax = self.env['account.tax'].search([('name', '=', name), ('type_tax_use', '=', 'purchase')])
+                    tax = self.env['account.tax'].search([('name', '=', name), ('type_tax_use', '=', 'sale')])
                     if not tax:
                         raise Warning(_('"%s" Tax not in your system') % name)
                     tax_id_lst.append(tax.id)
@@ -61,42 +61,42 @@ class PurchaseOrderImport(models.TransientModel):
             elif ',' in values.get('tax'):
                 tax_names = values.get('tax').split(',')
                 for name in tax_names:
-                    tax = self.env['account.tax'].search([('name', '=', name), ('type_tax_use', '=', 'purchase')])
+                    tax = self.env['account.tax'].search([('name', '=', name), ('type_tax_use', '=', 'sale')])
                     if not tax:
                         raise Warning(_('"%s" Tax not in your system') % name)
                     tax_id_lst.append(tax.id)
             else:
                 tax_names = values.get('tax').split(',')
-                tax = self.env['account.tax'].search([('name', '=', tax_names), ('type_tax_use', '=', 'purchase')])
+                tax = self.env['account.tax'].search([('name', '=', tax_names), ('type_tax_use', '=', 'sale')])
                 if not tax:
                     raise Warning(_('"%s" Tax not in your system') % tax_names)
                 tax_id_lst.append(tax.id)
 
-        if purchase_id.state == 'draft' and product_id:
-            purchase_lines.create({
-                'order_id': purchase_id.id,
+        if sale_id.state == 'draft' and product_id:
+            sale_lines.create({
+                'order_id': sale_id.id,
                 'name': product_id.name,
                 'product_id': product_id.id,
-                'product_uom': product_id.uom_po_id.id,
-                'product_qty': values.get('quantity'),
+                'product_uom': product_id.uom_id.id,
+                'product_uom_qty': values.get('quantity'),
                 'price_unit': values.get('price') if values.get('price') else product_id.lst_price,
             })
             # sale_lines.product_id_change()
             # sale_lines._onchange_discount()
 
-        elif purchase_id.state == 'sent' and product_id:
-            purchase_lines.create({
-                'order_id': purchase_id.id,
+        elif sale_id.state == 'sent' and product_id:
+            sale_lines.create({
+                'order_id': sale_id.id,
                 'name': product_id.name,
                 'product_id': product_id.id,
                 'product_uom': product_id.uom_id.id,
-                'product_qty': values.get('quantity'),
+                'product_uom_qty': values.get('quantity'),
                 'price_unit': values.get('price') if values.get('price') else product_id.lst_price,
             })
             # sale_lines.product_id_change()
             # sale_lines._onchange_discount()
         if tax_id_lst:
-            purchase_lines.write({'taxes_id': ([(6, 0, tax_id_lst)])})
+            sale_lines.write({'tax_id': ([(6, 0, tax_id_lst)])})
         return True
 
     @api.multi

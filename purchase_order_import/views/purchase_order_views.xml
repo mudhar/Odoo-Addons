@@ -17,12 +17,28 @@
         </form>
       </field>
     </record>
-    <act_window name="Import Product"
-                res_model="purchase_order.import"
-                src_model="purchase.order"
-                target="new"
-                view_mode="form"
-                view_id="purchase_order_import_view_form"
-                id="purchase_order_import_action"/>
+    <record id="purchase_order_import_action" model="ir.actions.act_window">
+            <field name="name">Import Products</field>
+            <field name="res_model">purchase_order.import</field>
+            <field name="target">new</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+        </record>
+
+        <record id="purchase_order_import_inherit_view" model="ir.ui.view">
+            <field name="name">purchase.order.import.inherit.view</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//button[@name='button_done']" position="after">
+                    <button name="%(purchase_order_import_action)d"
+                            string="Import Products"
+                            type="action"
+                            class="btn-primary"
+                            states="draft,sent"/>
+                </xpath>
+
+            </field>
+        </record>
   </data>
 </odoo>
