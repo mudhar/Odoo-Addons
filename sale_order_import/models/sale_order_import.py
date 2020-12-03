@@ -55,7 +55,7 @@ class SaleOrderImport(models.TransientModel):
                 for name in tax_names:
                     tax = self.env['account.tax'].search([('name', '=', name), ('type_tax_use', '=', 'sale')])
                     if not tax:
-                        raise Warning(_('"%s" Tax not in your system') % name)
+                        raise ValidationError(_('"%s" Tax not in your system') % name)
                     tax_id_lst.append(tax.id)
 
             elif ',' in values.get('tax'):
@@ -63,41 +63,53 @@ class SaleOrderImport(models.TransientModel):
                 for name in tax_names:
                     tax = self.env['account.tax'].search([('name', '=', name), ('type_tax_use', '=', 'sale')])
                     if not tax:
-                        raise Warning(_('"%s" Tax not in your system') % name)
+                        raise ValidationError(_('"%s" Tax not in your system') % name)
                     tax_id_lst.append(tax.id)
             else:
                 tax_names = values.get('tax').split(',')
                 tax = self.env['account.tax'].search([('name', '=', tax_names), ('type_tax_use', '=', 'sale')])
                 if not tax:
-                    raise Warning(_('"%s" Tax not in your system') % tax_names)
+                    raise ValidationError(_('"%s" Tax not in your system') % tax_names)
                 tax_id_lst.append(tax.id)
 
-        if sale_id.state == 'draft' and product_id:
-            sale_lines.create({
-                'order_id': sale_id.id,
-                'name': product_id.name,
-                'product_id': product_id.id,
-                'product_uom': product_id.uom_id.id,
-                'product_uom_qty': values.get('quantity'),
-                'price_unit': values.get('price') if values.get('price') else product_id.lst_price,
-            })
-            sale_lines.product_id_change()
-            sale_lines._onchange_discount()
+        if sale_id.order_line and sale_id.state in ['draft', 'sent']:
+            for line in sale_id.order_line.filtered(lambda l: l.product_id == product_id):
+                new_values = self._update_line_quantity(line, values)
+                line.write(new_values)
+            if product_id and product_id not in sale_id.order_line.mapped('product_id'):
+                line_data = self._create_order_line(sale_id, product_id, values)
+                sale_lines |= self.env['sale.order.line'].create(line_data)
 
-        elif sale_id.state == 'sent' and product_id:
-            sale_lines.create({
-                'order_id': sale_id.id,
-                'name': product_id.name,
-                'product_id': product_id.id,
-                'product_uom': product_id.uom_id.id,
-                'product_uom_qty': values.get('quantity'),
-                'price_unit': values.get('price') if values.get('price') else product_id.lst_price,
-            })
-            sale_lines.product_id_change()
-            sale_lines._onchange_discount()
+        if not sale_id.order_line:
+            if sale_id.state == 'draft' and product_id:
+                line_data = self._create_order_line(sale_id, product_id, values)
+                sale_lines |= self.env['sale.order.line'].create(line_data)
+            elif sale_id.state == 'sent' and product_id:
+                line_data = self._create_order_line(sale_id, product_id, values)
+                sale_lines |= self.env['sale.order.line'].create(line_data)
+
         if tax_id_lst:
             sale_lines.write({'tax_id': ([(6, 0, tax_id_lst)])})
+        else:
+            sale_lines.write({'tax_id': [(6, 0, product_id.taxes_id.ids)]})
         return True
+
+    @api.multi
+    def _create_order_line(self, sale_id, product_id, values):
+        return {
+            'order_id': sale_id.id,
+            'name': product_id.name,
+            'product_id': product_id.id,
+            'product_uom': product_id.uom_id.id,
+            'product_uom_qty': values.get('quantity'),
+            'price_unit': values.get('price') if values.get('price') else product_id.lst_price,
+        }
+
+    @api.multi
+    def _update_line_quantity(self, line, values):
+        return {
+            'product_uom_qty': line.product_uom_qty + float(values.get('quantity'))
+        }
 
     @api.multi
     def import_file(self):
