@@ -10,7 +10,7 @@
         Import Stock Move CSV File From Stock Picking Page
     """,
 
-    'author': "odoo-consultans",
+    'author': "odoo-consultants",
     'website': "http://www.odoo-consultants.com",
 
     # Categories can be used to filter modules in modules listing

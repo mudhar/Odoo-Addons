@@ -23,7 +23,7 @@ class PurchaseOrderImport(models.TransientModel):
 
     @api.multi
     def import_file_check(self):
-        keys = ['product', 'quantity', 'price', 'tax']
+        keys = ['product', 'quantity', 'price', 'tax', 'date']
         csv_data = base64.b64decode(self.data_file)
         data_file = io.StringIO(csv_data.decode("utf-8"))
         data_file.seek(0)
@@ -103,9 +103,15 @@ class PurchaseOrderImport(models.TransientModel):
         }
 
     def _create_order_line(self, purchase_id, product_id, values):
+        date = purchase_id.date_planned
+        if values.get('date'):
+            date = values.get('date')
+        if not date:
+            date = purchase_id.date_order
+
         return {
             'order_id': purchase_id.id,
-            'date_planned': purchase_id.date_planned,
+            'date_planned': date,
             'name': product_id.name,
             'product_id': product_id.id,
             'product_uom': product_id.uom_po_id.id,
