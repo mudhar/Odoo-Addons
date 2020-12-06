@@ -85,19 +85,5 @@
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
-        <!--         <record id="seq_picking_internal_transit_in" model="ir.sequence">-->
-        <!--            <field name="name">Picking Internal Transfer Transit IN</field>-->
-        <!--            <field name="code">picking.internal.transit.in</field>-->
-        <!--            <field name="prefix">Transit IN/%(y)s/%(month)s/</field>-->
-        <!--            <field name="padding">5</field>-->
-        <!--            <field name="company_id" eval="False"/>-->
-        <!--        </record>-->
-        <!--        <record id="seq_picking_internal_transit_out" model="ir.sequence">-->
-        <!--            <field name="name">Picking Internal Transfer Transit OUT</field>-->
-        <!--            <field name="code">picking.internal.transit.out</field>-->
-        <!--            <field name="prefix">Transit OUT/%(y)s/%(month)s/</field>-->
-        <!--            <field name="padding">5</field>-->
-        <!--            <field name="company_id" eval="False"/>-->
-        <!--        </record>-->
     </data>
 </odoo>

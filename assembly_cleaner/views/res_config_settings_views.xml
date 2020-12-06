@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="assembly_cleaned_data_view_form" model="ir.ui.view">
+      <field name="name">assembly_cleaned_data_view_form</field>
+      <field name="model">res.config.settings</field>
+      <field name="priority">20</field>
+      <field name="arch" type="xml">
+        <form string="assembly_cleaned_data_form" class="oe_form_configuration">
+          <header>
+            <button string="Apply" type="object" name="execute" class="oe_highlight"/>
+            <button string="Cancel" type="object" name="cancel" class="oe_link" special="cancel"/>
+          </header>
+          <separator string="White Label Setting"/>
+          <group name="data-clean" string="Data Cleaning (Be careful to do that!)">
+            <label string="Assembly"/>
+            <div class="mb4">
+              <button string="Delete All Assembly Order" type="object" name="remove_assembly"
+                      confirm="Please confirm to delete the select data?" class="oe_highlight"/>
+              <button name="reset_number_seq" type="object" string="Reset Number Sequence"
+                      confirm="Please confirm to delete the select data?"  class="oe_highlight"/>
+            </div>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="action_assembly_cleaned_config" model="ir.actions.act_window">
+      <field name="name">Assembly Data Customize</field>
+      <field name="type">ir.actions.act_window</field>
+      <field name="res_model">res.config.settings</field>
+      <field name="view_mode">form</field>
+      <field name="view_id" ref="assembly_cleaned_data_view_form"/>
+      <field name="target">inline</field>
+    </record>
+    <menuitem
+            id="base.menu_assembly_group"
+            name="Assembly Data"
+            parent="base.menu_administration"
+            sequence="1"
+            groups="base.group_system"/>
+     <menuitem
+                id="menu_assembly_config"
+                parent="base.menu_assembly_group"
+                sequence="1"
+                action="action_assembly_cleaned_config"
+                groups="base.group_system"/>
+  </data>
+</odoo>

@@ -9,12 +9,5 @@
             <field name="company_id" eval="False"/>
         </record>
 
-<!--        <record id="seq_workorder_spk" model="ir.sequence">-->
-<!--            <field name="name">SPK</field>-->
-<!--            <field name="code">mrp.workorder.qc.line</field>-->
-<!--            <field name="prefix">SPK  %(day)s/%(month)s/%(year)s/</field>-->
-<!--            <field name="padding">1</field>-->
-<!--            <field name="company_id" eval="False"/>-->
-<!--        </record>-->
     </data>
 </odoo>
