@@ -67,7 +67,7 @@ class StockPicking(models.Model):
                                   "Harap Anda MengKonfigurasi Terlebih Dahulu Agar Memudahkan\n"
                                   "Penaman SJ, SRB, SMB\n")
                                 % wh.display_name)
-                
+
     @api.model
     def create(self, vals):
         # Cek Apakah Sudah Diceklis Identitas Warehouse
@@ -77,6 +77,7 @@ class StockPicking(models.Model):
         picking_cmt_consume = self.env.ref('textile_assembly.picking_cmt_consume')
         picking_cmt_produce = self.env.ref('textile_assembly.picking_cmt_produce')
         picking_production = self.env.ref('stock.location_production')
+        defaults = self.default_get(['name', 'picking_type_id'])
 
         transit_location = self.env['stock.location'].search(
             [('usage', '=', 'transit'),
@@ -85,96 +86,98 @@ class StockPicking(models.Model):
              ])
         operation = self.env['stock.picking.type'].browse(vals.get('picking_type_id'))
         partner_id = self.env['res.partner'].browse(vals.get('partner_id'))
-        if operation.code == 'incoming':
-            # purchase order, product materials, vendor non cmt
-            # STBN
-            if vals.get('purchase_created') and partner_id and not partner_id.is_cmt:
-                if vals.get('product_select_type', 'materials') == 'materials':
-                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_incoming')
-            # purchase order, product goods, vendor cmt
-            # STBJ
-            elif vals.get('purchase_created') and partner_id and partner_id.is_cmt:
-                if vals.get('product_select_type', 'goods') == 'goods':
-                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.goods_incoming')
-            # Sale Return, Product Goods, Non CMT SR-Customer Code
-            elif vals.get('sale_created') and partner_id and not partner_id.is_cmt:
-                if vals.get('product_select_type', 'goods') == 'goods':
-                    customer_id = self.env['res.partner'].browse(vals.get('partner_id'))
-                    customer_code_seq = self.env['ir.sequence'].next_by_code('stock.picking.return_customer')
-                    picking_customer_reference = ''.join(
-                        'SR-%s/%s' % (customer_id.partner_customer_code, customer_code_seq))
-                    vals['name'] = picking_customer_reference
 
-        if operation.code == 'outgoing':
-            # purchase return, product materials/product goods, vendor non cmt/cmt
-            # SJRB, RTR
-            if vals.get('purchase_created') and partner_id and not partner_id.is_cmt:
-                if vals.get('product_select_type', 'materials') == 'materials':
-                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.return_non_cmt')
-            elif vals.get('purchase_created') and partner_id and partner_id.is_cmt:
+        if vals.get('name', '/') == '/' and defaults.get('name', '/') == '/'and vals.get('picking_type_id', defaults.get('picking_type_id')):
+            if operation.code == 'incoming':
+                # purchase order, product materials, vendor non cmt
+                # STBN
+                if vals.get('purchase_created') and partner_id and not partner_id.is_cmt:
+                    if vals.get('product_select_type', 'materials') == 'materials':
+                        vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_incoming')
+                # purchase order, product goods, vendor cmt
+                # STBJ
+                elif vals.get('purchase_created') and partner_id and partner_id.is_cmt:
+                    if vals.get('product_select_type', 'goods') == 'goods':
+                        vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.goods_incoming')
+                # Sale Return, Product Goods, Non CMT SR-Customer Code
+                elif vals.get('sale_created') and partner_id and not partner_id.is_cmt:
+                    if vals.get('product_select_type', 'goods') == 'goods':
+                        customer_id = self.env['res.partner'].browse(vals.get('partner_id'))
+                        customer_code_seq = self.env['ir.sequence'].next_by_code('stock.picking.return_customer')
+                        picking_customer_reference = ''.join(
+                            'SR-%s/%s' % (customer_id.partner_customer_code, customer_code_seq))
+                        vals['name'] = picking_customer_reference
+
+            if operation.code == 'outgoing':
+                # purchase return, product materials/product goods, vendor non cmt/cmt
+                # SJRB, RTR
+                if vals.get('purchase_created') and partner_id and not partner_id.is_cmt:
+                    if vals.get('product_select_type', 'materials') == 'materials':
+                        vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.return_non_cmt')
+                elif vals.get('purchase_created') and partner_id and partner_id.is_cmt:
+                    if vals.get('product_select_type', 'materials') == 'materials' \
+                            or vals.get('product_select_type', 'goods') == 'goods':
+                        vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.return_cmt')
+
+                # sales order, product goods, non customer cmt
+                # prefix customer code reference
+                elif vals.get('sale_created') and partner_id and not partner_id.is_cmt:
+                    if vals.get('product_select_type', 'goods') == 'goods':
+                        customer_id = self.env['res.partner'].browse(vals.get('partner_id'))
+                        customer_code_seq = self.env['ir.sequence'].next_by_code('stock.picking.goods_outgoing')
+                        picking_customer_reference = ''.join(
+                            '%s/%s' % (customer_id.partner_customer_code, customer_code_seq))
+                        vals['name'] = picking_customer_reference
+                # product materials, customer cmt
+                elif vals.get('sale_created') and partner_id and partner_id.is_cmt:
+                    # SJPB
+                    if vals.get('product_select_type', 'materials') == 'materials':
+                        vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_outgoing')
+
+            if operation.code == 'internal' and operation.id == picking_cmt_consume.id:
+                # SJPB
                 if vals.get('product_select_type', 'materials') == 'materials' \
-                        or vals.get('product_select_type', 'goods') == 'goods':
+                        and vals.get('location_dest_id') == picking_production.id:
+                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_outgoing')
+                elif vals.get('product_select_type', 'materials') == 'materials' \
+                        and vals.get('location_id') == picking_production.id:
                     vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.return_cmt')
 
-            # sales order, product goods, non customer cmt
-            # prefix customer code reference
-            elif vals.get('sale_created') and partner_id and not partner_id.is_cmt:
-                if vals.get('product_select_type', 'goods') == 'goods':
-                    customer_id = self.env['res.partner'].browse(vals.get('partner_id'))
-                    customer_code_seq = self.env['ir.sequence'].next_by_code('stock.picking.goods_outgoing')
-                    picking_customer_reference = ''.join(
-                        '%s/%s' % (customer_id.partner_customer_code, customer_code_seq))
-                    vals['name'] = picking_customer_reference
-            # product materials, customer cmt
-            elif vals.get('sale_created') and partner_id and partner_id.is_cmt:
-                # SJPB
-                if vals.get('product_select_type', 'materials') == 'materials':
-                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_outgoing')
+            if operation.code == 'internal' and operation.id == picking_cmt_produce.id:
+                # STBJ
+                if vals.get('product_select_type', 'goods') == 'goods' \
+                        and vals.get('location_id') == picking_production.id:
+                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.goods_incoming')
+                elif vals.get('product_select_type', 'goods') == 'goods' \
+                        and vals.get('location_dest_id') == picking_production.id:
+                    vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.return_cmt')
 
-        if operation.code == 'internal' and operation.id == picking_cmt_consume.id:
-            # SJPB
-            if vals.get('product_select_type', 'materials') == 'materials' \
-                    and vals.get('location_dest_id') == picking_production.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.materials_outgoing')
-            elif vals.get('product_select_type', 'materials') == 'materials' \
-                    and vals.get('location_id') == picking_production.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.return_cmt')
+            # PICKING REFERENCE SRB, SMB, SJ
+            if operation.code == 'internal' and operation.id not in [picking_cmt_consume.id, picking_cmt_produce.id]:
+                # SJ
+                if location_object.browse(vals.get('location_id')).get_warehouse().is_warehouse and \
+                        location_object.browse(vals.get('location_dest_id')).get_warehouse().is_store:
+                    vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.wh.store')
 
-        if operation.code == 'internal' and operation.id == picking_cmt_produce.id:
-            # STBJ
-            if vals.get('product_select_type', 'goods') == 'goods' \
-                    and vals.get('location_id') == picking_production.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.goods_incoming')
-            elif vals.get('product_select_type', 'goods') == 'goods' \
-                    and vals.get('location_dest_id') == picking_production.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('stock.picking.return_cmt')
+                # SRB
+                elif location_object.browse(vals.get('location_id')).get_warehouse().is_store and \
+                        location_object.browse(vals.get('location_dest_id')).get_warehouse().is_warehouse:
+                    vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.store.wh')
 
-        # PICKING REFERENCE SRB, SMB, SJ
-        if operation.code == 'internal' and operation.id not in [picking_cmt_consume.id, picking_cmt_produce.id]:
-            # SJ
-            if location_object.browse(vals.get('location_id')).get_warehouse().is_warehouse and \
-                    location_object.browse(vals.get('location_dest_id')).get_warehouse().is_store:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.wh.store')
+                # SMB
+                elif location_object.browse(vals.get('location_id')).get_warehouse().is_store and \
+                        location_object.browse(vals.get('location_dest_id')).get_warehouse().is_store:
+                    vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.store.store')
 
-            # SRB
-            elif location_object.browse(vals.get('location_id')).get_warehouse().is_store and \
-                    location_object.browse(vals.get('location_dest_id')).get_warehouse().is_warehouse:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.store.wh')
-
-            # SMB
-            elif location_object.browse(vals.get('location_id')).get_warehouse().is_store and \
-                    location_object.browse(vals.get('location_dest_id')).get_warehouse().is_store:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.store.store')
-
-            # PICKING REFERENCE TRANSIT LOCATION
-            # SJ
-            elif vals.get('location_dest_id') == transit_location.id and \
-                    vals.get('location_id') != transit_location.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.wh.store')
-            # SJ
-            elif vals.get('location_id') == transit_location.id and \
-                    vals.get('location_dest_id') != transit_location.id:
-                vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.wh.store')
+                # PICKING REFERENCE TRANSIT LOCATION
+                # SJ
+                elif vals.get('location_dest_id') == transit_location.id and \
+                        vals.get('location_id') != transit_location.id:
+                    vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.wh.store')
+                # SJ
+                elif vals.get('location_id') == transit_location.id and \
+                        vals.get('location_dest_id') != transit_location.id:
+                    vals['name'] = self.env['ir.sequence'].next_by_code('picking.internal.wh.store')
 
         return super(StockPicking, self).create(vals)
 
