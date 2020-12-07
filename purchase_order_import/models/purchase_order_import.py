@@ -97,11 +97,13 @@ class PurchaseOrderImport(models.TransientModel):
 
         return True
 
+    @api.multi
     def _update_order_line(self, values, line):
         return {
             'product_qty': float(values.get('quantity')) + line.product_qty
         }
 
+    @api.multi
     def _create_order_line(self, purchase_id, product_id, values):
         date = purchase_id.date_planned
         if values.get('date'):
@@ -115,7 +117,7 @@ class PurchaseOrderImport(models.TransientModel):
             'name': product_id.name,
             'product_id': product_id.id,
             'product_uom': product_id.uom_po_id.id,
-            'product_qty': values.get('quantity'),
+            'product_qty': values.get('quantity') if values.get('quantity') else 1.0,
             'price_unit': values.get('price') if values.get('price') else product_id.lst_price,
         }
 

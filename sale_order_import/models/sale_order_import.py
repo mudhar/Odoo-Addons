@@ -101,7 +101,7 @@ class SaleOrderImport(models.TransientModel):
             'name': product_id.name,
             'product_id': product_id.id,
             'product_uom': product_id.uom_id.id,
-            'product_uom_qty': values.get('quantity'),
+            'product_uom_qty': values.get('quantity') if values.get('quantity') else 1.0,
             'price_unit': values.get('price') if values.get('price') else product_id.lst_price,
         }
 
