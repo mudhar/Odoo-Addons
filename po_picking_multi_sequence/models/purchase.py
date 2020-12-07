@@ -25,14 +25,15 @@ class PurchaseOrder(models.Model):
 
     @api.model
     def create(self, vals):
-        if vals.get('product_select_type', 'materials') == 'materials':
-            vals['name'] = self.env['ir.sequence'].next_by_code('purchase.order.materials')
-        elif vals.get('product_select_type', 'goods') == 'goods':
-            vals['name'] = self.env['ir.sequence'].next_by_code('purchase.order.goods')
-        elif vals.get('product_select_type', 'subpo') == 'subpo':
-            vals['name'] = self.env['ir.sequence'].next_by_code('purchase.order.subpo')
-        else:
-            vals['name'] = self.env['ir.sequence'].next_by_code('purchase.order') or '/'
+        if vals.get('name', 'New') == 'New':
+            if vals.get('product_select_type', 'materials') == 'materials':
+                vals['name'] = self.env['ir.sequence'].next_by_code('purchase.order.materials')
+            elif vals.get('product_select_type', 'goods') == 'goods':
+                vals['name'] = self.env['ir.sequence'].next_by_code('purchase.order.goods')
+            elif vals.get('product_select_type', 'subpo') == 'subpo':
+                vals['name'] = self.env['ir.sequence'].next_by_code('purchase.order.subpo')
+            else:
+                vals['name'] = self.env['ir.sequence'].next_by_code('purchase.order') or 'New'
         return super(PurchaseOrder, self).create(vals)
 
     @api.model

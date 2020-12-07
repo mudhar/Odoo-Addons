@@ -16,19 +16,20 @@ class AssemblyPlan(models.Model):
             date_from = fields.Date.from_string(values.get('date_planned_start'))
             # 2019-12-01
             date_to = fields.Date.from_string(values.get('date_planned_finished'))
+            date_to_string = date_to.strftime('%Y-%m-%d')
             # 2020-01-01
             year = date_to.year
             month = date_to.month
             # value range month
             days = calendar.monthrange(year, month)
-            date_range = self._find_date_range_seq(sequence_id, date_to)
+            date_range = self._find_date_range_seq(sequence_id, date_to_string)
             if not date_range:
-                date_from = '{}-{}-01'.format(year, month)
-                date_to = '{}-{}-{}'.format(year, month, days[1])
+                dt_from = '{}-{}-01'.format(year, month)
+                dt_to = '{}-{}-{}'.format(year, month, days[1])
                 seq_date = self.env['ir.sequence.date_range'].create({
                     'sequence_id': sequence_id.id,
-                    'date_from': date_from,
-                    'date_to': date_to
+                    'date_from': dt_from,
+                    'date_to': dt_to
                 })
                 seq_prefix = self._create_sequence_prefix(sequence_id, seq_date)
 
@@ -60,5 +61,5 @@ class AssemblyPlan(models.Model):
     @api.multi
     def _find_date_range_seq(self, sequence_id, date):
         return self.env['ir.sequence.date_range'].search(
-            [('sequence_id', '=', sequence_id.id), ('date_from', '>=', date), ('date_to', '<=', date)],
+            [('sequence_id', '=', sequence_id.id), ('date_from', '<=', date), ('date_to', '>=', date)],
             order='date_to desc', limit=1)
