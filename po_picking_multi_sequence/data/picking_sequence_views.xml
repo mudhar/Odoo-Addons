@@ -5,6 +5,7 @@
         <record id="seq_stock_picking_materials_incoming" model="ir.sequence">
             <field name="name">Stock Picking Materials Incoming</field>
             <field name="code">stock.picking.materials_incoming</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">STBN/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -14,14 +15,16 @@
         <record id="seq_stock_picking_return_cmt" model="ir.sequence">
             <field name="name">Stock Picking Return CMT</field>
             <field name="code">stock.picking.return_cmt</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">SJRB/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
-          <!--Purchase Retur Non CMT -->
+        <!--Purchase Retur Non CMT -->
         <record id="seq_stock_picking_return_non_cmt" model="ir.sequence">
             <field name="name">Stock Picking Return Non CMT</field>
             <field name="code">stock.picking.return_non_cmt</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">RTR/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -31,6 +34,7 @@
         <record id="seq_stock_picking_materials_ougoing" model="ir.sequence">
             <field name="name">Stock Picking Materials Outgoing</field>
             <field name="code">stock.picking.materials_outgoing</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">SJPB/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -40,6 +44,7 @@
         <record id="seq_stock_picking_goods_incoming" model="ir.sequence">
             <field name="name">Stock Picking Goods Incoming</field>
             <field name="code">stock.picking.goods_incoming</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">STBJ/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -49,13 +54,15 @@
         <record id="seq_stock_picking_goods_ougoing" model="ir.sequence">
             <field name="name">Stock Picking Goods Outgoing</field>
             <field name="code">stock.picking.goods_outgoing</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
-         <record id="seq_stock_picking_return_customer" model="ir.sequence">
+        <record id="seq_stock_picking_return_customer" model="ir.sequence">
             <field name="name">Stock Picking Return Customer</field>
             <field name="code">stock.picking.return_customer</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -65,6 +72,7 @@
         <record id="seq_picking_internal_store_wh" model="ir.sequence">
             <field name="name">Picking Internal Transfer Store WH</field>
             <field name="code">picking.internal.store.wh</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">SRB/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -73,6 +81,7 @@
         <record id="seq_picking_internal_wh_store" model="ir.sequence">
             <field name="name">Picking Internal Transfer WH Store</field>
             <field name="code">picking.internal.wh.store</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">SJ/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -81,6 +90,7 @@
         <record id="seq_picking_internal_store_store" model="ir.sequence">
             <field name="name">Picking Internal Transfer Store Store</field>
             <field name="code">picking.internal.store.store</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">SMB/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>

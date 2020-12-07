@@ -61,6 +61,8 @@ class ResConfigSettings(models.TransientModel):
             if seqs:
                 seqs.write({'number_next': 1,
                             'number_next_actual': 1})
+                date_range = seqs.filtered(lambda seq: seq.date_range_ids)
+                date_range.mapped('date_range_ids').unlink()
         except Exception as e:
             pass
         return True

@@ -4,6 +4,7 @@
         <record id="seq_assembly_lan" model="ir.sequence">
             <field name="name">Assembly Plan</field>
             <field name="code">assembly.plan</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>

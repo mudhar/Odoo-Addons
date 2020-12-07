@@ -5,14 +5,16 @@
         <record id="seq_purchase_order_materials" model="ir.sequence">
             <field name="name">Purchase Order</field>
             <field name="code">purchase.order.materials</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">POBN/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
-         <!-- Sequences for purchase.order  Bahan Jadi-->
+        <!-- Sequences for purchase.order  Bahan Jadi-->
         <record id="seq_purchase_order_goods" model="ir.sequence">
             <field name="name">Purchase Order Goods</field>
             <field name="code">purchase.order.goods</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">POBJ/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -21,6 +23,7 @@
         <record id="seq_purchase_order_subpo" model="ir.sequence">
             <field name="name">SubPO Seq Number</field>
             <field name="code">purchase.order.subpo</field>
+            <field name="implementation">no_gap</field>
             <field name="prefix">SubPO/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
