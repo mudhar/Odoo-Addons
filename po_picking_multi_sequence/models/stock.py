@@ -69,21 +69,34 @@ class StockPicking(models.Model):
                                 % wh.display_name)
 
     @api.model
+    def _find_transit_location(self):
+        transit_location_id = self.env['stock.location'].search(
+            [('usage', '=', 'transit'),
+             ('company_id', '=', [self.env.user.company_id.id, False]),
+             ('location_id', '=', self.env.ref('stock.stock_location_locations').id)
+             ])
+        return transit_location_id
+
+    @api.model
+    def _find_cmt_consume_type(self):
+        return self.env.ref('textile_assembly.picking_cmt_consume')
+
+    @api.model
+    def _find_cmt_produce_type(self):
+        return self.env.ref('textile_assembly.picking_cmt_produce')
+
+    @api.model
     def create(self, vals):
         # Cek Apakah Sudah Diceklis Identitas Warehouse
         # Digunakan Untuk Penamaan Internal Transfer SJ, SRB, SMB
         self.check_warehouse_type()
         location_object = self.env['stock.location']
-        picking_cmt_consume = self.env.ref('textile_assembly.picking_cmt_consume')
-        picking_cmt_produce = self.env.ref('textile_assembly.picking_cmt_produce')
+        picking_cmt_consume = self._find_cmt_consume_type()
+        picking_cmt_produce = self._find_cmt_produce_type()
         picking_production = self.env.ref('stock.location_production')
         defaults = self.default_get(['name', 'picking_type_id'])
 
-        transit_location = self.env['stock.location'].search(
-            [('usage', '=', 'transit'),
-             ('company_id', '=', [self.env.user.company_id.id, False]),
-             ('location_id', '=', self.env.ref('stock.stock_location_locations').id)
-             ])
+        transit_location = self._find_transit_location()
         operation = self.env['stock.picking.type'].browse(vals.get('picking_type_id'))
         partner_id = self.env['res.partner'].browse(vals.get('partner_id'))
 
