@@ -157,22 +157,22 @@ class VendorInvoiceWizard(models.TransientModel):
         for wiz in self:
             po_uom_qty = wiz.product_uom_id._compute_quantity(wiz.product_qty, wiz.product_id.uom_po_id)
 
-            seller = wiz.product_id._select_seller(
-                partner_id=wiz.partner_id,
-                quantity=po_uom_qty,
-                date=wiz.purchase_date,
-                uom_id=wiz.product_id.uom_po_id
-            )
+            # seller = wiz.product_id._select_seller(
+            #     partner_id=wiz.partner_id,
+            #     quantity=po_uom_qty,
+            #     date=wiz.purchase_date,
+            #     uom_id=wiz.product_id.uom_po_id
+            # )
             taxes = wiz.product_id.supplier_taxes_id
             fpos = wiz.partner_id.property_account_position_id
             taxes_id = fpos.map_tax(taxes) if fpos else taxes
             if taxes_id:
                 taxes_id = taxes_id.filtered(lambda x: x.company_id.id == wiz.work_order_id.company_id.id)
 
-            price_unit = self.env['account.tax']._fix_tax_included_price_company(seller.price,
-                                                                                 wiz.product_id.supplier_taxes_id,
-                                                                                 taxes_id,
-                                                                                 wiz.work_order_id.company_id) if seller else 0.0
+            # price_unit = self.env['account.tax']._fix_tax_included_price_company(seller.price,
+            #                                                                      wiz.product_id.supplier_taxes_id,
+            #                                                                      taxes_id,
+            #                                                                      wiz.work_order_id.company_id) if seller else 0.0
             # if price_unit and seller and po_id.currency_id and seller.currency_id != po_id.currency_id:
             #     price_unit = seller.currency_id.compute(price_unit, po_id.currency_id)
 

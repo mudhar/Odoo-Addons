@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="vpicktree_inherited_info_view" model="ir.ui.view">
+        <field name="name">vpicktree.inherited.info.view</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='state']" position="after">
+                <!-- Add new fields here -->
+                <field name="total_initial_qty" sum="Total Initial Demand"/>
+                <field name="total_qty_received" sum="Total Received"/>
+                <field name="total_values_demand" widget="monetary" sum="Total Values Demand"/>
+                <field name="total_values_done" widget="monetary" sum="Total Values Done"/>
+            </xpath>
+
+        </field>
+    </record>
+  </data>
+</odoo>
