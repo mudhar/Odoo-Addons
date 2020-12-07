@@ -180,7 +180,7 @@ class AssemblyCmtProductTemplate(models.Model):
     @api.onchange('product_id')
     def onchange_product_id(self):
         self.product_uom_id = self.product_id.uom_id.id
-
+        self.price_unit = self.product_id.standard_price if self.product_id.standard_price else 0.0
         return {'domain': {'product_uom_id': [('category_id', '=', self.product_id.uom_id.category_id.id)]}}
 
     @api.onchange('product_uom_id')
@@ -224,7 +224,7 @@ class AssemblyCmtProductService(models.Model):
     @api.onchange('product_id')
     def onchange_product_id(self):
         self.product_uom_id = self.product_id.uom_id.id
-
+        self.price_unit = self.product_id.standard_price if self.product_id.standard_price else 0.0
 
     @api.multi
     @api.depends('price_unit', 'product_qty')
