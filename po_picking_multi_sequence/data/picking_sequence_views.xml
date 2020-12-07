@@ -6,6 +6,7 @@
             <field name="name">Stock Picking Materials Incoming</field>
             <field name="code">stock.picking.materials_incoming</field>
             <field name="implementation">no_gap</field>
+            <field name="use_date_range">True</field>
             <field name="prefix">STBN/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -16,6 +17,7 @@
             <field name="name">Stock Picking Return CMT</field>
             <field name="code">stock.picking.return_cmt</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">SJRB/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -25,6 +27,7 @@
             <field name="name">Stock Picking Return Non CMT</field>
             <field name="code">stock.picking.return_non_cmt</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">RTR/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -35,6 +38,7 @@
             <field name="name">Stock Picking Materials Outgoing</field>
             <field name="code">stock.picking.materials_outgoing</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">SJPB/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -45,6 +49,7 @@
             <field name="name">Stock Picking Goods Incoming</field>
             <field name="code">stock.picking.goods_incoming</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">STBJ/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -55,6 +60,7 @@
             <field name="name">Stock Picking Goods Outgoing</field>
             <field name="code">stock.picking.goods_outgoing</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -63,6 +69,7 @@
             <field name="name">Stock Picking Return Customer</field>
             <field name="code">stock.picking.return_customer</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -73,6 +80,7 @@
             <field name="name">Picking Internal Transfer Store WH</field>
             <field name="code">picking.internal.store.wh</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">SRB/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -82,6 +90,7 @@
             <field name="name">Picking Internal Transfer WH Store</field>
             <field name="code">picking.internal.wh.store</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">SJ/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -91,6 +100,7 @@
             <field name="name">Picking Internal Transfer Store Store</field>
             <field name="code">picking.internal.store.store</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">SMB/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>

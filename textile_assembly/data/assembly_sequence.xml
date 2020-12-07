@@ -5,6 +5,7 @@
             <field name="name">Assembly Plan</field>
             <field name="code">assembly.plan</field>
             <field name="implementation">no_gap</field>
+            <field name="use_date_range">True</field>
             <field name="prefix">%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>

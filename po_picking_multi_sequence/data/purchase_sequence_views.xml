@@ -6,6 +6,7 @@
             <field name="name">Purchase Order</field>
             <field name="code">purchase.order.materials</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">POBN/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -15,6 +16,7 @@
             <field name="name">Purchase Order Goods</field>
             <field name="code">purchase.order.goods</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">POBJ/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
@@ -24,6 +26,7 @@
             <field name="name">SubPO Seq Number</field>
             <field name="code">purchase.order.subpo</field>
             <field name="implementation">no_gap</field>
+             <field name="use_date_range">True</field>
             <field name="prefix">SubPO/%(y)s/%(month)s/</field>
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
