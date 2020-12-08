@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
-from _datetime import datetime as datetimes
 from dateutil.relativedelta import relativedelta
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
 
 
 class StockLocationReport(models.TransientModel):
