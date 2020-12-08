@@ -15,9 +15,9 @@
           <group name="data-clean" string="Data Cleaning (Be careful to do that!)">
             <label string="Assembly"/>
             <div class="mb4">
-              <button string="Delete All Assembly Order" type="object" name="remove_assembly"
+              <button string="Delete All Assembly Order" type="object" name="remove_assembly" colspan="1"
                       confirm="Please confirm to delete the select data?" class="oe_highlight"/>
-              <button name="reset_number_seq" type="object" string="Reset Number Sequence"
+              <button name="reset_number_seq" type="object" string="Reset Number Sequence" colspan="1"
                       confirm="Please confirm to delete the select data?"  class="oe_highlight"/>
             </div>
           </group>
