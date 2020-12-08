@@ -1,5 +1,5 @@
+# -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
-from odoo.addons import decimal_precision as dp
 from odoo.tools import float_is_zero
 from odoo.exceptions import UserError
 
