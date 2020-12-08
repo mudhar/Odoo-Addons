@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from odoo import api, fields, models
 from odoo.addons import decimal_precision as dp
 from odoo.exceptions import UserError
