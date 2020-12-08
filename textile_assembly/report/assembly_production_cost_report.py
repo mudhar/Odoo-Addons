@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 from odoo import api, models
-from odoo.exceptions import UserError,Warning
+
 
 class AssemblyProductionCostReport(models.Model):
     _name = 'report.textile_assembly.assembly_production_cost_report'

@@ -20,9 +20,6 @@
 ##############################################################################
 from . import assembly_plan_cost_report
 from . import assembly_production_cost_report
-# from . import mrp_production
-
-
 
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
