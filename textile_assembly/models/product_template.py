@@ -26,12 +26,3 @@ class ProductTemplate(models.Model):
                                         "Pada Tab Inventory/Tracking\n"
                                         "Anda Wajib Mimilih Opsi BY LOTS"))
         return True
-
-    # @api.depends('template_code')
-    # def _compute_template_code(self):
-    #     for res in self:
-    #         template_code = res.template_code.strip().split(sep=" ")
-    #         code_join = ''.join(code.lower() for code in template_code)
-    #         if code_join:
-    #             res.assembly_code |= code_join
-
