@@ -104,9 +104,6 @@ class AssemblyPlan(models.Model):
     assembly_id = fields.Many2one(comodel_name="assembly.production", string="#Assembly ID", readonly=True,
                                   ondelete='cascade', index=True)
 
-    # Purchase
-    # purchase_ids = fields.One2many(comodel_name="purchase.order", inverse_name="assembly_plan_id",
-    #                                string="Purchase Orders For Raw Material")
     check_raw_procurement = fields.Boolean(string="Is Raw Material Need Procurement", readonly=True)
     check_cmt_procurement = fields.Boolean(string="Is CMT Material Need Procurement", readonly=True,
                                            )
@@ -477,30 +474,32 @@ class AssemblyPlan(models.Model):
                 if produce.attribute_id:
                     total_produce_plan = sum(order.plan_line_ids.filtered(
                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                                  or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('new_qty'))
-                    if total_produce_plan and total_produce_plan != produce.quantity_plan:
-                        message = _("Total Quantity Untuk Warna %s %s Pcs(s) Pada Tabel Variant Plan"
-                                    "\n"
-                                    "\n Tidak Sama Dengan Total Quantity Yang Akan Diproduksi %s Pcs(s)"
-                                    "\n Pada Tabel Plan Quantity To Produce Untuk Warna %s"
-                                    "\n Samakan Total Quantity Pada Tabel Variant Plan Dengan Tabel To Produce") % (
-                                      produce.attribute_id.name, total_produce_plan,
-                                      produce.quantity_plan, produce.attribute_id.name)
-                        raise UserError(message)
+                        or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('new_qty'))
+                    total_produce_actual = sum(order.plan_line_ids.filtered(
+                        lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
+                        or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped(
+                            'actual_quantity'))
+                    if order.state in ['draft', 'procurement']:
+                        if total_produce_plan and total_produce_plan != produce.quantity_plan:
+                            message = _("Total Quantity Untuk Warna %s %s Pcs(s) Pada Tabel Variant Plan"
+                                        "\n"
+                                        "\n Tidak Sama Dengan Total Quantity Yang Akan Diproduksi %s Pcs(s)"
+                                        "\n Pada Tabel Plan Quantity To Produce Untuk Warna %s"
+                                        "\n Samakan Total Quantity Pada Tabel Variant Plan Dengan Tabel To Produce") % (
+                                          produce.attribute_id.name, total_produce_plan,
+                                          produce.quantity_plan, produce.attribute_id.name)
+                            raise UserError(message)
+                    if order.state == 'on process':
+                        if total_produce_actual and total_produce_actual != produce.quantity_actual:
+                            message = _("Total Quantity Untuk Warna %s %s Pcs(s) Pada Kolum Variant On Hand"
+                                        "\n"
+                                        "\n Tidak Sama Dengan Total Quantity Yang Akan Diproduksi %s Pcs(s)"
+                                        "\n Pada Kolum Actual Quantity To Produce Untuk Warna %s"
+                                        "\n Samakan Total Quantity Pada Kolom Variant On Hand Dengan Kolom Produce") % (
+                                          produce.attribute_id.name, total_produce_actual,
+                                          produce.quantity_actual, produce.attribute_id.name)
 
-                    total_produce_actual = sum(
-                        order.plan_line_ids.filtered(lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                                                               or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('actual_quantity'))
-                    if total_produce_actual and total_produce_actual != produce.quantity_actual:
-                        message = _("Total Quantity Untuk Warna %s %s Pcs(s) Pada Kolum Variant On Hand"
-                                    "\n"
-                                    "\n Tidak Sama Dengan Total Quantity Yang Akan Diproduksi %s Pcs(s)"
-                                    "\n Pada Kolum Actual Quantity To Produce Untuk Warna %s"
-                                    "\n Samakan Total Quantity Pada Kolom Variant On Hand Dengan Kolom Produce") % (
-                                      produce.attribute_id.name, total_produce_actual,
-                                      produce.quantity_actual, produce.attribute_id.name)
-
-                        raise UserError(message)
+                            raise UserError(message)
 
         return True
 
@@ -527,26 +526,14 @@ class AssemblyPlan(models.Model):
         for record in self:
             if not record.partner_id:
                 raise UserError(_("Pilih Vendor CMT Terlebih Dahulu"))
-            for produce in record.produce_ids:
-                if not produce.quantity_plan:
-                    raise UserError(_("Isi Kolum PLAN Quantity To Produce."
-                                      "\n Pada Tabel Produce Terlebih Dahulu"))
-                if produce.quantity_plan != produce.original_quantity_plan:
-                    raise UserError(_("Anda Baru Melakukan Perubahan Plan Quantity To Produce"
-                                      "\n Klik Tombol Update Untuk Memperbaharuinya"))
-            consume_qty_plan = sum(record.raw_line_ids.mapped('qty_to_plan'))
-            if not consume_qty_plan and record.state == 'draft':
-                raise UserError(_("Kolom Plan Expected Consume Qty Belum Terisi"
-                                  "\n Klik Tombol Update Pada Tabel To Produce Untuk Mengisinya"))
-
-            consume_qty_actual = sum(record.raw_line_ids.mapped('qty_to_actual'))
-            if not consume_qty_actual and record.state in ['procurement', 'process']:
-                raise UserError(_("Kolom Actual Expected Consume Qty Belum Terisi"
-                                  "\n Klik Tombol Update Pada Tabel To Produce Untuk Mengisinya"))
-
+            if not sum(record.produce_ids.mapped('quantity_plan')):
+                raise UserError(_("Isi Kolum PLAN Quantity To Produce."
+                                  "\n Pada Tabel Produce Terlebih Dahulu"))
+            if not sum(record.raw_line_ids.mapped('qty_to_plan')):
+                raise UserError(_("Total Quantity Bahan Baku Belum Terhitung\n"
+                                  "Klik Tombol Update Sebelum Melanjutkan"))
             record.check_remaining_qty()
             record.check_qty_available()
-            # record.check_warning_stock()
             record.compute_check_procurement()
 
             record.write({'state': 'on process'})

@@ -21,10 +21,10 @@ class AssemblyPlanCmtMaterial(models.Model):
     product_uom_id = fields.Many2one(comodel_name="product.uom", string="UoM")
     ratio = fields.Float(string="Ratio Of")
     qty_to_plan = fields.Float(string="Expected Consume Qty",
-                               digits=dp.get_precision('Product Unit of Measure'),
+                               digits=dp.get_precision('Product Unit of Measure'), readonly=True,
                                compute="_compute_quantity_consume", store=True)
     quantity_to_actual = fields.Float(string="Expected Consume Revised",
-                                      digits=dp.get_precision('Product Unit of Measure'),
+                                      digits=dp.get_precision('Product Unit of Measure'), readonly=True,
                                       compute="_compute_quantity_actual", store=True)
     price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'))
     price_subtotal_plan = fields.Float(string="Sub Total", digits=dp.get_precision('Account'),
@@ -68,7 +68,7 @@ class AssemblyPlanCmtMaterial(models.Model):
             if cmt.product_id and cmt.product_id.attribute_value_ids:
                 quantity_plan = sum(cmt.plan_id.plan_line_ids.filtered(
                     lambda x: (x.attribute_value_ids[0].id == cmt.product_id.attribute_value_ids[0].id)
-                              or (x.attribute_value_ids[1].id == cmt.product_id.attribute_value_ids[0].id)
+                    or (x.attribute_value_ids[1].id == cmt.product_id.attribute_value_ids[0].id)
                 ).mapped('new_qty'))
                 cmt.update({'qty_to_plan': quantity_plan})
             if cmt.product_id and not cmt.product_id.attribute_value_ids:

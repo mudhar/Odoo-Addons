@@ -34,15 +34,14 @@ class AssemblyPlanServices(models.Model):
         return True
 
     @api.multi
-    @api.depends('plan_id.produce_ids.quantity_plan',
-                 'plan_id.produce_ids.quantity_actual')
+    @api.depends('plan_id.plan_line_ids.new_qty',
+                 'plan_id.plan_line_ids.actual_quantity')
     def _compute_quantity_consume(self):
         for order in self:
-            produce_plan = sum(order.plan_id.produce_ids.mapped('quantity_plan'))
-            produce_actual = sum(order.plan_id.produce_ids.mapped('quantity_actual'))
-            order.quantity_plan = produce_plan * order.product_qty
-            order.quantity_actual = produce_actual * order.product_qty
-
+            produce_plan = sum(order.plan_id.plan_line_ids.mapped('new_qty'))
+            produce_actual = sum(order.plan_id.plan_line_ids.mapped('actual_quantity'))
+            order.quantity_plan = produce_plan
+            order.quantity_actual = produce_actual
 
 
 

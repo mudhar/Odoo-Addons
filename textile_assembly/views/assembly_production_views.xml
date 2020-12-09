@@ -94,7 +94,7 @@
                                     <field name="product_id" options="{'no_create': True}"/>
                                     <field name="product_uom_id"/>
                                     <field name="attribute_value_ids" widget="many2many_tags" groups="product.group_product_variant" readonly="1"/>
-                                    <field name="ratio"/>
+                                    <field name="ratio" sum="Total"/>
                                 </tree>
                                 <form string="Assembly Variant Lines">
                                     <sheet>

@@ -20,10 +20,12 @@ class AssemblyPlanRawMaterial(models.Model):
     qty_available = fields.Float('OnHand', digits=dp.get_precision('Product Unit of Measure'))
     total_ratio = fields.Float('Total Ratio', help="Jumlah Berdasarkan Ratio")
     qty_to_plan = fields.Float('Exp Consu Plan',
-                               digits=dp.get_precision('Product Unit of Measure'),
+                               digits=dp.get_precision('Product Unit of Measure'), compute="_compute_quantity_consume",
+                               readonly=True, store=True,
                                help="Total Yang Diharapkan Untuk Kebutuhan Material Yang Akan Diproduksi")
     qty_to_actual = fields.Float('Exp Consu Actual',
-                                 digits=dp.get_precision('Product Unit of Measure'))
+                                 digits=dp.get_precision('Product Unit of Measure'),
+                                 compute="_compute_quantity_actual", readonly=True, store=True)
 
     qty_final = fields.Float(string="To Be Produce Qty", default=0.0, digits=dp.get_precision('Product Unit of Measure'),
                              help="Berapa Unit Produk Yang Jadi DiProduksi, Maksimum Kapasitas")
@@ -47,6 +49,33 @@ class AssemblyPlanRawMaterial(models.Model):
                                          related="plan_id.date_planned_start")
 
     @api.multi
+    @api.depends('plan_id.plan_line_ids.new_qty')
+    def _compute_quantity_consume(self):
+        for raw in self:
+            if raw.product_id and raw.attribute_id:
+                quantity_plan = sum(raw.plan_id.plan_line_ids.filtered(
+                    lambda x: x.attribute_value_ids[0].id == raw.attribute_id.id
+                    or x.attribute_value_ids[1].id == raw.attribute_id.id).mapped('new_qty'))
+                raw.update({'qty_to_plan': float_round(
+                    raw.product_qty * quantity_plan,
+                    precision_rounding=raw.product_uom_id.rounding,
+                    rounding_method='UP')})
+
+    @api.multi
+    @api.depends('plan_id.plan_line_actual_ids.actual_quantity')
+    def _compute_quantity_actual(self):
+        for raw in self:
+            if raw.product_id and raw.attribute_id:
+                quantity_actual = sum(raw.plan_id.plan_line_actual_ids.filtered(
+                    lambda x: x.attribute_value_ids[0].id == raw.attribute_id.id
+                    or x.attribute_value_ids[1].id == raw.attribute_id.id).mapped('actual_quantity'))
+                raw.update({'qty_to_actual': float_round(
+                    raw.product_qty * quantity_actual,
+                    precision_rounding=raw.product_uom_id.rounding,
+                    rounding_method='UP')})
+
+    # hitung maximum product yang bisa diproduksi
+    @api.multi
     @api.depends('qty_available', 'product_qty',
                  'total_ratio')
     def _compute_total_actual_quantity(self):
@@ -55,16 +84,6 @@ class AssemblyPlanRawMaterial(models.Model):
                 result_qty = material.qty_available / material.product_qty
                 material.total_actual_quantity = math.ceil(result_qty)
 
-        return True
-
-    @api.multi
-    @api.depends('product_qty', 'total_qty_to_plan', 'total_ratio')
-    def _compute_amount_qty(self):
-        for material in self:
-            if material.total_qty_to_plan:
-                result_qty = (material.product_qty / material.total_ratio) * material.total_qty_to_plan
-                material.qty_to_plan = float_round(result_qty, precision_rounding=material.product_id.uom_id.rounding,
-                                                   rounding_method='UP')
         return True
 
     @api.multi

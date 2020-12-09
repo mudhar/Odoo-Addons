@@ -19,8 +19,10 @@ class AssemblyPlanProduce(models.Model):
     quantity_maximum = fields.Float(string="Max Qty To Produce", compute="_compute_maximum_quantity",
                                     digits=dp.get_precision('Product Unit of Measure'))
     original_quantity_actual = fields.Float(string="Orignal ACTUAL Quantity To Produce",
+                                            readonly=True, store=True, compute="_compute_total_quantity",
                                             digits=dp.get_precision('Product Unit of Measure'))
     original_quantity_plan = fields.Float(string="Orignal Plan Quantity To Produce",
+                                          readonly=True, store=True, compute="_compute_total_quantity",
                                           digits=dp.get_precision('Product Unit of Measure'),
                                          )
 
@@ -31,13 +33,26 @@ class AssemblyPlanProduce(models.Model):
     editable_quantity = fields.Boolean(string="Quantity Editable", compute="_compute_status_procurement")
 
     @api.multi
+    @api.depends('plan_id.plan_line_ids.new_qty',
+                 'plan_id.plan_line_actual_ids.actual_quantity')
+    def _compute_total_quantity(self):
+        for produce in self:
+            quantity_plan = sum(produce.plan_id.plan_line_ids.filtered(
+                lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
+                or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('new_qty'))
+            quantity_actual = sum(produce.plan_id.plan_line_actual_ids.filtered(
+                lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
+                or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('actual_quantity'))
+            produce.update(({'original_quantity_plan': quantity_plan,
+                             'original_quantity_actual': quantity_actual}))
+
+    @api.multi
     @api.depends('plan_id',
                  'plan_id.check_raw_procurement',
                  'plan_id.check_cmt_procurement')
     def _compute_status_procurement(self):
         for order in self:
             order.editable_quantity = order.plan_id.check_raw_procurement or order.plan_id.check_cmt_procurement
-
 
     @api.multi
     @api.onchange('quantity_actual')
