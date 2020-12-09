@@ -4,7 +4,7 @@ from datetime import datetime
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, Warning
-from odoo.tools import float_round
+from odoo.tools import float_round, float_is_zero
 from odoo.tools import html2plaintext
 
 _logger = logging.getLogger(__name__)
@@ -110,8 +110,6 @@ class AssemblyPlan(models.Model):
     show_cmt_consumed = fields.Text(string="List CMT Consumed", compute="_compute_cmt_consume")
     # Kolum Untuk Input Jumlah Quantity Yang Akan Diproduksi
     produce_ids = fields.One2many(comodel_name="assembly.plan.produce", inverse_name="plan_id", string="Produce")
-    check_quantity_produce = fields.Boolean(string="Is Quantity Produce Actual Changed?",
-                                            compute="_compute_check_quantity_produce")
     # Total Raw Material + Aksesoris + Biaya Produksi
     amount_total = fields.Float(string='Total', compute="_compute_amount_total")
 
@@ -143,14 +141,6 @@ class AssemblyPlan(models.Model):
         for plan in self:
             if plan.mo_ids:
                 plan.mo_done = all(mo.state == 'done' for mo in plan.mo_ids) if plan.mo_ids else False
-
-    @api.multi
-    @api.depends('produce_ids',
-                 'produce_ids.original_quantity_actual')
-    def _compute_check_quantity_produce(self):
-        for plan in self:
-            plan.check_quantity_produce = any(produce.quantity_actual != produce.original_quantity_actual
-                                              for produce in plan.produce_ids)
 
     def _compute_mo_count(self):
         read_group_res = self.env['mrp.production'].read_group([('assembly_plan_id', 'in', self.ids)],
@@ -189,7 +179,6 @@ class AssemblyPlan(models.Model):
 
     def _set_quantity_plan(self):
         for produce in self.produce_ids:
-            produce.write({'original_quantity_plan': produce.quantity_plan})
 
             raw_ids = self.raw_line_ids.filtered(
                 lambda x: x.attribute_id.id == produce.attribute_id.id)
@@ -213,7 +202,6 @@ class AssemblyPlan(models.Model):
     def _set_quantity_actual(self):
         for produce in self.produce_ids:
             if produce.attribute_id:
-                produce.write({'original_quantity_actual': produce.quantity_actual})
                 if produce.quantity_actual == produce.quantity_plan:
                     for line in self.plan_line_ids:
                         if line.actual_quantity != line.new_qty:
@@ -254,8 +242,6 @@ class AssemblyPlan(models.Model):
     def set_quantity_variant(self):
         if self.state == 'draft':
             for produce in self.produce_ids:
-                produce.write({'original_quantity_plan': produce.quantity_plan})
-
                 raw_ids = self.raw_line_ids.filtered(
                     lambda x: x.attribute_id.id == produce.attribute_id.id)
                 for raw in raw_ids:
@@ -278,7 +264,6 @@ class AssemblyPlan(models.Model):
         if self.state in ['process', 'procurement']:
             for produce in self.produce_ids:
                 if produce.attribute_id:
-                    produce.write({'original_quantity_actual': produce.quantity_actual})
                     if produce.quantity_actual == produce.quantity_plan:
                         variant_plan_ids = self.mapped('plan_line_ids')
                         self.write({'plan_line_actual_ids': [(6, 0, variant_plan_ids.ids)]})
@@ -524,12 +509,15 @@ class AssemblyPlan(models.Model):
     @api.multi
     def button_to_approve(self):
         for record in self:
+            precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+            produce_quantity_plan = sum(record.produce_ids.mapped('quantity_plan'))
+            quantity_variant = sum(record.plan_line_ids.mapped('new_qty'))
             if not record.partner_id:
                 raise UserError(_("Pilih Vendor CMT Terlebih Dahulu"))
-            if not sum(record.produce_ids.mapped('quantity_plan')):
+            if float_is_zero(produce_quantity_plan, precision_digits=precision):
                 raise UserError(_("Isi Kolum PLAN Quantity To Produce."
                                   "\n Pada Tabel Produce Terlebih Dahulu"))
-            if not sum(record.raw_line_ids.mapped('qty_to_plan')):
+            if float_is_zero(quantity_variant, precision_digits=precision):
                 raise UserError(_("Total Quantity Bahan Baku Belum Terhitung\n"
                                   "Klik Tombol Update Sebelum Melanjutkan"))
             record.check_remaining_qty()
@@ -542,20 +530,17 @@ class AssemblyPlan(models.Model):
     @api.multi
     def button_done(self):
         for order in self:
-            if order.check_quantity_produce:
-                raise UserError(_("Anda Melakukan Perubahan Jumlah Quantity Actual Pada Koloum Produce"
-                                  "\n Harap Update Dulu Jumlah Quantity Pada Kolom Variant On Hand"
-                                  "\n Dengan Memencet Tombol Update Finish Goods"))
-            for produce in order.produce_ids:
-                if not produce.quantity_actual:
-                    raise UserError(_("Isi Actual Quantity To Produce Pada Produce Terlebih Dahulu."
-                                      "\n"
-                                      "**Kolum Actual Quantity To Produce = Berapa Pcs Produk Yang Jadi Diproduksi"))
+            precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+            produce_quantity_actual = sum(order.produce_ids.mapped('quantity_actual'))
+            quantity_variant = sum(order.plan_line_actual_ids.mapped('actual_quantity'))
+            if not float_is_zero(produce_quantity_actual, precision_digits=precision):
+                raise UserError(_("Isi Actual Quantity To Produce Pada Produce Terlebih Dahulu."
+                                  "\n"
+                                  "**Kolum Actual Quantity To Produce = Berapa Pcs Produk Yang Jadi Diproduksi"))
+            if float_is_zero(quantity_variant, precision_digits=precision):
+                raise UserError(_("Kolum Variants Plan dan Variants On Hand Belum Terisi, "
+                                  "Klik Tombol Update QTY Agar qty Pada Kolum Tsb Terisi"))
 
-            for record in order.plan_line_ids:
-                if not record.new_qty and not record.actual_quantity:
-                    raise UserError(_("Kolum Variants Plan dan Variants On Hand Belum Terisi, "
-                                      "Klik Tombol Update QTY Agar qty Pada Kolum Tsb Terisi"))
             order.check_remaining_qty()
             raw_final = sum(order.produce_ids.mapped('quantity_actual'))
 

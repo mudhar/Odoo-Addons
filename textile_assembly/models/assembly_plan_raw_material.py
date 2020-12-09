@@ -26,9 +26,9 @@ class AssemblyPlanRawMaterial(models.Model):
     qty_to_actual = fields.Float('Exp Consu Actual',
                                  digits=dp.get_precision('Product Unit of Measure'),
                                  compute="_compute_quantity_actual", readonly=True, store=True)
-
-    qty_final = fields.Float(string="To Be Produce Qty", default=0.0, digits=dp.get_precision('Product Unit of Measure'),
-                             help="Berapa Unit Produk Yang Jadi DiProduksi, Maksimum Kapasitas")
+    #
+    # qty_final = fields.Float(string="To Be Produce Qty", default=0.0, digits=dp.get_precision('Product Unit of Measure'),
+    #                          help="Berapa Unit Produk Yang Jadi DiProduksi, Maksimum Kapasitas")
 
     total_actual_quantity = fields.Float(string="Maximum Potensial", default=0.0,
                                          digits=dp.get_precision('Product Unit of Measure'),
