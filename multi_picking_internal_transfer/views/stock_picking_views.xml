@@ -9,12 +9,12 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='location_id']" position="after">
                     <!-- Add your fields or attributes here -->
-                    <div name="options" attrs="{'invisible': ['|','|','|',('picking_type_code','in',('incoming','outgoing')),('backorder_id','!=',False), ('raw_material_production_id', '!=', False), ('production_id', '!=', False)]}">
+                    <div name="options" attrs="{'invisible': ['|','|','|','|',('picking_type_code','in',('incoming','outgoing')),('backorder_id','!=',False), ('raw_material_production_id', '!=', False), ('production_id', '!=', False), ('state', '!=', 'draft')]}">
                         <field name="check_final_location" class="oe_inline"/>
                         <label for="check_final_location"/>
 
                     </div>
-                    <div name="options" attrs="{'invisible':['|','|','|','|',('check_final_location','=',False), ('picking_type_code','in',('incoming','outgoing')),('backorder_id','!=',False), ('raw_material_production_id', '!=', False), ('production_id', '!=', False)]}">
+                    <div name="options" attrs="{'invisible':['|','|','|','|','|',('check_final_location','=',False), ('picking_type_code','in',('incoming','outgoing')),('backorder_id','!=',False), ('raw_material_production_id', '!=', False), ('production_id', '!=', False), ('state','!=','draft')]}">
                         <field name="has_transit_location" class="oe_inline"/>
                         <label for="has_transit_location"/>
                     </div>
