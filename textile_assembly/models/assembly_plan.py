@@ -180,14 +180,6 @@ class AssemblyPlan(models.Model):
     def _set_quantity_plan(self):
         for produce in self.produce_ids:
 
-            raw_ids = self.raw_line_ids.filtered(
-                lambda x: x.attribute_id.id == produce.attribute_id.id)
-            for raw in raw_ids:
-                raw.write({'qty_to_plan': float_round(
-                    raw.product_qty * produce.quantity_plan,
-                    precision_rounding=raw.product_id.uom_id.rounding,
-                    rounding_method='UP')})
-
             total_ratio = sum(self.plan_line_ids.filtered(
                 lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
                           or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
@@ -207,24 +199,6 @@ class AssemblyPlan(models.Model):
                         if line.actual_quantity != line.new_qty:
                             line.update({'actual_quantity': line.new_qty})
 
-                    raw_ids = self.raw_line_ids.filtered(
-                        lambda x: x.attribute_id.id == produce.attribute_id.id)
-                    for raw in raw_ids:
-                        raw.write({
-                            'qty_to_actual': float_round(
-                                raw.product_qty * produce.quantity_actual,
-                                precision_rounding=raw.product_id.uom_id.rounding,
-                                rounding_method='UP')})
-                if produce.quantity_actual != produce.quantity_plan:
-                    raw_ids = self.raw_line_ids.filtered(
-                        lambda x: x.attribute_id.id == produce.attribute_id.id)
-                    for raw in raw_ids:
-                        raw.write({
-                            'qty_to_actual': float_round(
-                                raw.product_qty * produce.quantity_actual,
-                                precision_rounding=raw.product_id.uom_id.rounding,
-                                rounding_method='UP')})
-
                     total_ratio = sum(self.plan_line_ids.filtered(
                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
                                   or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
@@ -237,69 +211,6 @@ class AssemblyPlan(models.Model):
                                 {'actual_quantity': float_round(
                                     (variant.ratio / total_ratio) * produce.quantity_actual,
                                     precision_rounding=variant.product_uom_id.rounding)})
-
-    @api.multi
-    def set_quantity_variant(self):
-        if self.state == 'draft':
-            for produce in self.produce_ids:
-                raw_ids = self.raw_line_ids.filtered(
-                    lambda x: x.attribute_id.id == produce.attribute_id.id)
-                for raw in raw_ids:
-                    raw.write({'qty_to_plan': float_round(
-                        raw.product_qty * produce.quantity_plan,
-                        precision_rounding=raw.product_id.uom_id.rounding,
-                        rounding_method='UP')})
-
-                total_ratio = sum(self.plan_line_ids.filtered(
-                    lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                              or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
-                variant_ids = self.plan_line_ids.filtered(
-                    lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                              or x.attribute_value_ids[1].id == produce.attribute_id.id)
-                for variant in variant_ids:
-                    if variant.product_id:
-                        variant.write({'new_qty': float_round((variant.ratio / total_ratio) * produce.quantity_plan,
-                                                              precision_rounding=variant.product_uom_id.rounding)})
-
-        if self.state in ['process', 'procurement']:
-            for produce in self.produce_ids:
-                if produce.attribute_id:
-                    if produce.quantity_actual == produce.quantity_plan:
-                        variant_plan_ids = self.mapped('plan_line_ids')
-                        self.write({'plan_line_actual_ids': [(6, 0, variant_plan_ids.ids)]})
-
-                        raw_ids = self.raw_line_ids.filtered(
-                            lambda x: x.attribute_id.id == produce.attribute_id.id)
-                        for raw in raw_ids:
-                            raw.write({
-                                'qty_to_actual': float_round(
-                                    raw.product_qty * produce.quantity_actual,
-                                    precision_rounding=raw.product_id.uom_id.rounding,
-                                    rounding_method='UP')})
-                    if produce.quantity_actual != produce.quantity_plan:
-                        raw_ids = self.raw_line_ids.filtered(
-                            lambda x: x.attribute_id.id == produce.attribute_id.id)
-                        for raw in raw_ids:
-                            raw.write({
-                                'qty_to_actual': float_round(
-                                    raw.product_qty * produce.quantity_actual,
-                                    precision_rounding=raw.product_id.uom_id.rounding,
-                                    rounding_method='UP')})
-
-                        total_ratio = sum(self.plan_line_ids.filtered(
-                            lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                                      or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
-                        variant_ids = self.plan_line_ids.filtered(
-                            lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                                      or x.attribute_value_ids[1].id == produce.attribute_id.id)
-                        for variant in variant_ids:
-                            if variant.product_id:
-                                variant.write(
-                                    {'actual_quantity': float_round(
-                                        (variant.ratio / total_ratio) * produce.quantity_actual,
-                                        precision_rounding=variant.product_uom_id.rounding)})
-
-        return True
 
     @api.multi
     def _compute_cmt_consume(self):
@@ -533,7 +444,7 @@ class AssemblyPlan(models.Model):
             precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
             produce_quantity_actual = sum(order.produce_ids.mapped('quantity_actual'))
             quantity_variant = sum(order.plan_line_actual_ids.mapped('actual_quantity'))
-            if not float_is_zero(produce_quantity_actual, precision_digits=precision):
+            if float_is_zero(produce_quantity_actual, precision_digits=precision):
                 raise UserError(_("Isi Actual Quantity To Produce Pada Produce Terlebih Dahulu."
                                   "\n"
                                   "**Kolum Actual Quantity To Produce = Berapa Pcs Produk Yang Jadi Diproduksi"))
