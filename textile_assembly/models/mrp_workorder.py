@@ -127,12 +127,15 @@ class MrpWorkOrder(models.Model):
     #         return {}
     #     return super(MrpWorkOrder, self).write(values)
 
-    @api.multi
-    def write(self, vals):
-        if self.check_assembly_plan_id:
-            return self.write_assembly(vals)
-        else:
-            return super(MrpWorkOrder, self).write(vals)
+    # @api.multi
+    # def write(self, values):
+    #     if list(values.keys()) != ['time_ids'] and any(workorder.state == 'done' for workorder in self):
+    #         super(MrpWorkOrder, self).write(values=values)
+
+
+        #     return self.write_assembly(vals)
+        # else:
+        #     return super(MrpWorkOrder, self).write(vals)
 
     def write_assembly(self, values):
         self._write(values)
@@ -384,7 +387,9 @@ class MrpWorkOrder(models.Model):
             both_move = (move_consume_state | move_finish_state)
             if any(move.created_return_picking for move in both_move):
                 for work_order in work_ids:
-                    work_order.action_cancel()
+                    # pakain method _write untuk bypass trigger method write workorder
+                    # bila state workorder ada yang sudah done dan tidak bisa di cancel
+                    work_order._write({'state': 'cancel'})
                 work.production_id.write({'state': 'cancel', 'is_locked': True})
                 work.production_id.assembly_plan_id._action_cancel()
 

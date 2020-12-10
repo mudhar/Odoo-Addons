@@ -198,7 +198,7 @@ class AssemblyPlan(models.Model):
                     for line in self.plan_line_ids:
                         if line.actual_quantity != line.new_qty:
                             line.update({'actual_quantity': line.new_qty})
-
+                else:
                     total_ratio = sum(self.plan_line_ids.filtered(
                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
                                   or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
@@ -211,6 +211,8 @@ class AssemblyPlan(models.Model):
                                 {'actual_quantity': float_round(
                                     (variant.ratio / total_ratio) * produce.quantity_actual,
                                     precision_rounding=variant.product_uom_id.rounding)})
+
+
 
     @api.multi
     def _compute_cmt_consume(self):
