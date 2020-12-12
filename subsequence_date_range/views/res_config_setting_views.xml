@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="subsequence_view_form" model="ir.ui.view">
+      <field name="name">subsequence.view.form</field>
+      <field name="model">res.config.settings</field>
+      <field name="priority">20</field>
+      <field name="arch" type="xml">
+        <form string="Sub Sequence Related To Assembly" class="oe_form_configuration">
+          <header>
+            <button string="Apply" type="object" name="execute" class="oe_highlight"/>
+            <button string="Cancel" type="object" name="cancel" class="oe_link" special="cancel"/>
+          </header>
+          <separator string="White Label Setting"/>
+          <group name="data-clean" string="Data To Be Update (Be careful to do that!)">
+            <label string="Assembly"/>
+            <div class="mb4">
+              <button string="Update All Sequence Assembly" type="object" name="update_sequence_assembly" colspan="1"
+                      confirm="Please confirm to update the select data?" class="oe_highlight"/>
+            </div>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="action_subsequence_config" model="ir.actions.act_window">
+      <field name="name">Data Sequence</field>
+      <field name="type">ir.actions.act_window</field>
+      <field name="res_model">res.config.settings</field>
+      <field name="view_mode">form</field>
+      <field name="view_id" ref="subsequence_view_form"/>
+      <field name="target">inline</field>
+    </record>
+    <menuitem
+            id="base.menu_subsequence_group"
+            name="Data Sequence"
+            parent="base.menu_administration"
+            sequence="1"
+            groups="base.group_system"/>
+    <menuitem
+            id="menu_subsequence_config"
+            parent="base.menu_subsequence_group"
+            sequence="1"
+            action="action_subsequence_config"
+            groups="base.group_system"/>
+  </data>
+</odoo>
