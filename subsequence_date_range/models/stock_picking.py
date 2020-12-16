@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import calendar
+from dateutil.relativedelta import relativedelta
 from odoo import fields, models, api
 
 
@@ -153,8 +153,12 @@ class StockPicking(models.Model):
 
         return super(StockPicking, self).create(vals)
 
+    def _get_stock_picking_date(self, date):
+        order_date = fields.Datetime.from_string(date)
+        return order_date + relativedelta(days=1)
+
     def create_date_range_picking(self, values, sequence_id):
-        date_to = fields.Date.from_string(values.get('date'))
+        date_to = self._get_stock_picking_date(values['date'])
         date_to_string = date_to.strftime('%Y-%m-%d')
         dt_from, dt_to = self.env['ir.sequence']._format_date_range_seq(date_to)
         date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to_string)

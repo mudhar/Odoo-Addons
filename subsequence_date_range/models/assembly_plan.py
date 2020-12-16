@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from dateutil.relativedelta import relativedelta
 from odoo import models, fields, api, _
 
 
@@ -10,7 +11,7 @@ class AssemblyPlan(models.Model):
         sequence_id = self.env['ir.sequence'].search([('code', '=', 'assembly.plan')])
         if values.get('assembly_id') and sequence_id.use_date_range:
             partner_id = self.env['res.partner'].browse(values.get('partner_id'))
-            date_to = fields.Date.from_string(values.get('date_planned_finished'))
+            date_to = self._get_assembly_date(values['date_planned_finished'])
             date_to_string = date_to.strftime('%Y-%m-%d')
             # 2020-01-01
             date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to_string)
@@ -29,4 +30,8 @@ class AssemblyPlan(models.Model):
     @api.multi
     def _create_assembly_plan_prefix(self, partner_id, seq_prefix):
         return ''.join('%s/%s' % (partner_id.partner_cmt_code, seq_prefix))
+
+    def _get_assembly_date(self, date):
+        order_date = fields.Datetime.from_string(date)
+        return order_date + relativedelta(days=1)
 

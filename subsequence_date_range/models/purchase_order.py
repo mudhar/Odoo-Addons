@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import calendar
+from dateutil.relativedelta import relativedelta
 from odoo import fields, models, api
 
 
@@ -12,7 +12,7 @@ class PurchaseOrder(models.Model):
             sequence_id = self.env['ir.sequence'].search([('code', '=', 'purchase.order.materials')])
             if sequence_id.use_date_range and vals.get('date_order'):
                 # 2020-01-10
-                date_to = fields.Date.from_string(vals.get('date_order'))
+                date_to = self._get_purchase_date_order(vals['date_order'])
                 dt_from, dt_to = self.env['ir.sequence']._format_date_range_seq(date_to)
                 date_to_string = date_to.strftime('%Y-%m-%d')
                 date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to_string)
@@ -28,7 +28,7 @@ class PurchaseOrder(models.Model):
             sequence_id = self.env['ir.sequence'].search([('code', '=', 'purchase.order.goods')])
             if sequence_id.use_date_range and vals.get('date_order'):
                 # 2020-01-10
-                date_to = fields.Date.from_string(vals.get('date_order'))
+                date_to = self._get_purchase_date_order(vals['date_order'])
                 dt_from, dt_to = self.env['ir.sequence']._format_date_range_seq(date_to)
                 date_to_string = date_to.strftime('%Y-%m-%d')
                 date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to_string)
@@ -41,5 +41,10 @@ class PurchaseOrder(models.Model):
                     vals['name'] = self.env['ir.sequence']._create_sequence_prefix(sequence_id, date_range)
 
         return super(PurchaseOrder, self).create(vals)
+
+    def _get_purchase_date_order(self, date):
+        date_order = fields.Datetime.from_string(date)
+        return date_order + relativedelta(days=1)
+
 
 
