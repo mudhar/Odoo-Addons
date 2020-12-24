@@ -155,8 +155,10 @@ class StockPicking(models.Model):
         return super(StockPicking, self).create(vals)
 
     def _get_stock_picking_date(self, date):
-        order_date = fields.Date.from_string(date).strftime(DEFAULT_SERVER_DATE_FORMAT)
-        return order_date
+        picking_date = fields.Date.from_string(date)
+        if picking_date:
+            date_picking = picking_date + relativedelta(days=1)
+            return date_picking.strftime(DEFAULT_SERVER_DATE_FORMAT)
 
     def create_date_range_picking(self, values, sequence_id):
         date_to = self._get_stock_picking_date(values['date'])
