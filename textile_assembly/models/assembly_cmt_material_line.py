@@ -127,7 +127,8 @@ class AssemblyCmtProductTemplate(models.Model):
                                   ondelete='cascade', index=True)
     sequence = fields.Integer(string='Seq', default=1)
     product_id = fields.Many2one(comodel_name="product.template", string="Products", index=True,
-                                 track_visibility='onchange', domain=[('type', 'in', ['product', 'consu'])], required=True)
+                                 track_visibility='onchange',
+                                 domain=[('type', 'in', ['product', 'consu'])], required=True)
     product_uom_id = fields.Many2one(comodel_name="product.uom", string="UoM", required=True)
     product_qty = fields.Float(string="Quantity Per Pcs", digits=dp.get_precision('Product Unit of Measure'),
                                default=1.0)
@@ -280,9 +281,3 @@ class AssemblyCmtProductService(models.Model):
             for val in line.prepare_assembly_plan_services(plan_id):
                 done += plan_services.create(val)
         return done
-
-
-
-
-
-

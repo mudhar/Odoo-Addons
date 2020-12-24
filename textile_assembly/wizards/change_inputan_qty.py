@@ -62,7 +62,8 @@ class ChangeInputanQty(models.TransientModel):
             res['next_work_order_id'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).next_work_order_id.id
 
         if 'is_work_order_finishing' in fields_list and not res.get('is_work_order_finishing') and res.get('qc_id'):
-            res['is_work_order_finishing'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).is_work_order_finishing
+            res['is_work_order_finishing'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']
+                                                                                      ).is_work_order_finishing
 
         if 'product_qty' in fields_list and not res.get('product_qty') and res.get('qc_id'):
             res['product_qty'] = self.env['mrp.workorder.qc.line'].browse(res['qc_id']).product_qty
@@ -130,6 +131,3 @@ class ChangeInputanQty(models.TransientModel):
             order.qc_id.qc_sample -= order.quantity_sample
 
         return {'type': 'ir.actions.act_window_close'}
-
-
-

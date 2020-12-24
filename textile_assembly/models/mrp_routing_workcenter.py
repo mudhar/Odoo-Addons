@@ -39,7 +39,3 @@ class MrpRouting(models.Model):
                     operation[2]['sequence'] = index + 1
         result = super(MrpRouting, self).write(vals)
         return result
-
-
-
-

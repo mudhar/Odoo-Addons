@@ -13,7 +13,8 @@ class AssemblyPlanServices(models.Model):
     product_id = fields.Many2one(comodel_name="product.product", string="Products", index=True)
     product_qty = fields.Float(string="Quantity", default=0.0, digits=dp.get_precision('Product Unit of Measure'))
     quantity_plan = fields.Float(string="Exp Consu Plan", default=0.0,
-                                 digits=dp.get_precision('Product Unit of Measure'), compute="_compute_quantity_consume")
+                                 digits=dp.get_precision('Product Unit of Measure'),
+                                 compute="_compute_quantity_consume")
     quantity_actual = fields.Float(string="Exp Consu Revised", default=0.0,
                                    digits=dp.get_precision('Product Unit of Measure'),
                                    compute="_compute_quantity_consume")
@@ -42,6 +43,3 @@ class AssemblyPlanServices(models.Model):
             produce_actual = sum(order.plan_id.plan_line_ids.mapped('actual_quantity'))
             order.quantity_plan = produce_plan
             order.quantity_actual = produce_actual
-
-
-

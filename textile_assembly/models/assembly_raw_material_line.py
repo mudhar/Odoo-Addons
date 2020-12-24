@@ -10,8 +10,10 @@ class AssemblyRawMaterialLine(models.Model):
     _rec_name = 'product_id'
     _order = 'assembly_id, sequence, id'
 
-    assembly_id = fields.Many2one(comodel_name="assembly.production", string="Assembly Order", ondelete='cascade', index=True)
-    product_qty = fields.Float(string="Quantity Per Pcs", digits=dp.get_precision('Product Unit of Measure'), default=1.0)
+    assembly_id = fields.Many2one(comodel_name="assembly.production", string="Assembly Order",
+                                  ondelete='cascade', index=True)
+    product_qty = fields.Float(string="Quantity Per Pcs", digits=dp.get_precision('Product Unit of Measure'),
+                               default=1.0)
     price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'), required=True)
     product_uom_id = fields.Many2one(comodel_name="product.uom", string="UoM", required=True,)
     sequence = fields.Integer(string='Sequence', default=1)
@@ -133,6 +135,3 @@ class AssemblyRawMaterialLine(models.Model):
         """
         for line in self:
             line.price_subtotal = line.product_qty * line.price_unit
-
-
-

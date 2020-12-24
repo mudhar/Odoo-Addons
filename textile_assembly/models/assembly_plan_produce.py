@@ -23,9 +23,7 @@ class AssemblyPlanProduce(models.Model):
                                             digits=dp.get_precision('Product Unit of Measure'))
     original_quantity_plan = fields.Float(string="Orignal Plan Quantity To Produce",
                                           readonly=True, store=True, compute="_compute_total_quantity",
-                                          digits=dp.get_precision('Product Unit of Measure'),
-                                         )
-
+                                          digits=dp.get_precision('Product Unit of Measure'))
 
     state = fields.Selection(related='plan_id.state')
     # Untuk Mengecek Apabila Terdapat Bahan Baku Membutuhkan Stok Tambahan -> Button Procurement(tampil)
@@ -75,16 +73,3 @@ class AssemblyPlanProduce(models.Model):
                 else:
                     order.quantity_maximum = quantity_max[0]
         return {}
-
-
-
-
-
-
-
-
-
-
-
-
-

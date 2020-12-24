@@ -29,7 +29,8 @@ class ProductServiceRemoveWizard(models.TransientModel):
         work_order_object = self.env['mrp.workorder']
         for purchase_ids in work_order_object.search(
                 [('production_id', '=', self.production_id.id)]).mapped('po_ids'):
-            for purchase in purchase_ids.mapped('order_line').filtered(lambda x: x.product_id.id == self.product_service_id.id):
+            for purchase in purchase_ids.mapped('order_line').filtered(
+                    lambda x: x.product_id.id == self.product_service_id.id):
                 if purchase.state != 'cancel':
                     raise UserError(_("Product %s Sudah Kebentuk Purchase Order\n"
                                       "Batalkan PO %s Yang Terdapat Product ini\n"

@@ -22,7 +22,8 @@ class StockMove(models.Model):
                 move_lines = picking_object.search(
                     [('backorder_id', '=', move.picking_id.id),
                      ('is_rejected', '=', True)])
-                for line in move_lines.filtered(lambda x: x.product_id.id == move.product_id.id):
+
+                for line in move_lines.move_line_ids.filtered(lambda x: x.product_id.id == move.product_id.id):
                     quantity.append(line.product_qty)
             if quantity:
                 move.quantity_reject = sum(quantity)
@@ -59,26 +60,3 @@ class StockMove(models.Model):
                             move_line.write({'lot_name': lot_id.name,
                                              'lot_id': lot_id.id})
         return True
-
-    # @api.multi
-    # @api.depends('production_id')
-    # def compute_qc_done(self):
-    #     for order in self:
-    #         if order.production_id and order.product_id:
-    #             workorder_ids = self.env['mrp.workorder'].search([('production_id', '=', order.production_id.id)])
-    #             for workorder in workorder_ids.filtered(lambda x: not x.next_work_order_id):
-    #                 if workorder and workorder.qc_ids:
-    #                     for line in workorder.qc_ids:
-    #                         if line.product_id and line.product_id.id != order.product_id.id and line.state == 'done':
-    #                             continue
-    #                         if line.product_id and line.product_id.id == order.product_id.id and line.state == 'done':
-    #                             order.is_qc_done = True
-    #                         else:
-    #                             order.is_qc_done = False
-    #     return True
-
-
-
-
-
-

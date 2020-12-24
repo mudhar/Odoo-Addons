@@ -61,10 +61,3 @@ class PurchaseOrderLine(models.Model):
                         raw_price_unit = order.product_id.uom_id._compute_price(raw.price_unit, order.product_uom)
                         order.update({'price_unit': raw_price_unit})
         return {}
-
-
-
-
-
-
-

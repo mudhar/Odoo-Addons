@@ -49,8 +49,8 @@ class AssemblyPlanLine(models.Model):
             for produce in self.env['assembly.plan.produce'].search(
                     [
                         ('plan_id', '=', plan.plan_id.id)
-                    ]).filtered(lambda x: x.attribute_id.id == plan.attribute_value_ids[0].id \
-                                          or x.attribute_id.id == plan.attribute_value_ids[1].id):
+                    ]).filtered(lambda x: x.attribute_id.id == plan.attribute_value_ids[0].id
+                                or x.attribute_id.id == plan.attribute_value_ids[1].id):
                 quantity.append(produce.quantity_actual)
         return quantity
 
@@ -77,4 +77,3 @@ class AssemblyPlanLine(models.Model):
         }
         res.append(value)
         return res
-

@@ -88,7 +88,7 @@ class AssemblyPlanCmtMaterial(models.Model):
             if cmt.product_id and cmt.product_id.attribute_value_ids:
                 quantity_actual = sum(cmt.plan_id.plan_line_ids.filtered(
                     lambda x: (x.attribute_value_ids[0].id == cmt.product_id.attribute_value_ids[0].id)
-                              or (x.attribute_value_ids[1].id == cmt.product_id.attribute_value_ids[0].id)
+                    or (x.attribute_value_ids[1].id == cmt.product_id.attribute_value_ids[0].id)
                 ).mapped('actual_quantity'))
                 cmt.update({'quantity_to_actual': quantity_actual})
             if cmt.product_id and not cmt.product_id.attribute_value_ids:
@@ -109,5 +109,3 @@ class AssemblyPlanCmtMaterial(models.Model):
                     cmt.need_procurement = False
             elif cmt.product_id.type == 'consu':
                 cmt.need_procurement = True
-
-

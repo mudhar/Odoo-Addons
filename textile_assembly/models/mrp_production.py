@@ -34,7 +34,8 @@ class MrpProduction(models.Model):
                                       states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
     picking_finished_product_ids = fields.One2many(comodel_name="stock.picking", inverse_name="production_id",
                                                    string="Picking Finished Products", copy=False,
-                                                   states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
+                                                   states={'done': [('readonly', True)],
+                                                           'cancel': [('readonly', True)]})
     # Work Order
     check_work_order_done = fields.Boolean(string="Check Work Order Done", compute="_check_work_order_done",
                                            help="Informasi Untuk Mengecek Status Work Order Yang Done")
@@ -45,7 +46,8 @@ class MrpProduction(models.Model):
     # End override field
     product_template_id = fields.Many2one(comodel_name="product.template", string="Product",
                                           domain=[('type', 'in', ['product', 'consu'])],
-                                          readonly=True, states={'confirmed': [('readonly', False)]}, copy=False)
+                                          readonly=True, states={'confirmed': [('readonly', False)]},
+                                          copy=False)
     backdate_finished = fields.Datetime('End Date', copy=False, index=True)
 
     @api.multi
@@ -211,9 +213,9 @@ class MrpProduction(models.Model):
     def generate_plan_moves(self):
         for production in self:
             # production._generate_finished_picking()
-            factor = production.product_uom_id._compute_quantity(production.product_qty,
-                                                                 production.bom_id.product_uom_id) / production.bom_id.product_qty
-            boms, lines = production.bom_id.explode_template(production.product_template_id, factor)
+            factor = production.product_uom_id._compute_quantity(
+                production.product_qty, production.bom_id.product_uom_id) / production.bom_id.product_qty
+            bom_id, lines = production.bom_id.explode_template(production.product_template_id, factor)
             # Raw Material Product
             move_raw = production._generate_plan_raw_moves(lines)
             raw_picking = production._generate_picking_raw_moves()
@@ -270,7 +272,6 @@ class MrpProduction(models.Model):
         # qty = line_data['original_qty']
         quantity = line_data['quantity']
         qty = line_data['original_qty']
-        # alt_op needed for the case when you explode phantom bom and all the lines will be consumed in the operation given by the parent bom line
         alt_op = line_data['parent_line'] and line_data['parent_line'].operation_id.id or False
         if bom_line.child_bom_id and bom_line.child_bom_id.type == 'phantom':
             return self.env['stock.move']
@@ -337,15 +338,15 @@ class MrpProduction(models.Model):
     @api.multi
     def action_work_order_assembly(self):
         # self.action_update_plan_consumed()
-        orders_to_plan = self.filtered(lambda order: order.routing_id and (
-                not order.product_id and order.state == 'confirmed'))
+        orders_to_plan = self.filtered(lambda x: x.routing_id and (
+                not x.product_id and x.state == 'confirmed'))
         if orders_to_plan:
             for order in orders_to_plan:
                 order._check_move_consume_state()
-                quantity = order.product_uom_id._compute_quantity(order.product_qty,
-                                                                  order.bom_id.product_uom_id) / order.bom_id.product_qty
-                boms, lines = order.bom_id.explode_template(order.product_template_id, quantity)
-                order.generate_workorders(boms)
+                quantity = order.product_uom_id._compute_quantity(
+                    order.product_qty, order.bom_id.product_uom_id) / order.bom_id.product_qty
+                bom_id, lines = order.bom_id.explode_template(order.product_template_id, quantity)
+                order.generate_workorders(bom_id)
 
             return orders_to_plan.write({'state': 'planned'})
 
@@ -354,7 +355,6 @@ class MrpProduction(models.Model):
         workorders = self.env['mrp.workorder']
         original_one = False
         for bom, bom_data in exploded_boms:
-            # If the routing of the parent BoM and phantom BoM are the same, don't recreate work orders, but use one master routing
             if bom.routing_id.id and (
                     not bom_data['parent_line'] or bom_data['parent_line'].bom_id.routing_id.id != bom.routing_id.id):
                 temp_workorders = self.workorders_create(bom, bom_data)
@@ -373,7 +373,6 @@ class MrpProduction(models.Model):
         workorders = self.env['mrp.workorder']
         bom_qty = bom_data['quantity']
 
-
         # Initial qty producing
         if self.product_template_id.tracking == 'serial':
             quantity = 1.0
@@ -383,7 +382,7 @@ class MrpProduction(models.Model):
 
         for operation in bom.routing_id.operation_ids:
             # create workorder
-            cycle_number = math.ceil(bom_qty / operation.workcenter_id.capacity)  # TODO: float_round UP
+            cycle_number = math.ceil(bom_qty / operation.workcenter_id.capacity)
             duration_expected = (operation.workcenter_id.time_start +
                                  operation.workcenter_id.time_stop +
                                  cycle_number * operation.time_cycle * 100.0 / operation.workcenter_id.time_efficiency)
@@ -432,7 +431,8 @@ class MrpProductionVariant(models.Model):
     _rec_name = 'product_id'
     _description = 'Line Product Variant'
 
-    production_id = fields.Many2one(comodel_name="mrp.production", string="Variant Order", ondelete="cascade", index=True)
+    production_id = fields.Many2one(comodel_name="mrp.production", string="Variant Order",
+                                    ondelete="cascade", index=True)
     sequence = fields.Integer('Sequence', default=1)
 
     product_id = fields.Many2one(comodel_name="product.product", string="Products")
@@ -465,9 +465,3 @@ class MrpProductionVariant(models.Model):
         }
         res.append(template)
         return res
-
-
-
-
-
-

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 from odoo.addons import decimal_precision as dp
 from odoo.exceptions import UserError
-from odoo.tools.translate import _
 
 
 class AssemblyProdVariantLine(models.Model):
@@ -30,14 +29,14 @@ class AssemblyProdVariantLine(models.Model):
         variant_ids = self.env['assembly.prod.variant.line'].search_count(
             [('product_id', '=', self.product_id.id), ('assembly_id', '=', self.assembly_id.id)])
         if variant_ids and variant_ids > 1:
-            raise UserError(_("Duplicate Product %s Total Duplicate %s") % (self.product_id.display_name, str(variant_ids)))
+            raise UserError(_("Duplicate Product %s Total Duplicate %s") % (
+                self.product_id.display_name, str(variant_ids)))
         else:
             return False
 
     @api.multi
     @api.onchange('product_id')
     def _onchange_product_id(self):
-        values = {}
         domain = {'product_id': [('product_tmpl_id', '=', self.product_template_id.id)]}
         result = {'domain': domain}
         return result

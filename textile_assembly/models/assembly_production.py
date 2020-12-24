@@ -206,7 +206,7 @@ class AssemblyProd(models.Model):
                     'partner_id': order.partner_id.id,
                     'date_planned_start': order.date_planned_start,
                     'date_planned_finished': order.date_planned_finished,
-                    'bom_id':bom_id[0].id
+                    'bom_id': bom_id[0].id
                 }
                 plan_id = assembly_plan_model.create(res)
             else:
@@ -412,7 +412,7 @@ class AssemblyProd(models.Model):
                     set_attributes = cmt_line.product_id.mapped('attribute_value_ids')
                     total_ratio_list = [variant.ratio for variant in self.variant_line_ids.filtered(
                         lambda x: (x.attribute_value_ids[0] in set_attributes)
-                                  or (x.attribute_value_ids[1] in set_attributes))]
+                        or (x.attribute_value_ids[1] in set_attributes))]
                     cmt_line.update({'ratio': sum(total_ratio_list)})
 
         product_non_attributes = self.cmt_material_line_ids.filtered(
@@ -436,7 +436,7 @@ class AssemblyProd(models.Model):
                 if raw.product_id and raw.attribute_id:
                     total_ratio = [variant.ratio for variant in assembly.variant_line_ids.filtered(
                         lambda x: (x.attribute_value_ids[0] in raw.attribute_id)
-                                  or (x.attribute_value_ids[1] in raw.attribute_id))]
+                        or (x.attribute_value_ids[1] in raw.attribute_id))]
                     raw.update({'ratio': sum(total_ratio)})
 
     @api.multi
@@ -465,7 +465,9 @@ class AssemblyProd(models.Model):
         :return: str
         """
         for assembly in self:
-            name, version, product_code = assembly.product_tmpl_id.name, count_number, assembly.product_tmpl_id.template_code
+            template_name = assembly.product_tmpl_id.name
+            template_code = assembly.product_tmpl_id.template_code
+            name, version, product_code = template_name, count_number, template_code
             return ''.join('%s %s V%s' % (name, product_code, str(version)))
 
     @api.multi
@@ -606,90 +608,3 @@ class AssemblyProd(models.Model):
         self.ensure_one()
         default = dict(default or {}, active=True)
         return super(AssemblyProd, self).copy(default)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -40,7 +40,8 @@ class AssemblyPlan(models.Model):
     def _get_default_location_stock(self):
         return self.env.ref('stock.stock_location_stock').id
 
-    name = fields.Char('Plan Reference', required=True, copy=False, readonly=True, index=True, default='New', track_visibility='always')
+    name = fields.Char('Plan Reference', required=True, copy=False, readonly=True, index=True,
+                       default='New', track_visibility='always')
     origin = fields.Char(string="Source", copy=False, help="Sumber Dokumen Yang Membuat Dokumen Assembly Plan Ini")
     plan_line_ids = fields.One2many('assembly.plan.line', 'plan_id', string="Variant Plan Lines")
     plan_line_actual_ids = fields.One2many('assembly.plan.line', 'plan_id', string="Variant Actual Lines")
@@ -53,10 +54,11 @@ class AssemblyPlan(models.Model):
     raw_actual_line_ids = fields.One2many('assembly.plan.raw.material', 'plan_id', string="Raw Material Actual Lines")
 
     cmt_material_line_ids = fields.One2many('assembly.plan.cmt.material', 'plan_id',
-                                            string="Aksesoris Plan Lines")
-    cmt_material_actual_line_ids = fields.One2many('assembly.plan.cmt.material', 'plan_id', string="Aksesoris On Hand Lines")
+                                            string="Accessories Plan Lines")
+    cmt_material_actual_line_ids = fields.One2many('assembly.plan.cmt.material', 'plan_id',
+                                                   string="Accessories On Hand Lines")
     cmt_service_ids = fields.One2many('assembly.plan.services', 'plan_id',
-                                      string="Biaya Produksi")
+                                      string="Cost Services")
     active = fields.Boolean('Active Plan', default=True, index=True,
                             help="If unchecked, it will allow you to hide the Assembly Production without removing it.")
 
@@ -81,7 +83,8 @@ class AssemblyPlan(models.Model):
                                             'cancel': [('readonly', True)]})
 
     bom_id = fields.Many2one('mrp.bom', 'Bill of Material', readonly=True)
-    company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env['res.company']._company_default_get('mrp.production'))
+    company_id = fields.Many2one('res.company', 'Company',
+                                 default=lambda self: self.env['res.company']._company_default_get('mrp.production'))
     currency_id = fields.Many2one('res.currency', 'Currency', readonly=True,
                                   default=lambda self: self.env.user.company_id.currency_id.id)
     user_id = fields.Many2one('res.users', string='Responsible', index=True, track_visibility='onchange',
@@ -182,10 +185,10 @@ class AssemblyPlan(models.Model):
 
             total_ratio = sum(self.plan_line_ids.filtered(
                 lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                          or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
+                or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
             variant_ids = self.plan_line_ids.filtered(
                 lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                          or x.attribute_value_ids[1].id == produce.attribute_id.id)
+                or x.attribute_value_ids[1].id == produce.attribute_id.id)
             for variant in variant_ids:
                 if variant.product_id:
                     variant.write({'new_qty': float_round((variant.ratio / total_ratio) * produce.quantity_plan,
@@ -201,18 +204,16 @@ class AssemblyPlan(models.Model):
                 else:
                     total_ratio = sum(self.plan_line_ids.filtered(
                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                                  or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
+                        or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('ratio'))
                     variant_ids = self.plan_line_ids.filtered(
                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                                  or x.attribute_value_ids[1].id == produce.attribute_id.id)
+                        or x.attribute_value_ids[1].id == produce.attribute_id.id)
                     for variant in variant_ids:
                         if variant.product_id:
                             variant.write(
                                 {'actual_quantity': float_round(
                                     (variant.ratio / total_ratio) * produce.quantity_actual,
                                     precision_rounding=variant.product_uom_id.rounding)})
-
-
 
     @api.multi
     def _compute_cmt_consume(self):
@@ -305,7 +306,8 @@ class AssemblyPlan(models.Model):
         self.ensure_one()
         for order in self:
             if any([ptype in ['product', 'consu'] for ptype in order.plan_line_ids.mapped('product_id.type')]):
-                production_ids = order.mo_ids.filtered(lambda mo: mo.assembly_plan_id and mo.state not in ('done', 'cancel'))
+                production_ids = order.mo_ids.filtered(
+                    lambda mo: mo.assembly_plan_id and mo.state not in ('done', 'cancel'))
                 if not production_ids:
                     # location_src_id = order.picking_type_id.default_location_src_id
                     # location_dest_id = order.picking_type_id.default_location_dest_id
@@ -328,17 +330,8 @@ class AssemblyPlan(models.Model):
                 else:
                     production_id = production_ids[0]
                 order.plan_line_ids.generate_production_variant(production_id)
-                # order.assign_production_finished_picking()
 
         return True
-
-    @api.multi
-    def assign_production_finished_picking(self):
-        for order in self:
-            production_ids = order.mo_ids.filtered(lambda mo: mo.assembly_plan_id and mo.state == 'confirmed')
-            if production_ids:
-                production_ids._generate_finished_picking()
-            return True
 
     @api.multi
     def check_remaining_qty(self):
@@ -352,7 +345,7 @@ class AssemblyPlan(models.Model):
                     total_produce_actual = sum(order.plan_line_ids.filtered(
                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
                         or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped(
-                            'actual_quantity'))
+                        'actual_quantity'))
                     if order.state in ['draft', 'procurement']:
                         if total_produce_plan and total_produce_plan != produce.quantity_plan:
                             message = _("Total Quantity Untuk Warna %s %s Pcs(s) Pada Tabel Variant Plan"
@@ -376,16 +369,6 @@ class AssemblyPlan(models.Model):
                             raise UserError(message)
 
         return True
-
-    @api.multi
-    def copy(self, default=None):
-        default = dict(default or {})
-        self.ensure_one()
-        default.update({
-            'state': 'draft',
-            'name': self._get_default_name(),
-        })
-        return super(AssemblyPlan, self).copy(default)
 
     @api.multi
     def unlink(self):
@@ -540,8 +523,8 @@ class AssemblyPlan(models.Model):
     def action_create_purchase_order(self):
         self.ensure_one()
 
-        orders_to_procurement = self.filtered(lambda x: x.check_raw_procurement or x.check_cmt_procurement
-                                                        and x.state == 'on process')
+        orders_to_procurement = self.filtered(
+            lambda x: x.check_raw_procurement or x.check_cmt_procurement and x.state == 'on process')
         for order in orders_to_procurement:
             if not order.purchase_date:
                 raise UserError(_("Silahkan Dipilih Tanggal Purchase Date Terlebih Dahulu\n"))
@@ -638,26 +621,3 @@ class AssemblyPlan(models.Model):
             purchase_line_data = self._prepare_purchase_order_line(
                 po, line.product_id, product_qty, line.product_uom_id, line.price_unit, partner_id)
             purchase_order_line_model.create(purchase_line_data)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

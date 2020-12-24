@@ -42,7 +42,6 @@ class StockPicking(models.Model):
             if order.production_id:
                 if len(order.production_id.workorder_ids) == 0:
                     raise UserError(_("Belum Ada Proses Work Order Yang Berjalan"))
-           
 
         return result
 
@@ -61,18 +60,3 @@ class ReturnPicking(models.TransientModel):
         if self.picking_id.raw_material_production_id:
             vals.update({'returned_picking': True})
         return vals
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

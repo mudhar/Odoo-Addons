@@ -194,7 +194,3 @@ class WorkOrderExtensionWizard(models.TransientModel):
             })
             variants += variant
         return variants
-
-
-
-
