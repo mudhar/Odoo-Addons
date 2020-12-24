@@ -196,6 +196,7 @@ class AssemblyProd(models.Model):
         assembly_plan_model = self.env['assembly.plan']
         for order in self:
             plan_domain = assembly_plan_model.search([('assembly_id', '=', order.id)])
+            bom_id = order.bom_ids.filtered(lambda x: x.assembly_prod_id)
             if not plan_domain:
                 res = {
                     'assembly_id': order.id,
@@ -205,6 +206,7 @@ class AssemblyProd(models.Model):
                     'partner_id': order.partner_id.id,
                     'date_planned_start': order.date_planned_start,
                     'date_planned_finished': order.date_planned_finished,
+                    'bom_id':bom_id[0].id
                 }
                 plan_id = assembly_plan_model.create(res)
             else:

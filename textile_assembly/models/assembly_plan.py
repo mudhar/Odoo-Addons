@@ -256,7 +256,6 @@ class AssemblyPlan(models.Model):
                                                 self.env['ir.sequence'].next_by_code('assembly.plan'))) or '/'
 
         plan = super(AssemblyPlan, self).create(values)
-        plan.onchange_product_template_id()
         return plan
 
     @api.multi
@@ -286,29 +285,6 @@ class AssemblyPlan(models.Model):
                 for quant in quant_ids:
                     amount += quant.quantity
         return amount
-
-    @api.multi
-    def onchange_product_template_id(self):
-        bom_model = self.env['mrp.bom']
-        for plan in self:
-            if plan.product_template_id:
-                plan.bom_id = False
-        else:
-
-            bom = bom_model.bom_find_assembly(product_tmpl=plan.product_template_id,
-                                              picking_type=plan.picking_type_id,
-                                              company_id=plan.company_id.id,
-                                              assembly=plan.assembly_id)
-
-            if bom.type == 'normal':
-                plan.bom_id = bom.id
-            else:
-                plan.bom_id = False
-
-            plan.product_uom_id = plan.product_template_id.uom_id.id
-            categ_id = plan.product_template_id.uom_id.category_id
-            return {'domain': {'product_uom_id': [('category_id', '=', categ_id
-                                                   )]}}
 
     # START FUNGSI FUNGI
     # YANG DIGUNAKAN UNTUK PEMBUATAN RECORD MANUFACTURING ORDER #
