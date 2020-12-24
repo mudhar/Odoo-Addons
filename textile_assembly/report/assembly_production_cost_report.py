@@ -29,7 +29,7 @@ class AssemblyProductionCostReport(models.Model):
                             'total': 0.0,
                         }
                         for variant in assembly.variant_line_ids.filtered(
-                                lambda x: x.attribute_value_ids[0] in attrib or x.attribute_value_ids[1] in attrib):
+                                lambda x: attrib in x.attribute_value_ids):
                             variants = {
                                 'product_id': variant.product_id,
                                 'ratio': variant.ratio,

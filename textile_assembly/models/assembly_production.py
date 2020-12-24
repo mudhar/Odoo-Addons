@@ -110,22 +110,23 @@ class AssemblyProd(models.Model):
     def _compute_amount_total_text(self):
         """ Menghitung Total Keseluruhan Biaya Pada Tiap Variant
          :return total_amount_text """
-        # assemblies = self
-        # report_model = self.env['report.textile_assembly.assembly_production_cost_report']
-        # # Panggil Fungsi Report Untuk Mengenerate Total Variant
-        # value_ids = report_model.get_lines(assemblies)
-        # result = {'lines': value_ids}
-        # amount_total_text = ''.join('%s:' % (line['attributes']) + '{:,.2f}\n' .format(line['total'])
-        #                             for line in result['lines'])
-
-        for assembly in self:
-            report_model = self.env['report.textile_assembly.assembly_production_cost_report']
-            value_ids = report_model.get_lines(assembly)
-            if value_ids:
-                result = {'lines': value_ids}
-                amount_total_text = ''.join('%s:' % (line['attributes']) + '{:,.2f}\n'.format(line['total'])
-                                            for line in result['lines'])
-                assembly.amount_total_text = html2plaintext(amount_total_text)
+        for assembly in self.filtered(lambda x: x.state != 'draft'):
+            variant_attribute = assembly.raw_material_line_ids.mapped('attribute_id')
+            lines = []
+            for variant in variant_attribute:
+                values = {'attribute_name': variant.name,
+                          'total': 0.0}
+                for raw in assembly.raw_material_line_ids.filtered(lambda x: x.attribute_id.id == variant.id):
+                    values['total'] += raw.price_subtotal
+                cmt_total = sum(assembly.cmt_template_ids.mapped('price_subtotal'))
+                service_total = sum(assembly.cmt_service_ids.mapped('price_subtotal'))
+                values['total'] += cmt_total + service_total
+                lines += [values]
+            if lines:
+                amount_total = ''.join('%s:' % (line['attribute_name'])
+                                       + '{:,.2f}\n'.format(line['total'])
+                                       for line in lines)
+                assembly.update({'amount_total_text': html2plaintext(amount_total).strip().replace('*', '')})
             else:
                 return None
 
