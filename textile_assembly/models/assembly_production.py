@@ -32,10 +32,10 @@ class AssemblyProd(models.Model):
     name = fields.Char('Assembly Reference', copy=False, readonly=True, default=lambda x: _('New'),
                        track_visibility='onchange')
 
-    date_planned_start = fields.Datetime(
+    date_planned_start = fields.Date(
         'Scheduled Date Start', copy=False,
         states={'approve': [('readonly', True)], 'cancel': [('readonly', True)]})
-    date_planned_finished = fields.Datetime(
+    date_planned_finished = fields.Date(
         'Scheduled Date Finished', copy=False,
         states={'approve': [('readonly', True)], 'cancel': [('readonly', True)]})
 

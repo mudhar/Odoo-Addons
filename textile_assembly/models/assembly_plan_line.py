@@ -27,11 +27,7 @@ class AssemblyPlanLine(models.Model):
         'Ratio', digits=dp.get_precision('Product Unit of Measure'))
     attribute_value_ids = fields.Many2many(
         comodel_name="product.attribute.value", string="Variants")
-    date_planned_start = fields.Datetime('Schedule Date', copy=False, index=True,
-                                         related="plan_id.date_planned_start")
-
     state = fields.Selection(related='plan_id.state', store=True)
-
     unit_cost = fields.Float(string='Unit Cost', digits=dp.get_precision('Product Price'), compute="_compute_unit_cost")
 
     @api.multi

@@ -37,8 +37,6 @@ class AssemblyPlanCmtMaterial(models.Model):
     qty_available = fields.Float(string="On Hand",
                                  digits=dp.get_precision('Product Unit of Measure'))
     need_procurement = fields.Boolean(string="Need Procurment", readonly=True, compute="_compute_need_procurement")
-    date_planned_start = fields.Datetime('Deadline Start', copy=False, index=True,
-                                         related="plan_id.date_planned_start")
 
     @api.multi
     @api.depends('price_unit',
@@ -49,14 +47,6 @@ class AssemblyPlanCmtMaterial(models.Model):
             cmt.price_subtotal_plan = cmt.qty_to_plan * cmt.price_unit
             cmt.price_subtotal_actual = cmt.quantity_to_actual * cmt.price_unit
         return True
-
-    # @api.multi
-    # @api.depends('qty_consumed',
-    #              'qty_used')
-    # def _compute_qty_differ(self):
-    #     for order in self:
-    #         if order.qty_used != order.qty_consumed:
-    #             order.qty_differ = order.qty_consumed - order.qty_used
 
     @api.multi
     @api.depends('product_id',

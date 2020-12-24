@@ -42,8 +42,6 @@ class AssemblyPlanRawMaterial(models.Model):
     state = fields.Selection(related='plan_id.state')
 
     need_procurement = fields.Boolean(string="Need Procurment", readonly=True, compute="_compute_need_procurement")
-    date_planned_start = fields.Datetime('Deadline Start', copy=False, index=True,
-                                         related="plan_id.date_planned_start")
 
     @api.multi
     @api.depends('plan_id.plan_line_ids.new_qty')

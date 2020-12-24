@@ -72,15 +72,14 @@ class AssemblyPlan(models.Model):
                                   default=_get_default_location_stock)
     location_dest_id = fields.Many2one(comodel_name="stock.location", string="Finished Products Location")
     partner_id = fields.Many2one(comodel_name="res.partner", string="CMT Vendor", track_visibility='onchange')
-    date_planned_start = fields.Datetime(
+    date_planned_start = fields.Date(
         'Scheduled Date Start',
         states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
-    date_planned_finished = fields.Datetime(
+    date_planned_finished = fields.Date(
         'Scheduled Date Finished',
         states={'done': [('readonly', True)], 'cancel': [('readonly', True)]})
-    purchase_date = fields.Datetime('Purchase Schedule Date',
-                                    states={'done': [('readonly', True)],
-                                            'cancel': [('readonly', True)]})
+    purchase_date = fields.Date('Purchase Schedule Date', states={'done': [('readonly', True)],
+                                                                  'cancel': [('readonly', True)]})
 
     bom_id = fields.Many2one('mrp.bom', 'Bill of Material', readonly=True)
     company_id = fields.Many2one('res.company', 'Company',
