@@ -47,7 +47,7 @@
                             <label for="name" class="oe_edit_only"/>
                             <h1>
                                 <field name="name" placeholder="Assembly Reference" nolabel="1"
-                                       attrs="{'readonly': [('state', 'not in' , ('process'))]}"/>
+                                       attrs="{'readonly': [('state', '!=' , 'process')]}"/>
                             </h1>
                         </div>
                         <group>
@@ -57,12 +57,12 @@
                                     <field name="product_tmpl_id"
                                            options="{'no_create': True}"
                                            attrs="{'required': [('state', '=', 'draft')],
-                                           'readonly': [('state', 'not in' , ('draft'))]}"
+                                           'readonly': [('state', '!=' , 'draft')]}"
                                     />
                                     <field name="product_uom_id" readonly="1" invisible="1"/>
                                 </div>
                                 <field name="product_categ_id"/>
-                                <field name="routing_id" attrs="{'required': [('state', '=', 'draft')], 'readonly': [('state', 'not in' , ('draft'))]}"
+                                <field name="routing_id" attrs="{'required': [('state', '=', 'draft')], 'readonly': [('state', '!=' , 'draft')]}"
                                        groups="mrp.group_mrp_routings"/>
                                 <field name="partner_id" context="{'search_default_is_cmt':1, 'default_supplier':1, 'default_customer':0, 'default_is_cmt':1 }"
                                        domain="['&amp;',('supplier', '=', True), ('is_cmt','=',True)]"/>

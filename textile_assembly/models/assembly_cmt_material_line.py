@@ -21,8 +21,7 @@ class AssemblyCmtMaterialLine(models.Model):
                                default=1.0)
     qty_final = fields.Float(string="Quantity", digits=dp.get_precision('Product Unit of Measure'),
                              compute="_compute_qty_final")
-    price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'),
-                              default=0.0)
+    price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'), required=True)
     price_subtotal = fields.Float(string="Sub Total", digits=dp.get_precision('Account'),
                                   compute="_compute_price_subtotal")
     total_ratio = fields.Float(string="Amount Ratio", compute="_compute_ratio")
@@ -217,8 +216,7 @@ class AssemblyCmtProductService(models.Model):
     product_qty = fields.Float(string="Quantity Per Pcs", digits=dp.get_precision('Product Unit of Measure'),
                                default=1.0, required=True)
 
-    price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'),
-                              default=0.0, required=True)
+    price_unit = fields.Float(string="Unit Price", digits=dp.get_precision('Product Price'), required=True)
     price_subtotal = fields.Float(string="Sub Total", digits=dp.get_precision('Account'),
                                   compute="_compute_price_subtotal")
     state = fields.Selection(string="Status", related="assembly_id.state")
