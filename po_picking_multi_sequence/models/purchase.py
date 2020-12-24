@@ -10,15 +10,27 @@ class PurchaseOrder(models.Model):
     product_select_type = fields.Selection(string="Report Type",
                                            selection=[('materials', 'Materials'),
                                                       ('goods', 'Goods'),
-                                                      ('subpo', 'Sub PO')], default='materials',
+                                                      ('subpo', 'Sub PO')],
+                                           default='materials',
                                            help="Reference Picking Name",
                                            index=True, copy=True,  track_visibility='onchange', required=True)
+
+    @api.onchange('partner_id', 'company_id')
+    def onchange_partner_id(self):
+        result = super(PurchaseOrder, self).onchange_partner_id()
+        if self.product_select_type == 'subpo':
+            result['domain'] = {'partner_id': [
+                ('supplier', '=', True), ('customer', '=', False), ('is_cmt', '=', True)]}
+        else:
+            result['domain'] = {'partner_id': [
+                ('supplier', '=', True), ('customer', '=', False), ('is_cmt', '=', False)]}
+        return result
 
     @api.multi
     def button_confirm(self):
         for order in self:
             if order.product_select_type and order.product_select_type == 'subpo':
-                if any(line.type in ['consu','product'] for line in order.order_line.mapped('product_id')):
+                if any(line.type in ['consu', 'product'] for line in order.order_line.mapped('product_id')):
                     raise ValidationError(_("Dokumen Picking Untuk Sub PO Tidak Ditemukan\n"
                                             "Cek Tipe Produk, Apakah Sudah Bertipe Service?\n"))
         return super(PurchaseOrder, self).button_confirm()
@@ -52,9 +64,13 @@ class PurchaseOrderLine(models.Model):
         result = super(PurchaseOrderLine, self).onchange_product_id()
         if self.order_id.product_select_type:
             if self.order_id.product_select_type == 'materials':
-                result['domain'] = {'product_id': [('product_tmpl_id.is_materials', '=', True)]}
+                result['domain'] = {'product_id': [('product_tmpl_id.is_materials', '=', True),
+                                                   ('type', '=', 'product')]}
             elif self.order_id.product_select_type == 'goods':
-                result['domain'] = {'product_id': [('product_tmpl_id.is_goods', '=', True)]}
+                result['domain'] = {'product_id': [('product_tmpl_id.is_goods', '=', True),
+                                                   ('type', '=', 'product')]}
+            else:
+                result['domain'] = {'product_id': [('type', '=', 'service')]}
 
         return result
 
@@ -64,4 +80,3 @@ class PurchaseOrderLine(models.Model):
         if len(res) == 1:
             res[0].update({'product_select_type': self.order_id.product_select_type})
         return res
-
