@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from odoo import fields, models, api
+from odoo.tools import DEFAULT_SERVER_DATE_FORMAT
 
 
 class PurchaseOrder(models.Model):
@@ -14,8 +16,8 @@ class PurchaseOrder(models.Model):
                 # 2020-01-10
                 date_to = self._get_purchase_date_order(vals['date_order'])
                 dt_from, dt_to = self.env['ir.sequence']._format_date_range_seq(date_to)
-                date_to_string = date_to.strftime('%Y-%m-%d')
-                date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to_string)
+                # date_to_string = date_to.strftime('%Y-%m-%d')
+                date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to)
                 if not date_range:
                     seq_date = self.env['ir.sequence'].act_create_date_range_seq(dt_from, dt_to, sequence_id)
                     # seq_prefix
@@ -30,8 +32,8 @@ class PurchaseOrder(models.Model):
                 # 2020-01-10
                 date_to = self._get_purchase_date_order(vals['date_order'])
                 dt_from, dt_to = self.env['ir.sequence']._format_date_range_seq(date_to)
-                date_to_string = date_to.strftime('%Y-%m-%d')
-                date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to_string)
+                # date_to_string = date_to.strftime('%Y-%m-%d')
+                date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to)
                 if not date_range:
                     seq_date = self.env['ir.sequence'].act_create_date_range_seq(dt_from, dt_to, sequence_id)
                     # seq_prefix
@@ -43,8 +45,10 @@ class PurchaseOrder(models.Model):
         return super(PurchaseOrder, self).create(vals)
 
     def _get_purchase_date_order(self, date):
-        date_order = fields.Datetime.from_string(date)
-        return date_order + relativedelta(days=1)
+        purchase_date = fields.Date.from_string(date)
+        if purchase_date:
+            date_order = purchase_date + relativedelta(days=1)
+            return date_order.strftime(DEFAULT_SERVER_DATE_FORMAT)
 
 
 

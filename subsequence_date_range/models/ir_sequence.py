@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import calendar
-from odoo import models, api
+from odoo import models, api, fields
 
 
 class IrSequence(models.Model):
@@ -12,8 +12,9 @@ class IrSequence(models.Model):
 
     @api.multi
     def _format_date_range_seq(self, date_to):
-        year = date_to.year
-        month = date_to.month
+        date_format = fields.Date.from_string(date_to)
+        year = date_format.year
+        month = date_format.month
         days = calendar.monthrange(year, month)
         date_from = '{}-{}-01'.format(year, month)
         date_to = '{}-{}-{}'.format(year, month, days[1])

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from odoo import fields, models, api
+from odoo.tools import DEFAULT_SERVER_DATE_FORMAT
 
 
 class StockPicking(models.Model):
@@ -21,9 +23,8 @@ class StockPicking(models.Model):
         operation = self.env['stock.picking.type'].browse(vals.get('picking_type_id'))
         partner_id = self.env['res.partner'].browse(vals.get('partner_id'))
 
-        if vals.get('name', '/') == '/' and defaults.get('name', '/') == '/' and vals.get('picking_type_id',
-                                                                                          defaults.get(
-                                                                                                  'picking_type_id')):
+        if vals.get('name', '/') == '/' and defaults.get('name', '/') == '/' \
+                and vals.get('picking_type_id',defaults.get('picking_type_id')):
             if operation.code == 'incoming':
                 # purchase order, product materials, vendor non cmt
                 # STBN
@@ -154,20 +155,22 @@ class StockPicking(models.Model):
         return super(StockPicking, self).create(vals)
 
     def _get_stock_picking_date(self, date):
-        order_date = fields.Datetime.from_string(date)
-        return order_date + relativedelta(days=1)
+        order_date = fields.Date.from_string(date).strftime(DEFAULT_SERVER_DATE_FORMAT)
+        return order_date
 
     def create_date_range_picking(self, values, sequence_id):
         date_to = self._get_stock_picking_date(values['date'])
-        date_to_string = date_to.strftime('%Y-%m-%d')
+        # date_to_string = date_to.strftime('%Y-%m-%d')
         dt_from, dt_to = self.env['ir.sequence']._format_date_range_seq(date_to)
-        date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to_string)
+        date_range = self.env['ir.sequence']._find_date_range_seq(sequence_id, date_to)
         if not date_range:
             new_date_range = self.env['ir.sequence'].act_create_date_range_seq(dt_from, dt_to, sequence_id)
             values['name'] = self.env['ir.sequence']._create_sequence_prefix(sequence_id, new_date_range)
         else:
             values['name'] = self.env['ir.sequence']._create_sequence_prefix(sequence_id, date_range)
         return values
+
+
 
 
 

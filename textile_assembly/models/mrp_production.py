@@ -252,7 +252,8 @@ class MrpProduction(models.Model):
                     'raw_material_production_id': order.id,
                     'group_id': order.procurement_group_id.id,
                     'company_id': order.company_id.id,
-                    'product_select_type': 'materials'
+                    'product_select_type': 'materials',
+                    'date': order.date_planned_start,
                 }
                 done += picking_obj.create(res)
             else:
@@ -398,6 +399,7 @@ class MrpProduction(models.Model):
                 'state': len(workorders) == 0 and 'ready' or 'pending',
                 'qty_producing': quantity,
                 'capacity': operation.workcenter_id.capacity,
+                'backdate_start': self.date_planned_start,
             })
             self.variant_ids.generate_workorder_qc_line(workorder)
             self.generate_workorder_service_line(workorder)
