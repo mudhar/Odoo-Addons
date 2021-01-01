@@ -13,8 +13,7 @@
                     <!-- Jika Tidak Ditambah Pada XML api constrains tidak ke trigger -->
                     <label for="template_code"/>
                     <div class="o_row">
-                        <field name="template_code" placeholder="Referensi Code Produk Assembly"
-                               attrs="{'required': [('has_goods','=',True)]}"/>
+                        <field name="template_code" placeholder="Referensi Code Produk Assembly"/>
                         <button name="action_generate_internal_reference" type="object" string="Generate Internal Reference"
                                 class="oe_link"/>
                         <field name="assembly_code_ref" invisible="1"/>
