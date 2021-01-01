@@ -18,9 +18,9 @@
                             <group>
 
                                 <field name="template_code" placeholder="Referensi Code Produk Assembly"
-                                       attrs="{'invisible': [('has_goods','=',False)], 'required': [('has_goods','=',True)]}"/>
+                                       attrs="{'invisible': [('has_goods','=',False)]}"/>
                                 <field name="pattern_code" placeholder="Referensi Code Pola"
-                                       attrs="{'invisible': [('has_goods','=',False)], 'required': [('has_goods','=',True)]}"/>
+                                       attrs="{'invisible': [('has_goods','=',False)], 'required': [('template_code','=',True)]}"/>
                             </group>
                         </group>
                     </page>
