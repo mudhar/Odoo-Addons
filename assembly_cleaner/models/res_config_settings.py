@@ -18,6 +18,7 @@ class ResConfigSettings(models.TransientModel):
             ['assembly.prod.variant.line', ],
             ['assembly.production', ],
             ['assembly.raw.material.line', ],
+            ['mrp.bom'],
             ['mrp.production.variant', ],
             ['mrp_workorder.qc_finished_move', ],
             ['mrp_workorder.qc_reject_move', ],
@@ -61,7 +62,8 @@ class ResConfigSettings(models.TransientModel):
                 seqs.write({'number_next': 1,
                             'number_next_actual': 1})
                 date_range = seqs.filtered(lambda seq: seq.date_range_ids)
-                date_range.mapped('date_range_ids').unlink()
+                if date_range:
+                    date_range.mapped('date_range_ids').unlink()
         except Exception as e:
             pass
         return True
