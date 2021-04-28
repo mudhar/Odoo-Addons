@@ -1,0 +1,11 @@
+<odoo>
+    <report
+            id="report_sale_xlsx"
+            model="sale.order"
+            string="Export Sale Order to Excel"
+            report_type="xlsx"
+            name="report_sale_order_xlsx.report_sale_xlsx"
+            file="sale_order"
+            attachment_use="False"
+    />
+</odoo>
