@@ -1,0 +1,61 @@
+<odoo>
+  <record id="res_config_settings_view_form" model="ir.ui.view">
+    <field name="name">res.config.settings.view.form.inherit.aging.payable.reports</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="account_reports.res_config_settings_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@id='account_reports_settings']" position="inside">
+        <div class="col-12 col-lg-6 o_setting_box" id="aged_payable_config">
+          <div class="o_setting_left_pane">
+            <field name="period_manual_report"/>
+          </div>
+          <div class="o_setting_right_pane">
+            <span class="o_form_label">Aged Payable Report Configuration</span>
+            <div class="text-muted">
+              (Number of days overdue reported in each column)
+            </div>
+            <div class="content-group">
+              <div class="row mt16">
+                <span class="col-lg-3 o_light_label">Column 1</span>
+              </div>
+              <div class="row">
+                <label string="From" for="column1_from" class="col-lg-2 o_light_label"/>
+                <div class="content-group">
+                  <field name="column1_from" required="1" style="width: 150px; margin-right:8px"/> To <field name="column1_to" required="1" class="oe_inline"/>
+                </div>
+              </div>
+              <div class="row">
+                <span class="col-lg-3 o_light_label">Column 2</span>
+              </div>
+              <div class="row">
+                <label string="From" for="column2_from" class="col-lg-2 o_light_label"/>
+                <div class="content-group">
+                  <field name="column2_from" required="1" style="width: 150px; margin-right:8px"/> To <field name="column2_to" required="1" class="oe_inline"/>
+                </div>
+              </div>
+              <div class="row">
+                <span class="col-lg-3 o_light_label">Column 3</span>
+              </div>
+              <div class="row">
+                <label string="From" for="column3_from" class="col-lg-2 o_light_label"/>
+                <div class="content-group">
+                  <field name="column3_from" required="1" style="width: 150px; margin-right:8px"/> To <field name="column3_to" required="1" class="oe_inline"/>
+                </div>
+              </div>
+              <div class="row">
+                <span class="col-lg-3 o_light_label">Column 4</span>
+              </div>
+              <div class="row">
+                <label string="From" for="column4_from" class="col-lg-2 o_light_label"/>
+                <div class="content-group">
+                  <field name="column4_from" required="1" style="width: 150px; margin-right:8px"/> To <field name="column4_to" required="1" class="oe_inline"/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </xpath>
+
+    </field>
+  </record>
+</odoo>
