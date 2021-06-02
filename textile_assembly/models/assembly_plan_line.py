@@ -3,8 +3,9 @@ import logging
 
 from odoo import api, fields, models
 from odoo.addons import decimal_precision as dp
+from odoo.tools import float_is_zero
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class AssemblyPlanLine(models.Model):

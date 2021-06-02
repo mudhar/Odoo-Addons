@@ -7,7 +7,7 @@ from odoo.exceptions import UserError, Warning
 from odoo.tools import float_round, float_is_zero
 from odoo.tools import html2plaintext
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class AssemblyPlan(models.Model):
@@ -191,7 +191,7 @@ class AssemblyPlan(models.Model):
             for variant in variant_ids:
                 if variant.product_id:
                     variant.write({'new_qty': float_round((variant.ratio / total_ratio) * produce.quantity_plan,
-                                                          precision_rounding=variant.product_uom_id.rounding)})
+                                                          precision_rounding=1.0)})
 
     def _set_quantity_actual(self):
         for produce in self.produce_ids:
@@ -212,7 +212,7 @@ class AssemblyPlan(models.Model):
                             variant.write(
                                 {'actual_quantity': float_round(
                                     (variant.ratio / total_ratio) * produce.quantity_actual,
-                                    precision_rounding=variant.product_uom_id.rounding)})
+                                    precision_rounding=1.0)})
 
     @api.multi
     def _compute_cmt_consume(self):
@@ -340,10 +340,10 @@ class AssemblyPlan(models.Model):
                 if produce.attribute_id:
                     total_produce_plan = sum(order.plan_line_ids.filtered(
                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                        or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('new_qty'))
+                                  or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped('new_qty'))
                     total_produce_actual = sum(order.plan_line_ids.filtered(
                         lambda x: x.attribute_value_ids[0].id == produce.attribute_id.id
-                        or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped(
+                                  or x.attribute_value_ids[1].id == produce.attribute_id.id).mapped(
                         'actual_quantity'))
                     if order.state in ['draft', 'procurement']:
                         if total_produce_plan and total_produce_plan != produce.quantity_plan:
